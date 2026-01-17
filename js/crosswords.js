@@ -1498,6 +1498,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.notepad_btn.on('click', $.proxy(this.showNotepad, this));
 
         $(document).on('keydown', $.proxy(this.keyPressed, this));
+        $(document).on('keyup', $.proxy(this.check_reveal, this, 'puzzle', 'check'));
+          
 
         this.svgContainer.addEventListener('click', (e) => {
           if (e.target.tagName === 'rect') {
@@ -2367,6 +2369,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
       }
 
+      /*keyPressedThenCheck(e) {
+        this.keyPressed(e);
+        }
+	*/
       keyPressed(e) {
         if (this.settings_open) {
           return;
