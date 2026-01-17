@@ -659,6 +659,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         var parsePUZZLE_callback = $.proxy(this.parsePuzzle, this);
         var error_callback = $.proxy(this.error, this);
 
+	// --- MODS, BASE64 & BZIP2 LOGIC ---
+        const params = new URLSearchParams(window.location.search);
+
+        // 1. Handle UI Mods
+        //const mods = params.get('mods') || "";
+        //if (mods.includes('notimer')) this.config.mod_hide_timer = true;
+        //if (mods.includes('noreveal')) this.config.mod_disable_reveal = true;
+
         if (this.root) {
           this.remove();
         }
@@ -719,7 +727,31 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         // preload one puzzle
-        if (
+        const b64Data = params.get('data');
+        if (b64Data) {
+            try {
+                this.root.addClass('loading');
+		const binaryString = atob(decodeURIComponent(b64Data));
+                let bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // Check for bzip2 header "BZh" (0x42 0x5a 0x68)
+                if (bytes[0] === 0x42 && bytes[1] === 0x5a && bytes[2] === 0x68) {
+	            try { 		
+			bytes = bz2.decompress(bytes);
+                    }catch (e) {
+                     console.error("bzip2 library error",e);
+                    }
+                }
+		Promise.resolve(bytes)
+                .then(parsePUZZLE_callback)
+                .catch(error_callback);
+            } catch (e) {
+                console.error("Data load failed:", e);
+            }
+        } else if (
           this.config.puzzle_file &&
           this.config.puzzle_file.hasOwnProperty('url') &&
           this.config.puzzle_file.hasOwnProperty('type')
@@ -813,7 +845,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         setBreakpointClasses(this.root);
         // Place this at the END of the init() method:
         const svg = document.getElementById('cw-puzzle-grid');
-      }
+      } // ========>end init
 
       error(message) {
         alert(message);
