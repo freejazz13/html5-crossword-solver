@@ -256,6 +256,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
+                <button class = "cw-menu-item cw-save-db">Save state</button>
                 <button class = "cw-menu-item cw-file-info">Info</button>
                 <button class = "cw-menu-item cw-file-notepad">Notepad</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
@@ -705,6 +706,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.print_btn = this.root.find('.cw-file-print');
         this.clear_btn = this.root.find('.cw-file-clear');
         this.save_btn = this.root.find('.cw-file-save');
+        this.save_db_btn = this.root.find('.cw-save-db');
         this.download_btn = this.root.find('.cw-file-download');
 
         // Notepad button is hidden by default
@@ -1380,6 +1382,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.clear_btn.off('click');
         this.load_btn.off('click');
         this.save_btn.off('click');
+        this.save_db_btn.off('click');
         this.download_btn.off('click');
         this.timer_button.off('click');
 
@@ -1488,6 +1491,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         // SAVE
         this.save_btn.on('click', $.proxy(this.saveAsIpuz, this));
+        //this.save_db_btn.on('click', $.proxy(this.saveDb, this));
+	this.save_db_btn.on('click', (e) => { this.saveDb(e); });
 
         // LOAD
         this.load_btn.on('click', () => {
@@ -3560,6 +3565,28 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           JSON.stringify(savedSettings)
         );
       }
+
+      /* Save the game state to DB */
+      async saveDb(e) {
+        this.fillJsXw();
+        try {
+            const response = await fetch('/cgi-lmpuz/nexus_update.py', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(this.jsxw)
+            });
+
+            // Response is defined here
+            const data = await response.json();
+            console.log("json returned by nexus_update:", data);
+	    if (data.status != 0) { alert(data.message); }
+    
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+     }
 
       /* Save the game to local storage */
       saveGame() {
