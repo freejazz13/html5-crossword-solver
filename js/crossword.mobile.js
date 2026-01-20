@@ -359,10 +359,15 @@ function createCustomKeyboard() {
   keyboard.id = 'custom-keyboard';
   keyboard.className = 'custom-keyboard';
 
-  const letterRows = [
+  const letterRowsQWERTY = [
     'QWERTYUIOP'.split(''),
     'ASDFGHJKL'.split(''),
     'ZXCVBNM'.split('')
+  ];
+  const letterRows = [
+    'AZERTYUIOP'.split(''),
+    'QSDFGHJKLM'.split(''),
+    'WXCVBN'.split('')
   ];
 
   const symbolRows = [
