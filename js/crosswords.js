@@ -984,7 +984,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.completion_message = puzzle.metadata.completion_message || "Puzzle solved!";
 
         if (this.title) {
-          document.title = this.title + ' | Crossword Nexus Solver';
+          document.title = 'Nexus : ' + this.title ;
         }
         if (this.crossword_type == 'acrostic' || this.crossword_type == 'coded') {
           this.is_autofill = true;
