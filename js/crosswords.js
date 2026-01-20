@@ -257,6 +257,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 </button>
                 <div    class = "cw-menu">
                 <button class = "cw-menu-item cw-save-db">Save state</button>
+                <button class = "cw-menu-item cw-load-db">Load state</button>
                 <button class = "cw-menu-item cw-file-info">Info</button>
                 <button class = "cw-menu-item cw-file-notepad">Notepad</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
@@ -707,6 +708,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.clear_btn = this.root.find('.cw-file-clear');
         this.save_btn = this.root.find('.cw-file-save');
         this.save_db_btn = this.root.find('.cw-save-db');
+        this.load_db_btn = this.root.find('.cw-load-db');
         this.download_btn = this.root.find('.cw-file-download');
 
         // Notepad button is hidden by default
@@ -1383,6 +1385,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.load_btn.off('click');
         this.save_btn.off('click');
         this.save_db_btn.off('click');
+        this.load_db_btn.off('click');
         this.download_btn.off('click');
         this.timer_button.off('click');
 
@@ -1493,6 +1496,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.save_btn.on('click', $.proxy(this.saveAsIpuz, this));
         //this.save_db_btn.on('click', $.proxy(this.saveDb, this));
 	this.save_db_btn.on('click', (e) => { this.saveDb(e); });
+	this.load_db_btn.on('click', (e) => { this.loadDb(e); });
 
         // LOAD
         this.load_btn.on('click', () => {
@@ -3565,6 +3569,51 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           JSON.stringify(savedSettings)
         );
       }
+
+      /* load last state from DB */
+      async loadDb(e) {
+        this.fillJsXw();
+        try {
+            const response = await fetch('/cgi-lmpuz/nexus_load.py', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(this.jsxw)
+            });
+
+            const data = await response.json();
+            console.log("json returned by nexus_update:", data);
+	    if (data.status != 0) { alert(data.message); }
+	    else {
+	    	const state = data.state
+		this.updateCellsFromState(this.cells, state);
+          	this.renderCells(); 
+		}
+    
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+     }
+// Example usage:
+// const state = '-----CAUSA-.-------------';
+    updateCellsFromState(cells, stateString) {
+      const height = this.grid_height;
+      const width = this.grid_width;
+      for (let y = 1; y <= height; y++) {
+        for (let x = 1; x <= width; x++) {
+            const index = (y - 1) * width + (x - 1);
+            const char = stateString[index];
+            const cell = cells[x][y];
+            if (char === '-' || char === '.') {
+                cell.letter = "";
+            } else {
+                cell.letter = char;
+            }
+        }
+      }
+    console.log("Grid updated.");
+  }
 
       /* Save the game state to DB */
       async saveDb(e) {
