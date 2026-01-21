@@ -32,6 +32,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 }
 
 #this-word-letters {
+  background-color: #ffeb3f;
   letter-spacing: 3px; /* Adjust value to increase/decrease the gap */
   /*font-family: monospace;  Monospace keeps the spacing consistent */
   position: absolute;
