@@ -21,6 +21,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
     overflow: hidden;
     text-overflow: ellipsis;
 }
+#this-word-letters {
+    font-weight: bold;
+    font-size: 24px;
+}
 .cw-title {
     font-weight: bold;
 }

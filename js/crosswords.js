@@ -305,6 +305,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             <div   class = "cw-top-text">
             <span  class = "cw-clue-number"></span>
             <span  class = "cw-clue-text"></span>
+            <span class = "cw-thisword-text"></span>
                     </div>
                   </div>
                   <svg id = "cw-puzzle-grid"></svg>
@@ -1257,6 +1258,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                  </button>`
               : ''
           }
+          <span class="cw-header-separator">&nbsp;•&nbsp;</span>
+          <span id="this-word-letters"></span>
           <span class="cw-flex-spacer"></span>
           <span class="cw-copyright">${escape(this.copyright)}</span>
         `);
@@ -1772,6 +1775,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
       setActiveWord(word) {
         if (word) {
+	  // get current word state as string: "W_O_RD"
+	  const wordString = word.cell_ranges.map(range => {
+    	     const cell = this.cells[range.x][range.y];
+             return (cell.letter && cell.letter !== "") ? cell.letter : "_"; 
+	     }).join("");
+	  //console.log(wordString); 
+	  // display in header space:
+           $('#this-word-letters').text(wordString);
+
           this.selected_word = word;
           if (this.fakeclues) {
             return;
@@ -2515,15 +2527,20 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               e.preventDefault();
               this.toggleTimer();
             } else {
-              if (this.selected_cell && (this.selected_word || this.diagramless_mode)) {
+              if (false && (this.selected_cell && (this.selected_word || this.diagramless_mode))) {
                 this.hidden_input.val('');
                 var rebus_entry = prompt('Rebus entry', '');
                 this.hiddenInputChanged(rebus_entry);
               }
             }
             break;
-          case 45: // insert -- same as escape
-            if (this.selected_cell && (this.selected_word || this.diagramless_mode)) {
+          case 45: // insert -- reveal letter
+	    if (e.shiftKey) {
+            	this.check_reveal( 'word', 'reveal');
+	    } else {
+            	this.check_reveal( 'letter', 'reveal');
+	    }
+            if (false &&(this.selected_cell && (this.selected_word || this.diagramless_mode))) {
               var rebus_entry = prompt('Rebus entry', '');
               this.hiddenInputChanged(rebus_entry);
             }
