@@ -21,12 +21,29 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
     overflow: hidden;
     text-overflow: ellipsis;
 }
-#this-word-letters {
-    font-weight: bold;
-    font-size: 24px;
-}
 .cw-title {
     font-weight: bold;
+}
+.cw-header {
+  position: relative; /* Essential for absolute centering */
+  display: flex;
+  align-items: center;
+  /*height: 50px;  Adjust based on your design */
+}
+
+#this-word-letters {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-weight: bold;
+  font-size: 24px;
+  /* Optional: Ensure it doesn't overlap if screen is too small */
+  z-index: 1;
+}
+
+.cw-flex-spacer {
+  flex-grow: 1;
 }
 .cw-header-separator {
     flex: 0 0 auto;
