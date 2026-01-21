@@ -2535,7 +2535,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           case 45: // insert -- reveal letter
-	    if (e.shiftKey) {
+	    if (e.shiftKey) { // SHIFT insert -- reveal word
             	this.check_reveal( 'word', 'reveal');
 	    } else {
             	this.check_reveal( 'letter', 'reveal');
@@ -2662,12 +2662,25 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           }
-        }
+	} //SWITCH
         if (prevent) {
           e.preventDefault();
           e.stopPropagation();
         }
-      }
+
+	// redisplay word in the upper box:
+        if (this.selected_cell && this.selected_word) {
+          var i,
+            word,
+            x = this.selected_cell.x,
+            y = this.selected_cell.y;
+            word = this.clueGroups[this.activeClueGroupIndex].getMatchingWord(x, y);
+            if (word) {
+                this.setActiveWord(word);
+                // this.renderCells(); ??
+		}
+	}
+  } //FUNCTION
 
       autofill() {
         this.saveGame(); // keep saving
