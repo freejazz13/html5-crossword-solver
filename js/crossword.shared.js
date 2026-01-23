@@ -42,7 +42,8 @@ window.CrosswordShared = {
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 1;
     const isiPad = ua.includes("iPad") || (ua.includes("Mac") && navigator.maxTouchPoints > 1);
     const isMobileUA = /android|iphone|ipod|mobile/i.test(ua);
-    return isTouch && (isMobileUA || isiPad);
+    const isMobileForced = (new URL(window.location.href).searchParams.get("mobile") == "1");
+    return isMobileForced || (isTouch && (isMobileUA || isiPad));
   }
 };
 

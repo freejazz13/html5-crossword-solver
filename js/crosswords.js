@@ -664,11 +664,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	// --- MODS, BASE64 & BZIP2 LOGIC ---
         const params = new URLSearchParams(window.location.search);
 
-        // 1. Handle UI Mods
-        //const mods = params.get('mods') || "";
-        //if (mods.includes('notimer')) this.config.mod_hide_timer = true;
-        //if (mods.includes('noreveal')) this.config.mod_disable_reveal = true;
-
         if (this.root) {
           this.remove();
         }
@@ -1024,7 +1019,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             x: rawCell.x + 1,
             y: rawCell.y + 1,
             solution: rawCell.solution,
-            letter: rawCell.letter || '',
+            letter: rawCell.value || '',
             type: rawCell.type || null,
             number: rawCell.number || null,
             bar: {
