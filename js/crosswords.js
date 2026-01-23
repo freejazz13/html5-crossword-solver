@@ -305,7 +305,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             <div   class = "cw-top-text">
             <span  class = "cw-clue-number"></span>
             <span  class = "cw-clue-text"></span>
-            <span class = "cw-thisword-text"></span>
                     </div>
                   </div>
                   <svg id = "cw-puzzle-grid"></svg>
