@@ -196,6 +196,27 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
   line-height: 1.2;
 }
 
+
+.cw-autocheck-label {
+  background: var(--button-bg-color);
+  display: inline-flex;
+  align-items: center;
+  margin-right: 10px;
+  font-size: 0.9em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cw-autocheck-checkbox {
+  margin-right: 5px;
+  cursor: pointer;
+}
+.cw-check {
+    display: none;
+}
+
+
+
 /* MOBILE BASE OVERRIDES */
 body.mobile-mode,
 html.mobile-mode {

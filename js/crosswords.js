@@ -215,8 +215,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       const isFirefox = /FxiOS|Firefox/i.test(ua);
       return isSafari || isFirefox;
     })();
-    var xw_timer,
-      xw_timer_seconds = 0;
+    var xw_timer, xw_timer_seconds = 0;
+    var v_autocheck = true;
 
     /** Template will have to change along with CSS **/
     var template = `
@@ -249,6 +249,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           <div    class = "cw-modal"></div>
           <div    class = "cw-grid">
           <div    class = "cw-buttons-holder">
+          <label class = "cw-autocheck-label">
+            <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck-id" checked>
+            Autocheck
+          </label>
           <div    class = "cw-menu-container">
           <button type  = "button" class = "cw-button">
             <span class="cw-button-icon">🗄️</span>
@@ -705,6 +709,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.save_db_btn = this.root.find('.cw-save-db');
         this.load_db_btn = this.root.find('.cw-load-db');
         this.download_btn = this.root.find('.cw-file-download');
+        this.autocheck_btn = this.root.find('.cw-autocheck-checkbox');
 
         // Notepad button is hidden by default
         this.notepad_btn = this.root.find('.cw-file-notepad');
@@ -1384,6 +1389,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.save_db_btn.off('click');
         this.load_db_btn.off('click');
         this.download_btn.off('click');
+        this.autocheck_btn.off('click');
         this.timer_button.off('click');
 
         this.settings_btn.off('click');
@@ -1494,6 +1500,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         //this.save_db_btn.on('click', $.proxy(this.saveDb, this));
 	this.save_db_btn.on('click', (e) => { this.saveDb(e); });
 	this.load_db_btn.on('click', (e) => { this.loadDb(e); });
+	this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
 
         // LOAD
         this.load_btn.on('click', () => {
@@ -1536,7 +1543,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.notepad_btn.on('click', $.proxy(this.showNotepad, this));
 
         $(document).on('keydown', $.proxy(this.keyPressed, this));
-        $(document).on('keyup', $.proxy(this.check_reveal, this, 'puzzle', 'check'));
+	$(document).on('keyup', () => {
+          if (v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+	  });  
           
 
         this.svgContainer.addEventListener('click', (e) => {
@@ -2528,7 +2537,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               }
             }
             break;
-          case 45: // insert -- reveal letter
+          case 45:            // insert -- reveal letter
 	    if (e.shiftKey) { // SHIFT insert -- reveal word
             	this.check_reveal( 'word', 'reveal');
 	    } else {
@@ -2633,7 +2642,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 // Move in the current diagramless direction (across or down)
                 next_cell = this.nextDiagramlessCell(this.selected_cell, this.diagramless_dir, +1);
               } else if (this.selected_word) {
-                // Regular crossword logic
+
                 if (this.config.skip_filled_letters && !this.selected_word.isFilled()) {
                   next_cell = this.selected_word.getFirstEmptyCell(
                     this.selected_cell.x,
@@ -2650,6 +2659,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               }
 
+              if (v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) next_cell=null;
               if (next_cell) {
                 this.setActiveCell(next_cell);
               }
@@ -2669,10 +2679,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             x = this.selected_cell.x,
             y = this.selected_cell.y;
             word = this.clueGroups[this.activeClueGroupIndex].getMatchingWord(x, y);
-            if (word) {
-                this.setActiveWord(word);
-                // this.renderCells(); ??
-		}
+            if (word) { this.setActiveWord(word); }
 	}
   } //FUNCTION
 
@@ -3593,6 +3600,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           JSON.stringify(savedSettings)
         );
       }
+
+      toggleAutoCheck(e) {
+      	v_autocheck = !v_autocheck;
+        const menu = document.querySelector('.cw-check');
+        menu.style.display = v_autocheck ? 'none' : 'block';
+      }
+
 
       /* load last state from DB */
       async loadDb(e) {
