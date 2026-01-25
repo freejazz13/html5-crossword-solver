@@ -218,6 +218,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     var xw_timer, xw_timer_seconds = 0;
     var v_autocheck = true;
 
+
     /** Template will have to change along with CSS **/
     var template = `
       <div class = "cw-main auto normal">
@@ -952,6 +953,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
         */
 
+	this.stat_errors = {};
+       	this.stat_cheated = {};
         const jsxw2_cells = this.loadGame();
         if (jsxw2_cells) {
           console.log('Loading puzzle from localStorage');
@@ -961,6 +964,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.notes.set(entry.key, entry.value);
             }
           }
+          var statObj = JSON.parse(localStorage.getItem(this.savegame_name + "_misc"));
+	  if (statObj && Object.keys(statObj).length > 0) {
+	      this.stat_cheated = statObj.stat_cheated;
+	      this.stat_errors = statObj.stat_errors;
+	  }
           puzzle.cells = jsxw2_cells;
         }
 
@@ -1215,7 +1223,21 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         //console.log(this);
 
+        // Initialize stat structures (assuming w and h are defined)
+	if (Object.keys(this.stat_cheated).length === 0) {
+        // not already loaded from local storage
+	  for (let x = 1; x <= this.grid_width ; x++) {
+            this.stat_errors[x] = {};
+            this.stat_cheated[x] = {};
+            for (let y = 1; y <= this.grid_height ; y++) {
+                this.stat_errors[x][y] = false;
+                this.stat_cheated[x][y] = false;
+            }
+          }
+	}  
+
         this.completeLoad();
+	this.updateStatsUI()
       }
 
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
@@ -1258,6 +1280,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               : ''
           }
           <span class="cw-header-separator">&nbsp;•&nbsp;</span>
+          <span class="cw-author" id="misc-stats">Cheated:0 Errors:0</span>
           <span id="this-word-letters"></span>
           <span class="cw-flex-spacer"></span>
           <span class="cw-copyright">${escape(this.copyright)}</span>
@@ -1786,6 +1809,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	  //console.log(wordString); 
 	  // display in header space:
            $('#this-word-letters').text(wordString);
+	   //$('#misc-stats').text(`Ch:${stat_cheated} Err:${stat_errors}`);
+	   //this.updateStatsUI();
 
           this.selected_word = word;
           if (this.fakeclues) {
@@ -3485,7 +3510,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             </div>
             <div class="settings-option">
               <label class="settings-label">
-                <input id="timer_autostart" checked="" type="checkbox" name="timer_autostart" class="settings-changer">
+                <input id="timer_autostart" checked="checked" type="checkbox" name="timer_autostart" class="settings-changer">
                   Start timer on puzzle open
                 </input>
               </label>
@@ -3688,6 +3713,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             value: n[1]
           }
         })));
+	localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
+            stat_cheated: this.stat_cheated,
+            stat_errors: this.stat_errors
+        }));
+
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
       }
 
@@ -3732,6 +3762,32 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         //  this.parsePuzzle(jsxw);
         //}
       }
+
+// ----------------------- cheat & errors helpers -------------------------------//
+      setError(x, y) {
+          if (this.stat_errors[x]) this.stat_errors[x][y] = true;
+	  this.updateStatsUI();
+      }
+
+      setCheated(x, y) {
+          if (this.stat_cheated[x]) this.stat_cheated[x][y] = true;
+	  this.updateStatsUI();
+      }
+      total_errors() {
+          return Object.values(this.stat_errors).reduce((acc, row) =>
+          acc + Object.values(row).filter(val => val === true).length, 0);
+      }
+
+     total_cheated() {
+          return Object.values(this.stat_cheated).reduce((acc, row) =>
+          acc + Object.values(row).filter(val => val === true).length, 0);
+     }
+     updateStatsUI() {
+         //$('#error-count').text(this.total_errors());
+         //$('#cheated-count').text(this.total_cheated());
+	 $('#misc-stats').text(`Cheated:${this.total_cheated()} Errors:${this.total_errors()}`);
+     }
+//--------------------------------------------------------------------------------//     
 
       check_reveal(to_solve, reveal_or_check, e) {
         var my_cells = [],
@@ -3808,13 +3864,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               }
               c.checked = false;
               c.revealed = false;
-            } else {
+            } else { // revealed std puzzle
               // ✅ SAFEGUARD for normal puzzles: don't show "#" as a letter
               if (c.solution === '#') {
                 c.letter = '';
                 c.revealed = false;
                 c.checked = false;
               } else {
+		if (c.letter != c.solution) { this.setCheated(c.x,c.y); }
                 c.letter = c.solution;
                 c.revealed = true;
                 c.checked = false;
@@ -3836,6 +3893,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               // Regular crossword
               if (c.letter) {
                 c.checked = !isCorrect(c.letter, c.solution);
+		if (c.checked) { this.setError(c.x,c.y) } // c.checked is : NOT (correct entry)
               } else {
                 c.checked = false;
               }
