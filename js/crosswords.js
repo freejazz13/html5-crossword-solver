@@ -2193,26 +2193,27 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               svg.appendChild(text);
             }
 
-	    // 1. Add "Cheated" Indicator (Red Circle)
-            if (this.stat_cheated[x][y]) {
-                const circle = document.createElementNS(this.svgNS, 'circle');
-                circle.setAttribute('cx', cellX + SIZE * 0.9); // Bottom Right
-                circle.setAttribute('cy', cellY + SIZE * 0.1); // Top Right
-                circle.setAttribute('r', SIZE * 0.04);          // Tiny radius
-                circle.setAttribute('fill', 'red');
-                circle.classList.add('cw-indicator-cheated');
-                svg.appendChild(circle);
+	    // 1. Error Indicator: Top-Right Orange Triangle
+            if (this.stat_errors[x][y]) {
+                const triangle = document.createElementNS(this.svgNS, 'polygon');
+                const p1 = `${cellX + SIZE},${cellY}`;             // Top-right corner
+                const p2 = `${cellX + SIZE},${cellY + SIZE * 0.2}`; // Down the right side
+                const p3 = `${cellX + SIZE * 0.8},${cellY}`;       // Left along the top
+                triangle.setAttribute('points', `${p1} ${p2} ${p3}`);
+		// can be RGB: '#FF4500':
+                triangle.setAttribute('fill', 'orange');
+                svg.appendChild(triangle);
             }
 
-            // 2. Add "Error" Indicator (Blue Circle)
-            if (this.stat_errors[x][y]) {
-                const circle = document.createElementNS(this.svgNS, 'circle');
-                circle.setAttribute('cx', cellX + SIZE * 0.1); // Bottom Left
-                circle.setAttribute('cy', cellY + SIZE * 0.9); // Bottom Left
-                circle.setAttribute('r', SIZE * 0.04);
-                circle.setAttribute('fill', 'blue');
-                circle.classList.add('cw-indicator-error');
-                svg.appendChild(circle);
+            // 2. Cheated Indicator: Bottom-Right Red Triangle
+            if (this.stat_cheated[x][y]) {
+                const triangle = document.createElementNS(this.svgNS, 'polygon');
+                const p1 = `${cellX + SIZE},${cellY + SIZE}`;      // Bottom-right corner
+                const p2 = `${cellX + SIZE},${cellY + SIZE * 0.8}`; // Up the right side
+                const p3 = `${cellX + SIZE * 0.8},${cellY + SIZE}`; // Left along the bottom
+                triangle.setAttribute('points', `${p1} ${p2} ${p3}`);
+                triangle.setAttribute('fill', 'red');
+                svg.appendChild(triangle);
             }
 
             if (cell.number) {
