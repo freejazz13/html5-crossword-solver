@@ -147,7 +147,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       arrow_direction: 'arrow_move_filled',
       space_bar: 'space_clear',
       filled_clue_color: '#999999',
-      timer_autostart: false,
+      timer_autostart: true,
       confetti_enabled: true,
       dark_mode_enabled: false,
       tab_key: 'tab_noskip',
@@ -155,6 +155,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       gray_completed_clues: false,
       forced_theme: null,
       lock_theme: false,
+      autocheck: true,
       min_sidebar_clue_width: 220
     };
 
@@ -216,7 +217,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       return isSafari || isFirefox;
     })();
     var xw_timer, xw_timer_seconds = 0;
-    var v_autocheck = true;
+    var v_autocheck = default_config.autocheck;
 
 
     /** Template will have to change along with CSS **/
@@ -251,7 +252,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           <div    class = "cw-grid">
           <div    class = "cw-buttons-holder">
           <label class = "cw-autocheck-label">
-            <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck-id" checked>
+            <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck1" checked>
             Autocheck
           </label>
           <div    class = "cw-menu-container">
@@ -711,6 +712,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.load_db_btn = this.root.find('.cw-load-db');
         this.download_btn = this.root.find('.cw-file-download');
         this.autocheck_btn = this.root.find('.cw-autocheck-checkbox');
+        this.autocheck2 = this.root.find('#autocheck2');
 
         // Notepad button is hidden by default
         this.notepad_btn = this.root.find('.cw-file-notepad');
@@ -1344,6 +1346,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
         }
 
+        // (v_autocheck)
+        const menu = document.querySelector('.cw-check');
+        menu.style.display = v_autocheck ? 'none' : 'block';
+        //$('#autocheck2').prop('checked', v_autocheck);
+
         // Start the timer if necessary
         if (this.config.timer_autostart) {
           this.toggleTimer();
@@ -1413,6 +1420,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.load_db_btn.off('click');
         this.download_btn.off('click');
         this.autocheck_btn.off('click');
+        this.autocheck2.off('click');
         this.timer_button.off('click');
 
         this.settings_btn.off('click');
@@ -2183,6 +2191,28 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               text.classList.add('cw-cell-letter');
               text.setAttribute('fill', fontColorFill);
               svg.appendChild(text);
+            }
+
+	    // 1. Add "Cheated" Indicator (Red Circle)
+            if (this.stat_cheated[x][y]) {
+                const circle = document.createElementNS(this.svgNS, 'circle');
+                circle.setAttribute('cx', cellX + SIZE * 0.9); // Bottom Right
+                circle.setAttribute('cy', cellY + SIZE * 0.1); // Top Right
+                circle.setAttribute('r', SIZE * 0.04);          // Tiny radius
+                circle.setAttribute('fill', 'red');
+                circle.classList.add('cw-indicator-cheated');
+                svg.appendChild(circle);
+            }
+
+            // 2. Add "Error" Indicator (Blue Circle)
+            if (this.stat_errors[x][y]) {
+                const circle = document.createElementNS(this.svgNS, 'circle');
+                circle.setAttribute('cx', cellX + SIZE * 0.1); // Bottom Left
+                circle.setAttribute('cy', cellY + SIZE * 0.9); // Bottom Left
+                circle.setAttribute('r', SIZE * 0.04);
+                circle.setAttribute('fill', 'blue');
+                circle.classList.add('cw-indicator-error');
+                svg.appendChild(circle);
             }
 
             if (cell.number) {
@@ -3510,7 +3540,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             </div>
             <div class="settings-option">
               <label class="settings-label">
-                <input id="timer_autostart" checked="checked" type="checkbox" name="timer_autostart" class="settings-changer">
+                <input id="timer_autostart" checked="" type="checkbox" name="timer_autostart" class="settings-changer">
                   Start timer on puzzle open
                 </input>
               </label>
@@ -3522,6 +3552,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 </input>
               </label>
             </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
+                  Autocheck
+                </input>
+              </label>
+            </div>
+
+
             <!--
             <div class="settings-option">
               <label class="settings-label">
@@ -3535,6 +3574,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         `;
 
         this.createModalBox('Settings', settingsHTML);
+        $('#autocheck2').prop('checked', v_autocheck);
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
         for (var cc of classChangers) {
@@ -3551,6 +3591,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           .find('.settings-wrapper')
           .get(0)
           .addEventListener('click', (event) => {
+            if (event.target.name == 'autocheck2' ) {
+		this.toggleAutoCheck();
+	    }
             if (event.target.className === 'settings-changer') {
               if (event.target.type === 'checkbox') {
                 this.config[event.target.name] = event.target.checked;
@@ -3588,7 +3631,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             this.saveSettings();
           });
-      }
+      } // OPEN SETTINGS
 
       fillJsXw() {
         const cells = this.cells;
@@ -3630,6 +3673,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       	v_autocheck = !v_autocheck;
         const menu = document.querySelector('.cw-check');
         menu.style.display = v_autocheck ? 'none' : 'block';
+        $('#autocheck1').prop('checked', v_autocheck);
+        if (v_autocheck) { this.check_reveal('puzzle', 'check'); } 
       }
 
 

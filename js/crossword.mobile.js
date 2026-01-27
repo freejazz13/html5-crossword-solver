@@ -422,6 +422,7 @@ function createCustomKeyboard() {
       key.addEventListener('click', () => {
         if (gCrossword?.hidden_input) {
           gCrossword.hiddenInputChanged(letter);
+          if (v_autocheck) { this.check_reveal('puzzle', 'check'); } 
         }
       });
       rowDiv.appendChild(key);
