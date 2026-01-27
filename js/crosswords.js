@@ -218,7 +218,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       return isSafari || isFirefox;
     })();
     var xw_timer, xw_timer_seconds = 0;
-    var v_autocheck = default_config.autocheck;
     var v_display_cn = default_config.display_cn;
 
 
@@ -511,6 +510,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           }
         }
+    	this.v_autocheck = default_config.autocheck;
 
 
         /* Update config values based on `color_word` */
@@ -1349,7 +1349,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         const menu = document.querySelector('.cw-check');
-        menu.style.display = v_autocheck ? 'none' : 'block';
+        menu.style.display = this.v_autocheck ? 'none' : 'block';
 
         // Start the timer if necessary
         if (this.config.timer_autostart) {
@@ -1575,7 +1575,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         $(document).on('keydown', $.proxy(this.keyPressed, this));
 	$(document).on('keyup', () => {
-          if (v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+          if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
 	  });  
           
 
@@ -2194,7 +2194,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
 	    // 1. Error Indicator: Top-Right Orange Triangle
-            if (v_autocheck && this.stat_errors[x][y]) {
+            if (this.v_autocheck && this.stat_errors[x][y]) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY}`;             // Top-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.2}`; // Down the right side
@@ -2206,7 +2206,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
             // 2. Cheated Indicator: Bottom-Right Red Triangle
-            if (v_autocheck && this.stat_cheated[x][y]) {
+            if (this.v_autocheck && this.stat_cheated[x][y]) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY + SIZE}`;      // Bottom-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.8}`; // Up the right side
@@ -2717,7 +2717,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               }
 
 	      // dont change cell if wrong:
-              if (v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) next_cell=null;
+              if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) next_cell=null;
               if (next_cell) {
                 this.setActiveCell(next_cell);
               }
@@ -2763,7 +2763,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         if (this.selected_cell) {
           if (rebus_string && rebus_string.trim()) { //mobile case rebus_string= letter entered
             this.selected_cell.letter = rebus_string.toUpperCase(); // ✅ Use rebus string if available
-            if (v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) {
+            if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) {
 	        next_cell=null;
                 this.renderCells();
                 this.hidden_input.val('');
@@ -3590,7 +3590,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         `;
 
         this.createModalBox('Settings', settingsHTML);
-        $('#autocheck2').prop('checked', v_autocheck);
+        $('#autocheck2').prop('checked', this.v_autocheck);
         $('#display-cn').prop('checked', v_display_cn);
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
@@ -3699,11 +3699,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       }
 
       toggleAutoCheck(e) {
-      	v_autocheck = !v_autocheck;
+      	this.v_autocheck = !this.v_autocheck;
         const menu = document.querySelector('.cw-check');
-        menu.style.display = v_autocheck ? 'none' : 'block';
-        $('#autocheck1').prop('checked', v_autocheck);
-        if (v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+        menu.style.display = this.v_autocheck ? 'none' : 'block';
+        $('#autocheck1').prop('checked', this.v_autocheck);
+        if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
       }
 
 
@@ -3725,8 +3725,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	    else {
 	    	const state = data.state
 		this.updateCellsFromState(this.cells, state);
+
+		// 2. Load the stat structures (fallback to {} if null)
+                this.stat_errors = data.errors || {};
+                this.stat_cheated = data.cheated || {};
           	this.renderCells(); 
-		}
+	    }
     
         } catch (error) {
             console.error('Error loading stats:', error);
@@ -3755,13 +3759,18 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       /* Save the game state to DB */
       async saveDb(e) {
         this.fillJsXw();
+	const payload = {
+            ...this.jsxw, // Spread existing properties
+            stat_errors: this.stat_errors,
+            stat_cheated: this.stat_cheated
+            };
         try {
             const response = await fetch('/cgi-lmpuz/nexus_update.py', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(this.jsxw)
+                body: JSON.stringify(payload)
             });
 
             // Response is defined here
@@ -3839,12 +3848,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
 // ----------------------- cheat & errors helpers -------------------------------//
       setError(x, y) {
-          if (v_autocheck && this.stat_errors[x]) this.stat_errors[x][y] = true;
+          if (this.stat_errors[x]) this.stat_errors[x][y] = true;
 	  this.updateStatsUI();
       }
 
       setCheated(x, y) {
-          if (v_autocheck && this.stat_cheated[x]) this.stat_cheated[x][y] = true;
+          if (this.stat_cheated[x]) this.stat_cheated[x][y] = true;
 	  this.updateStatsUI();
       }
       total_errors() {
@@ -3856,7 +3865,31 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           return Object.values(this.stat_cheated).reduce((acc, row) =>
           acc + Object.values(row).filter(val => val === true).length, 0);
      }
+     getNonBlackCells() {
+          const allCells = Object.values(this.cells); // Convert Object to Array
+          return allCells.filter(c => c.solution !== null ).length;
+     }
+
      updateStatsUI() {
+         const total = this.getNonBlackCells();
+         const cheated = this.total_cheated();
+         const errors = this.total_errors();
+
+         // Count cells that have a letter entered
+         const filled =  Object.values(this.cells).filter(c => c.solution !== null && c.letter).length;
+
+         // Calculate percentages
+         const cheatedPct = ((cheated / total) * 100).toFixed(1);
+         const errorsPct = ((errors / total) * 100).toFixed(1);
+         const completedPct = ((filled / total) * 100).toFixed(1);
+     
+         $('#misc-stats').text(
+             `Cheated: ${cheated} (${cheatedPct}%) ` +
+             `Errors: ${errors} (${errorsPct}%) ` +
+             `Completed: ${completedPct}%`
+         );
+     }
+     updateStatsUI000() {
          //$('#error-count').text(this.total_errors());
          //$('#cheated-count').text(this.total_cheated());
 	 $('#misc-stats').text(`Cheated:${this.total_cheated()} Errors:${this.total_errors()}`);
