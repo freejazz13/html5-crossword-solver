@@ -15,6 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 var gCrossword;
 let isAltKeyboard = false;
+//var v_autocheck;
 
 $(document).ready(function() {
   let initialWindowHeight = window.innerHeight;
@@ -113,6 +114,10 @@ $(document).ready(function() {
   if (gCrossword?.syncTopTextWidth) {
     window.gCrossword.syncTopTextWidth = gCrossword.syncTopTextWidth.bind(gCrossword);
   }
+
+  /*if (gCrossword && gCrossword.config) {
+    v_autocheck = gCrossword.config.autocheck;
+  }*/
   if (isMobile && crosswordRoot) {
     const tryWrapLayout = () => {
       const canvas = document.querySelector('.cw-canvas');
@@ -422,7 +427,7 @@ function createCustomKeyboard() {
       key.addEventListener('click', () => {
         if (gCrossword?.hidden_input) {
           gCrossword.hiddenInputChanged(letter);
-          if (v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+	  if (gCrossword.v_autocheck) { gCrossword.check_reveal('puzzle', 'check'); }
         }
       });
       rowDiv.appendChild(key);

@@ -156,6 +156,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       forced_theme: null,
       lock_theme: false,
       autocheck: true,
+      display_cn: true,
       min_sidebar_clue_width: 220
     };
 
@@ -218,6 +219,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     })();
     var xw_timer, xw_timer_seconds = 0;
     var v_autocheck = default_config.autocheck;
+    var v_display_cn = default_config.display_cn;
 
 
     /** Template will have to change along with CSS **/
@@ -1346,10 +1348,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
         }
 
-        // (v_autocheck)
         const menu = document.querySelector('.cw-check');
         menu.style.display = v_autocheck ? 'none' : 'block';
-        //$('#autocheck2').prop('checked', v_autocheck);
 
         // Start the timer if necessary
         if (this.config.timer_autostart) {
@@ -2194,7 +2194,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
 	    // 1. Error Indicator: Top-Right Orange Triangle
-            if (this.stat_errors[x][y]) {
+            if (v_autocheck && this.stat_errors[x][y]) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY}`;             // Top-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.2}`; // Down the right side
@@ -2206,7 +2206,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
             // 2. Cheated Indicator: Bottom-Right Red Triangle
-            if (this.stat_cheated[x][y]) {
+            if (v_autocheck && this.stat_cheated[x][y]) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY + SIZE}`;      // Bottom-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.8}`; // Up the right side
@@ -2216,7 +2216,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 svg.appendChild(triangle);
             }
 
-            if (cell.number) {
+            if (v_display_cn && cell.number) {
               const number = document.createElementNS(this.svgNS, 'text');
               number.setAttribute('x', cellX + SIZE * 0.1);
               number.setAttribute('y', cellY + SIZE * 0.3);
@@ -2674,8 +2674,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             prevent = true;
             break;
           default: {
+	    const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // no junk needed, we only allow a-z keys in cells.
             // Allow any single printable character except space (space has special meaning)
-            const isPrintableChar =
+            const isPrintableChar000 =
               e.key.length === 1 &&
               e.key !== ' ' &&
               !e.ctrlKey && !e.metaKey && !e.altKey;
@@ -2715,6 +2716,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               }
 
+	      // dont change cell if wrong:
               if (v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) next_cell=null;
               if (next_cell) {
                 this.setActiveCell(next_cell);
@@ -2759,8 +2761,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       hiddenInputChanged(rebus_string) {
         var next_cell;
         if (this.selected_cell) {
-          if (rebus_string && rebus_string.trim()) {
+          if (rebus_string && rebus_string.trim()) { //mobile case rebus_string= letter entered
             this.selected_cell.letter = rebus_string.toUpperCase(); // ✅ Use rebus string if available
+            if (v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) {
+	        next_cell=null;
+                this.renderCells();
+                this.hidden_input.val('');
+		return;
+		}
           } else {
             const mychar = this.hidden_input.val().slice(0, 1).toUpperCase();
             if (mychar) {
@@ -3560,6 +3568,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 </input>
               </label>
             </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="display-cn" checked="" type="checkbox" name="display-cn" class="yy-settings-changer">
+                  Display cell numbers
+                </input>
+              </label>
+            </div>
 
 
             <!--
@@ -3576,6 +3591,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.createModalBox('Settings', settingsHTML);
         $('#autocheck2').prop('checked', v_autocheck);
+        $('#display-cn').prop('checked', v_display_cn);
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
         for (var cc of classChangers) {
@@ -3594,6 +3610,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           .addEventListener('click', (event) => {
             if (event.target.name == 'autocheck2' ) {
 		this.toggleAutoCheck();
+	    }
+            if (event.target.name == 'display-cn' ) {
+		this.toggleClueNumbers();
 	    }
             if (event.target.className === 'settings-changer') {
               if (event.target.type === 'checkbox') {
@@ -3668,6 +3687,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           SETTINGS_STORAGE_KEY,
           JSON.stringify(savedSettings)
         );
+      }
+
+      toggleClueNumbers(e) {
+        v_display_cn = !v_display_cn;
+        if (v_display_cn) {
+            $('.cw-cell-number').show();
+        } else {
+            $('.cw-cell-number').hide();
+        }
       }
 
       toggleAutoCheck(e) {
@@ -3811,12 +3839,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
 // ----------------------- cheat & errors helpers -------------------------------//
       setError(x, y) {
-          if (this.stat_errors[x]) this.stat_errors[x][y] = true;
+          if (v_autocheck && this.stat_errors[x]) this.stat_errors[x][y] = true;
 	  this.updateStatsUI();
       }
 
       setCheated(x, y) {
-          if (this.stat_cheated[x]) this.stat_cheated[x][y] = true;
+          if (v_autocheck && this.stat_cheated[x]) this.stat_cheated[x][y] = true;
 	  this.updateStatsUI();
       }
       total_errors() {
@@ -3939,7 +3967,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               // Regular crossword
               if (c.letter) {
                 c.checked = !isCorrect(c.letter, c.solution);
-		if (c.checked) { this.setError(c.x,c.y) } // c.checked is : NOT (correct entry)
+		if (c.checked) { this.setError(c.x,c.y) } // c.checked is : NOT correct entry
               } else {
                 c.checked = false;
               }
