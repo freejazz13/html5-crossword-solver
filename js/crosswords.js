@@ -1239,6 +1239,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           }
 	}  
+	this.nonBlackCells=this.getNonBlackCells();
 
         this.completeLoad();
 	this.updateStatsUI()
@@ -1272,24 +1273,30 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       }
 
       completeLoad() {
-        $('.cw-header').html(`
-          <span class="cw-title">${escape(this.title)}</span>
-          <span class="cw-header-separator">&nbsp;•&nbsp;</span>
-          <span class="cw-author">${escape(this.author)}</span>
-          ${
-            this.notepad
-              ? `<button class="cw-button cw-button-notepad">
-                   <span class="cw-button-icon">📝</span> Notes
-                 </button>`
-              : ''
-          }
-          <span class="cw-header-separator">&nbsp;•&nbsp;</span>
-          <span class="cw-author" id="misc-stats">Cheated:0 Errors:0</span>
-          <span id="this-word-letters"></span>
-          <span class="cw-flex-spacer"></span>
-          <span class="cw-copyright">${escape(this.copyright)}</span>
-        `);
+        // Force the header to wrap its content
+    $('.cw-header').css('flex-wrap', 'wrap');
 
+    $('.cw-header').html(`
+        <span class="cw-title">${escape(this.title)}</span>
+        <span class="cw-header-separator">&nbsp;•&nbsp;</span>
+        <span class="cw-author">${escape(this.author)}</span>
+        ${
+          this.notepad
+            ? `<button class="cw-button cw-button-notepad">
+                 <span class="cw-button-icon">📝</span> Notes
+               </button>` 
+            : ''
+        }
+        <span class="cw-flex-spacer"></span>
+        <span class="cw-copyright">${escape(this.copyright)}</span>
+        
+        <div style="flex-basis: 100%; height: 0;"></div>
+        
+        <span class="cw-author" id="misc-stats">Cheated:0 Errors:0</span>
+        <span id="this-word-letters"></span>
+    `);
+
+       
         this.notepad_icon = this.root.find('.cw-button-notepad');
 
         // === Initial cell selection (diagramless or fakeclues) ===
@@ -1817,8 +1824,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	  //console.log(wordString); 
 	  // display in header space:
            $('#this-word-letters').text(wordString);
-	   //$('#misc-stats').text(`Ch:${stat_cheated} Err:${stat_errors}`);
-	   //this.updateStatsUI();
 
           this.selected_word = word;
           if (this.fakeclues) {
@@ -2323,7 +2328,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         for (const wordId in this.words) {
           this.updateClueAppearance(this.words[wordId]);
         }
-      }
+	this.updateStatsUI();
+      } // end renderCells
 
       drawSelectedWordBorder(svg, word) {
         // this doesn't play well with irregularly shaped words
@@ -3849,12 +3855,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 // ----------------------- cheat & errors helpers -------------------------------//
       setError(x, y) {
           if (this.stat_errors[x]) this.stat_errors[x][y] = true;
-	  this.updateStatsUI();
       }
 
       setCheated(x, y) {
           if (this.stat_cheated[x]) this.stat_cheated[x][y] = true;
-	  this.updateStatsUI();
       }
       total_errors() {
           return Object.values(this.stat_errors).reduce((acc, row) =>
@@ -3866,33 +3870,27 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           acc + Object.values(row).filter(val => val === true).length, 0);
      }
      getNonBlackCells() {
-          const allCells = Object.values(this.cells); // Convert Object to Array
-          return allCells.filter(c => c.solution !== null ).length;
+          return Object.values(this.cells).flatMap(col => Object.values(col)).filter(c => c.solution !== null).length;
      }
 
      updateStatsUI() {
-         const total = this.getNonBlackCells();
+         const total = this.nonBlackCells;
          const cheated = this.total_cheated();
          const errors = this.total_errors();
 
          // Count cells that have a letter entered
-         const filled =  Object.values(this.cells).filter(c => c.solution !== null && c.letter).length;
+	 const filled = Object.values(this.cells).flatMap(col => Object.values(col)).filter(c => c.solution !== null && c.letter && c.letter === c.solution ).length;
 
          // Calculate percentages
          const cheatedPct = ((cheated / total) * 100).toFixed(1);
          const errorsPct = ((errors / total) * 100).toFixed(1);
          const completedPct = ((filled / total) * 100).toFixed(1);
      
-         $('#misc-stats').text(
-             `Cheated: ${cheated} (${cheatedPct}%) ` +
-             `Errors: ${errors} (${errorsPct}%) ` +
-             `Completed: ${completedPct}%`
-         );
-     }
-     updateStatsUI000() {
-         //$('#error-count').text(this.total_errors());
-         //$('#cheated-count').text(this.total_cheated());
-	 $('#misc-stats').text(`Cheated:${this.total_cheated()} Errors:${this.total_errors()}`);
+	  $('#misc-stats').text(
+            `Cheated: ${cheated} (${cheatedPct}%) • ` +
+            `Errors: ${errors} (${errorsPct}%) • ` +
+            `Completed: ${completedPct}%`
+             );
      }
 //--------------------------------------------------------------------------------//     
 
