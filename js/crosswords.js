@@ -1228,21 +1228,28 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         //console.log(this);
 
         // Initialize stat structures (assuming w and h are defined)
-	if (Object.keys(this.stat_cheated).length === 0) {
-        // not already loaded from local storage
-	  for (let x = 1; x <= this.grid_width ; x++) {
-            this.stat_errors[x] = {};
-            this.stat_cheated[x] = {};
-            for (let y = 1; y <= this.grid_height ; y++) {
-                this.stat_errors[x][y] = false;
-                this.stat_cheated[x][y] = false;
-            }
-          }
-	}  
+        const freshStats = this.initStats();
+        this.stat_errors = freshStats.errors;
+        this.stat_cheated = freshStats.cheated;
+
 	this.nonBlackCells=this.getNonBlackCells();
 
         this.completeLoad();
 	this.updateStatsUI()
+      }
+
+      initStats() {
+         let errors = {};
+         let cheated = {};
+         for (let x = 1; x <= this.grid_width; x++) {
+             errors[x] = {};
+             cheated[x] = {};
+             for (let y = 1; y <= this.grid_height; y++) {
+                 errors[x][y] = false;
+                 cheated[x][y] = false;
+             }
+         }
+         return { errors, cheated }; // Return both as an object
       }
 
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
@@ -3732,9 +3739,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	    	const state = data.state
 		this.updateCellsFromState(this.cells, state);
 
-		// 2. Load the stat structures (fallback to {} if null)
-                this.stat_errors = data.errors || {};
-                this.stat_cheated = data.cheated || {};
+		// 2. Load the stat structures or init them if one is empty
+		if ( data.errors && Object.keys(data.errors).length > 0) { // useless to test cheated
+                    this.stat_errors = data.errors;
+                    this.stat_cheated = data.cheated;
+                } else {
+                    const freshStats = this.initStats();
+                    this.stat_errors = freshStats.errors;
+                    this.stat_cheated = freshStats.cheated;
+                }
           	this.renderCells(); 
 	    }
     
