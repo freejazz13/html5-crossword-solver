@@ -1227,29 +1227,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         //console.log(this);
 
-        // Initialize stat structures (assuming w and h are defined)
-        const freshStats = this.initStats();
-        this.stat_errors = freshStats.errors;
-        this.stat_cheated = freshStats.cheated;
+        // Initialize stat structures
+        this.stat_errors = {};
+        this.stat_cheated = {}; 
 
 	this.nonBlackCells=this.getNonBlackCells();
 
         this.completeLoad();
 	this.updateStatsUI()
-      }
-
-      initStats() {
-         let errors = {};
-         let cheated = {};
-         for (let x = 1; x <= this.grid_width; x++) {
-             errors[x] = {};
-             cheated[x] = {};
-             for (let y = 1; y <= this.grid_height; y++) {
-                 errors[x][y] = false;
-                 cheated[x][y] = false;
-             }
-         }
-         return { errors, cheated }; // Return both as an object
       }
 
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
@@ -2206,7 +2191,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
 	    // 1. Error Indicator: Top-Right Orange Triangle
-            if (this.v_autocheck && this.stat_errors[x][y]) {
+            if (this.v_autocheck && this.stat_errors[`${x},${y}`] ) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY}`;             // Top-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.2}`; // Down the right side
@@ -2218,7 +2203,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
             // 2. Cheated Indicator: Bottom-Right Red Triangle
-            if (this.v_autocheck && this.stat_cheated[x][y]) {
+            if (this.v_autocheck && this.stat_cheated[`${x},${y}`]) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY + SIZE}`;      // Bottom-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.8}`; // Up the right side
@@ -3739,15 +3724,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	    	const state = data.state
 		this.updateCellsFromState(this.cells, state);
 
-		// 2. Load the stat structures or init them if one is empty
-		if ( data.errors && Object.keys(data.errors).length > 0) { // useless to test cheated
-                    this.stat_errors = data.errors;
-                    this.stat_cheated = data.cheated;
-                } else {
-                    const freshStats = this.initStats();
-                    this.stat_errors = freshStats.errors;
-                    this.stat_cheated = freshStats.cheated;
-                }
+                this.stat_errors = {};
+                this.stat_cheated = {};
+
+		// ?.length (Optional Chaining): This safely checks if the list exists and has items in one short expression. If error_list is undefined, it simply skips the block.
+		// Reconstruct stats from simple arrays [ "x1,y1", "x2,y2" ] => stat_errors ={ "x1,y1": true, ...}
+                this.stat_errors = data.error_list?.length ? Object.fromEntries(data.error_list.map(c => [c, true])) : {};
+                this.stat_cheated = data.cheated_list?.length ? Object.fromEntries(data.cheated_list.map(c => [c, true])) : {};
+
           	this.renderCells(); 
 	    }
     
@@ -3780,8 +3764,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.fillJsXw();
 	const payload = {
             ...this.jsxw, // Spread existing properties
-            stat_errors: this.stat_errors,
-            stat_cheated: this.stat_cheated
+	    error_list: Object.keys(this.stat_errors),
+            cheated_list: Object.keys(this.stat_cheated)
             };
         try {
             const response = await fetch('/cgi-lmpuz/nexus_update.py', {
@@ -3867,21 +3851,21 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
 // ----------------------- cheat & errors helpers -------------------------------//
       setError(x, y) {
-          if (this.stat_errors[x]) this.stat_errors[x][y] = true;
+          this.stat_errors[`${x},${y}`] = true;
       }
 
       setCheated(x, y) {
-          if (this.stat_cheated[x]) this.stat_cheated[x][y] = true;
-      }
-      total_errors() {
-          return Object.values(this.stat_errors).reduce((acc, row) =>
-          acc + Object.values(row).filter(val => val === true).length, 0);
+          this.stat_cheated[`${x},${y}`] = true;
       }
 
-     total_cheated() {
-          return Object.values(this.stat_cheated).reduce((acc, row) =>
-          acc + Object.values(row).filter(val => val === true).length, 0);
-     }
+      total_errors() {
+          return Object.keys(this.stat_errors).length;
+      }
+
+      total_cheated() {
+          return Object.keys(this.stat_cheated).length;
+      }
+
      getNonBlackCells() {
           return Object.values(this.cells).flatMap(col => Object.values(col)).filter(c => c.solution !== null).length;
      }
@@ -3895,9 +3879,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	 const filled = Object.values(this.cells).flatMap(col => Object.values(col)).filter(c => c.solution !== null && c.letter && c.letter === c.solution ).length;
 
          // Calculate percentages
+	 /*
          const cheatedPct = ((cheated / total) * 100).toFixed(1);
          const errorsPct = ((errors / total) * 100).toFixed(1);
          const completedPct = ((filled / total) * 100).toFixed(1);
+	 */
+	 const cheatedPct = Math.round((cheated / total) * 100);
+         const errorsPct = Math.round((errors / total) * 100);
+         const completedPct = Math.round((filled / total) * 100);
      
 	  $('#misc-stats').text(
             `Cheated: ${cheated} (${cheatedPct}%) • ` +
