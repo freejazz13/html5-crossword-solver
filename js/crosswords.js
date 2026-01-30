@@ -156,7 +156,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       forced_theme: null,
       lock_theme: false,
       autocheck: true,
-      display_cn: true,
+      display_cn: false,
       min_sidebar_clue_width: 220
     };
 
