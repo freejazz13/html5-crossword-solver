@@ -22,191 +22,170 @@
     </div>
 
     <script>
-        // Metadata extraction function - will be enhanced later
-    async function extractMetadata(file,filename) {
-        const buffer = await file.arrayBuffer();
-        const data = new Uint8Array(buffer);
-        const decoder = new TextDecoder('iso-8859-15');
 
-        const width = data[0x2c];
-        const height = data[0x2d];
-        const nbclues = data[0x2e] | (data[0x2f] << 8);
+//===============================================================================================
+async function loadArchive(url) {
+    try {
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        const zip = await JSZip.loadAsync(blob);
 
-        const solStart = 0x34;
-        const gridSize = width * height;
+        const fileGrid = document.getElementById('file-grid');
+        const loading = document.getElementById('loading');
 
-        // Extract Solution and Layout
-        const solEnd = solStart + gridSize;
-        const sol = decoder.decode(data.slice(solStart, solEnd));
+        // Extract and parse file data
+        const filesData = await processZip(zip);
 
-        const layoutEnd = solEnd + gridSize;
-        const layout = decoder.decode(data.slice(solEnd, layoutEnd));
+        loading.style.display = 'none';
 
-        // Extract Null-Terminated Metadata
-        let pos = layoutEnd;
-        function readNullTerminated() {
-            let end = pos;
-            while (end < data.length && data[end] !== 0) end++;
-            const str = decoder.decode(data.slice(pos, end));
-            pos = end + 1;
-            return str;
+        if (filesData.length === 0) {
+            fileGrid.innerHTML = '<div class="no-files">No files found in archive</div>';
+            return;
         }
 
-        const title = readNullTerminated();
-        const author = readNullTerminated();
+        // Update stats
+        document.getElementById('stats-files').textContent = `Files: ${filesData.length}`;
 
-        return { width, height, nbclues, title, author, sol, layout };
+        // Create stickers using the parsed data
+        for (const data of filesData) {
+            // Pass the parsed object to your UI generator
+            const sticker = await createFileSticker(data);
+            fileGrid.appendChild(sticker);
+        }
+
+    } catch (error) {
+        document.getElementById('loading').textContent = 'Error loading archive: ' + error.message;
+        console.error('Archive loading error:', error);
     }
+}
 
-        async function extractMetadata(file, filename) {
-            // Placeholder for future metadata extraction
-            // Will extract title and other metadata from file content
+async function processZip(zip) {
+    const fileEntries = Object.keys(zip.files)
+        .filter(path => !zip.files[path].dir && path.toLowerCase().endsWith('.puz'))
+        .map(path => ({ path, file: zip.files[path] }));
+
+    return await Promise.all(fileEntries.map(async (entry) => {
+        try {
+            // 1. Get the actual bytes
+            const buffer = await entry.file.async("uint8array");
+
+            // 2. Parse metadata from bytes
+            const puzData = parsePuzBuffer(buffer);
+
+            // 3. Return everything, including the raw data (buffer)
             return {
-                title: filename.replace(/\.[^/.]+$/, ''), // Remove extension for now
-                // Future: extract from file content (JPZ, IPUZ, PUZ metadata, etc.)
+                path: entry.path,
+                data: buffer, // This is the actual file data
+                ...puzData
             };
+        } catch (err) {
+            console.error(`Error parsing ${entry.path}:`, err);
+            return null;
         }
+    })).then(results => results.filter(r => r !== null));
+}
 
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+async function processZip000(zip) {
+    const fileEntries = Object.keys(zip.files)
+    .filter(path => !zip.files[path].dir && path.toLowerCase().endsWith('.puz'))
+    .map(path => ({ path, file: zip.files[path] }));
+
+    const results = await Promise.all(fileEntries.map(async (entry) => {
+        try {
+            const buffer = await entry.file.async("uint8array");
+            const puzData = parsePuzBuffer(buffer);
+            return { file: entry.file, path: entry.path, ...puzData };
+        } catch (err) {
+            console.error(`Error parsing ${entry.path}:`, err);
+            return null;
         }
+    }));
 
-        function getFileType(filename) {
-            const ext = filename.split('.').pop().toLowerCase();
-            const types = {
-                'puz': 'Across Lite',
-                'jpz': 'JPZ Crossword',
-                'ipuz': 'iPuz Format',
-                'xml': 'XML Document',
-                'json': 'JSON Document',
-                'txt': 'Text File',
-                'html': 'HTML File',
-                'pdf': 'PDF Document'
-            };
-            return types[ext] || ext.toUpperCase();
-        }
+    return results.filter(r => r !== null);
+}
 
-        async function createFileSticker(path, file) {
-            const filename = path.split('/').pop();
-            const metadata = await extractMetadata(file, filename);
+function parsePuzBuffer(data) {
+    const decoder = new TextDecoder('iso-8859-15');
+    const width = data[0x2c];
+    const height = data[0x2d];
+    const nbclues = data[0x2e] | (data[0x2f] << 8);
 
-            const sticker = document.createElement('div');
-            sticker.className = 'file-sticker';
+    const solStart = 0x34;
+    const gridSize = width * height;
+    const solEnd = solStart + gridSize;
+    const layoutEnd = solEnd + gridSize;
 
-            sticker.innerHTML = `
-                <div class="file-title">${metadata.title}</div>
-                <div class="file-details">
-                    <div class="file-size">${formatFileSize(file._data.uncompressedSize)}</div>
-                    <div class="file-type">${getFileType(filename)}</div>
-                    <div class="file-name">${filename}</div>
-                </div>
-            `;
+    const sol = decoder.decode(data.slice(solStart, solEnd));
+    const layout = decoder.decode(data.slice(solEnd, layoutEnd));
 
-            sticker.addEventListener('click', async () => {
-                const blob = await file.async("blob");
-                window.open(URL.createObjectURL(blob), '_blank');
-            });
+    let pos = layoutEnd;
+    const readNullTerminated = () => {
+        let end = pos;
+        while (end < data.length && data[end] !== 0) end++;
+        const str = decoder.decode(data.slice(pos, end));
+        pos = end + 1;
+        return str;
+    };
 
-            return sticker;
-        }
+    return {
+        width,
+        height,
+        nbclues,
+        title: readNullTerminated(),
+        author: readNullTerminated(),
+        sol,
+        layout
+    };
+}
+function createFileSticker(puz) {
+    const filename = puz.path.split('/').pop();
 
-        async function loadArchive(url) {
-            try {
-                const resp = await fetch(url);
-                const zip = await JSZip.loadAsync(await resp.blob());
-		results = processZip(zip);
+    const sticker = document.createElement('div');
+    sticker.className = 'file-sticker';
 
-                const fileGrid = document.getElementById('file-grid');
-                const loading = document.getElementById('loading');
+    sticker.innerHTML = `
+        <div class="file-title">${puz.title || 'Untitled'}</div>
+        <div class="file-details">
+            <div class="file-author">${puz.author || 'Unknown'}</div>
+            <div class="file-type">${puz.width}x${puz.height}</div>
+            <div class="file-name">${filename}</div>
+        </div>
+    `;
 
-                loading.style.display = 'none';
-                // Filter out directories
-                /*const files = Object.keys(zip.files)
-                    .filter(path => !zip.files[path].dir)
-                    .map(path => ({ path, file: zip.files[path] }));
+    sticker.addEventListener('click', async () => {
+    // 1. Create a Blob from the Uint8Array
+    const blob = new Blob([puz.data], { type: 'application/x-crossword' });
 
-                if (files.length === 0) {
-                    fileGrid.innerHTML = '<div class="no-files">No files found in archive</div>';
-                    return;
-                }
-*/
+    // 2. Convert Blob to Base64 via FileReader
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        const base64String = reader.result
+            .split(',')[1]; // Remove the "data:application/x-crossword;base64," prefix
 
-                // Update stats
-                document.getElementById('stats-files').textContent = `Files: ${files.length}`;
+        // 3. URL encode and open
+        const puzdata = encodeURIComponent(base64String);
+        window.open(`/play?data=${puzdata}`, '_blank');
+    };
+    reader.readAsDataURL(blob);
+  });
+    /*
+    sticker.addEventListener('click', () => {
+        // You already have the data in puz.sol, puz.layout, etc.
+        console.log("Puzzle Data:", puz);
 
-                // Create stickers for each file
-                for (const { path, file } of files) {
-                    const sticker = await createFileSticker(path, file);
-                    fileGrid.appendChild(sticker);
-                }
+    sticker.addEventListener('click', () => {
+    // Create a Blob from the Uint8Array stored in puz.data
+    console.log("Puzzle Data:", puz);
+    const blob = new Blob([puz.data], { type: 'application/x-crossword' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+   });
+    */
+     return sticker;
 
-            } catch (error) {
-                document.getElementById('loading').textContent = 'Error loading archive: ' + error.message;
-                console.error('Archive loading error:', error);
-            }
-        }
-
-      	async function processZip(zip) {
-            const fileEntries = Object.keys(zip.files)
-                .filter(path => !zip.files[path].dir)
-                .map(path => ({ path, file: zip.files[path] }));
-        
-            const results = await Promise.all(fileEntries.map(async (entry) => {
-                // Get the binary data from JSZip
-                const buffer = await entry.file.async("uint8array");
-        
-                try {
-                    // Reuse the previously defined getPuzData logic
-                    const puzData = await parsePuzBuffer(buffer);
-                    return { path: entry.path, ...puzData };
-                } catch (err) {
-                    console.error(`Error parsing ${entry.path}:`, err);
-                    return null;
-                }
-            }));
-        
-            return results.filter(r => r !== null);
-        }
-        
-        async function parsePuzBuffer(data) {
-            const decoder = new TextDecoder('iso-8859-15');
-            const width = data[0x2c];
-            const height = data[0x2d];
-            const nbclues = data[0x2e] | (data[0x2f] << 8);
-        
-            const solStart = 0x34;
-            const gridSize = width * height;
-            const solEnd = solStart + gridSize;
-            const layoutEnd = solEnd + gridSize;
-        
-            const sol = decoder.decode(data.slice(solStart, solEnd));
-            const layout = decoder.decode(data.slice(solEnd, layoutEnd));
-        
-            let pos = layoutEnd;
-            const readNullTerminated = () => {
-                let end = pos;
-                while (end < data.length && data[end] !== 0) end++;
-                const str = decoder.decode(data.slice(pos, end));
-                pos = end + 1;
-                return str;
-            };
-        
-            return {
-                width,
-                height,
-                nbclues,
-                title: readNullTerminated(),
-                author: readNullTerminated(),
-                sol,
-                layout
-            };
-        }
-
-        loadArchive('crosswords/files.zip');
-    </script>
+   }
+//===============================================================================================
+  loadArchive('crosswords/915916e0.zip');
+</script>
 </body>
 </html>
