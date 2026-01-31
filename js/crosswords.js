@@ -746,7 +746,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
 
-                // Check for bzip2 header "BZh" (0x42 0x5a 0x68)
+                // Check for bzip2 header "BZh" (0x42 0x5a 0x68) else let as is
                 if (bytes[0] === 0x42 && bytes[1] === 0x5a && bytes[2] === 0x68) {
 	            try { 		
 			bytes = bz2.decompress(bytes);
