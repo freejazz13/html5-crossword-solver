@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexPlay</title>
+    <link rel="icon" type="image/x-svg" href="/play/nexplay.svg">
     <link rel="stylesheet" href="browse.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -24,6 +25,34 @@
     <script>
 
 //===============================================================================================
+async function decryptAndLoad(url, password) {
+    const encryptedData = await (await fetch(url)).arrayBuffer();
+
+    // 1. Setup PBKDF2 to derive the key (simplified)
+    const passwordKey = await crypto.subtle.importKey(
+        "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]
+    );
+
+    // 2. Derive the actual AES key
+    // Note: In production, 'salt' and 'iv' should be sliced from the beginning of the file
+    const aesKey = await crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: crypto.getRandomValues(new Uint8Array(16)), iterations: 100000, hash: "SHA-256" },
+        passwordKey,
+        { name: "AES-CBC", length: 256 },
+        false, ["decrypt"]
+    );
+
+    // 3. Decrypt
+    const decryptedZip = await crypto.subtle.decrypt(
+        { name: "AES-CBC", iv: crypto.getRandomValues(new Uint8Array(16)) },
+        aesKey,
+        encryptedData
+    );
+
+    // 4. Load into JSZip
+    const zip = await JSZip.loadAsync(decryptedZip);
+    return processZip(zip);
+}
 async function loadArchive(url) {
     try {
         const resp = await fetch(url);
