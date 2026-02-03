@@ -1390,7 +1390,30 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         updateClueLayout();
 
         // and whenever window resizes
+	window.addEventListener("blur", () => {
+         if (this.timer_running) {
+             this.toggleTimer();
+         }
+        });
+	window.addEventListener("focus", () => {
+              if (!this.timer_running) {
+                  this.toggleTimer(); 
+              }
+        });
         window.addEventListener('resize', updateClueLayout);
+        document.addEventListener("visibilitychange", () => {
+  	  if (document.hidden) {
+    	      // If the timer is currently running, stop it
+    	      if (this.timer_running) {
+                this.toggleTimer();
+              }
+          } else {
+             // Optional: Resume the timer when they come back
+              if (!this.timer_running) {
+                  this.toggleTimer(); 
+              }
+          }
+        });
 
       } // end completeLoad
 
@@ -4086,6 +4109,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         // Cleanup
         URL.revokeObjectURL(url);
       }
+
 
       toggleTimer() {
         var display_seconds, display_minutes;
