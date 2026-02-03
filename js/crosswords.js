@@ -156,6 +156,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       forced_theme: null,
       lock_theme: false,
       autocheck: true,
+      autosave: false,
       display_cn: false,
       min_sidebar_clue_width: 220
     };
@@ -252,6 +253,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           <div    class = "cw-modal"></div>
           <div    class = "cw-grid">
           <div    class = "cw-buttons-holder">
+          <label class = "cw-autocheck-label">
+            <input type = "checkbox" class="cw-autosave-checkbox" id="autosave1" >
+            Autosave
+          </label>
           <label class = "cw-autocheck-label">
             <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck1" checked>
             Autocheck
@@ -511,6 +516,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
         }
     	this.v_autocheck = default_config.autocheck;
+    	this.v_autosave = default_config.autosave;
 
 
         /* Update config values based on `color_word` */
@@ -714,6 +720,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.load_db_btn = this.root.find('.cw-load-db');
         this.download_btn = this.root.find('.cw-file-download');
         this.autocheck_btn = this.root.find('.cw-autocheck-checkbox');
+        this.autosave_btn = this.root.find('.cw-autosave-checkbox');
         this.autocheck2 = this.root.find('#autocheck2');
 
         // Notepad button is hidden by default
@@ -1420,6 +1427,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.download_btn.off('click');
         this.autocheck_btn.off('click');
         this.autocheck2.off('click');
+        this.autosave_btn.off('click');
         this.timer_button.off('click');
 
         this.settings_btn.off('click');
@@ -1527,10 +1535,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         // SAVE
         this.save_btn.on('click', $.proxy(this.saveAsIpuz, this));
-        //this.save_db_btn.on('click', $.proxy(this.saveDb, this));
 	this.save_db_btn.on('click', (e) => { this.saveDb(e); });
 	this.load_db_btn.on('click', (e) => { this.loadDb(e); });
 	this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
+	this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
 
         // LOAD
         this.load_btn.on('click', () => {
@@ -3704,6 +3712,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
       }
 
+      toggleAutoSave(e) {
+      	this.v_autosave = !this.v_autosave;
+        $('#autosave1').prop('checked', this.v_autosave);
+      }
+
 
       /* load last state from DB */
       async loadDb(e) {
@@ -3805,6 +3818,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }));
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
+	if (this.v_autosave) { this.saveDb();}
       }
 
       /* Show "load game" menu" */
