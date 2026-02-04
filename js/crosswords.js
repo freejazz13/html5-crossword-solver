@@ -517,6 +517,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
     	this.v_autocheck = default_config.autocheck;
     	this.v_autosave = default_config.autosave;
+	this.is_saving = false;
 
 
         /* Update config values based on `color_word` */
@@ -3796,36 +3797,41 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
   }
 
     /* Save the game state to DB */
+    // Add this property to your class constructor/init:
+
     async saveDb(e) {
+        if (this.is_saving) return; // Exit if a save is already running
+        this.is_saving = true;
+    
         this.fillJsXw();
         const payload = {
             ...this.jsxw,
             error_list: Object.keys(this.stat_errors),
             cheated_list: Object.keys(this.stat_cheated)
         };
-
+    
         try {
-            // 1. Convert payload to a stream
             const stream = new Blob([JSON.stringify(payload)], { type: 'application/json' }).stream();
-            // 2. Compress using Gzip
             const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
-            // 3. Convert stream to a blob for the fetch body
             const compressedBody = await new Response(compressedStream).blob();
+    
             const response = await fetch('/cgi-lmpuz/nexus_update.py', {
                 method: 'POST',
                 referrerPolicy: 'no-referrer',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Content-Encoding': 'gzip' // Tells the server the body is compressed
+                    'Content-Encoding': 'gzip'
                 },
                 body: compressedBody
             });
-
+    
             const data = await response.json();
             if (data.status != 0) { alert(data.message); }
-
+    
         } catch (error) {
             console.error('Error loading stats:', error);
+        } finally {
+            this.is_saving = false; // Always unlock, even on error
         }
     }
 
