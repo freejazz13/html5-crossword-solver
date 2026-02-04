@@ -3795,32 +3795,39 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     console.log("Grid updated.");
   }
 
-      /* Save the game state to DB */
-      async saveDb(e) {
+    /* Save the game state to DB */
+    async saveDb(e) {
         this.fillJsXw();
-	const payload = {
-            ...this.jsxw, // Spread existing properties
-	    error_list: Object.keys(this.stat_errors),
+        const payload = {
+            ...this.jsxw,
+            error_list: Object.keys(this.stat_errors),
             cheated_list: Object.keys(this.stat_cheated)
-            };
+        };
+
         try {
+            // 1. Convert payload to a stream
+            const stream = new Blob([JSON.stringify(payload)], { type: 'application/json' }).stream();
+            // 2. Compress using Gzip
+            const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+            // 3. Convert stream to a blob for the fetch body
+            const compressedBody = await new Response(compressedStream).blob();
             const response = await fetch('/cgi-lmpuz/nexus_update.py', {
                 method: 'POST',
+                referrerPolicy: 'no-referrer',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Content-Encoding': 'gzip' // Tells the server the body is compressed
                 },
-                body: JSON.stringify(payload)
+                body: compressedBody
             });
 
-            // Response is defined here
             const data = await response.json();
-            console.log("json returned by nexus_update:", data);
-	    if (data.status != 0) { alert(data.message); }
-    
+            if (data.status != 0) { alert(data.message); }
+
         } catch (error) {
             console.error('Error loading stats:', error);
         }
-     }
+    }
 
       /* Save the game to local storage */
       saveGame() {
