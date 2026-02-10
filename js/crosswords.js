@@ -13,6 +13,29 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/* ==============================================================================
+reminder cell structure:
+
+{
+  "x": 1,          COLONNE
+  "y": 1,          LIGNE
+  "solution": "H", SOLUTION (vraie lettre correcte)
+  "letter": "H",   CURRENT LETTER (maybe wrong)
+  "type": null,    null si lettre, "block" si black square
+  "number": "1",   clue number 
+  "bar": { "top": false, "bottom": false, "left": false, "right": false },
+  "color": null,
+  "shape": null,
+  "image": null,
+  "fixed": false,     => DISCARDED, UNUSED (messes save /load)
+  "shade_highlight_color": "#FEE300",
+  "empty": false,     ??????
+  "clue": false,      ???????
+  "checked": false,   BARREE (wrong entry)
+  "revealed": false   CHEATED
+}
+================================================================================
+*/
 // Settings that we can save
 const CONFIGURABLE_SETTINGS = [
   "skip_filled_letters", "arrow_direction", "space_bar", "tab_key",
@@ -268,14 +291,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
-                <button class = "cw-menu-item cw-save-db">Save state</button>
-                <button class = "cw-menu-item cw-load-db">Load state</button>
+                <button class = "cw-menu-item cw-save-db">Save to DB</button>
+                <button class = "cw-menu-item cw-load-db">Load from DB</button>
                 <button class = "cw-menu-item cw-file-info">Info</button>
                 <button class = "cw-menu-item cw-file-notepad">Notepad</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
                 <button class = "cw-menu-item cw-file-print">Print</button>
                 <button class = "cw-menu-item cw-file-save">Save as iPuz</button>
-                <button class = "cw-menu-item cw-file-clear">Clear</button>
+                <button class = "cw-menu-item cw-file-clear">Restart</button>
                 </div>
               </div>
               <div    class = "cw-menu-container cw-check">
@@ -518,6 +541,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     	this.v_autosave = default_config.autosave;
 	this.is_saving = false;
 
+	/*
+        This code dynamically generates a matching color theme based on a single base color (COLOR_WORD). It uses HSV (Hue, Saturation, Value) transformations to ensure all UI elements (hover states, highlights, buttons) look visually consistent.
+        Logic: Instead of hardcoding colors like "blue" or "red," it uses Color.applyHsvTransform. This takes your base color and tweaks:
+            dh (Delta Hue): Shifts the actual color (e.g., making it slightly more purple or green).
+            ks (Saturation Factor): Adjusts how "vibrant" or "gray" the color is.
+            kv (Value Factor): Adjusts the brightness.
+	*/
 
         /* Update config values based on `color_word` */
         const COLOR_WORD = this.config.color_word;
@@ -877,6 +907,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         return rawTitle; // Preserve original if it's custom
       }
 
+//---------------------------------------------------------------------------------------------------
       /**
        * Parse puzzle data into Crossword structure.
        *
@@ -979,6 +1010,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	  if (statObj && Object.keys(statObj).length > 0) {
 	      this.stat_cheated = statObj.stat_cheated;
 	      this.stat_errors = statObj.stat_errors;
+	      xw_timer_seconds = statObj.timeplayed;
+
 	  }
           puzzle.cells = jsxw2_cells;
         }
@@ -1056,7 +1089,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             shape: rawCell['background-shape'] || null,
             image: rawCell['image'] || null,
             top_right_number: rawCell.top_right_number,
-            fixed: rawCell.fixed === true // Preserve fixed flag from saved data
+            fixed: false // ensure always false
           };
 
           /* set a "shade_highlight" color */
@@ -1074,6 +1107,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // ✔ DO NOT reset `c.fixed` to false here!
 
           // Apply rules only if this is a fresh load
+	  // J : we dont use this stuff
+	  /*
           if (!loadedFromStorage && !c.fixed) {
             // Rule 1: Fix punctuation like ‘–’, ‘,’ etc
             if (c.letter && !/[A-Za-z]/.test(c.letter)) {
@@ -1098,6 +1133,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               c.fixed = true;
             }
           }
+	  */
 
           if (this.diagramless_mode) {
             c.type = null;
@@ -1242,8 +1278,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.completeLoad();
 	this.updateStatsUI()
-      }
-
+      } // END parsePuzzle
+// -----------------------------------------------------------------------------------------------------------------------
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
       // dir: 'across' (x+) or 'down' (y+). step = +1 (forward) or -1 (backward)
       nextDiagramlessCell(fromCell, dir = this.diagramless_dir, step = 1) {
@@ -1270,7 +1306,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       toggleDiagramlessDir() {
         this.diagramless_dir = (this.diagramless_dir === 'across') ? 'down' : 'across';
       }
-
+// -----------------------------------------------------------------------------------------------------------------------
       completeLoad() {
         // Force the header to wrap its content
     $('.cw-header').css('flex-wrap', 'wrap');
@@ -1357,6 +1393,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.v_autocheck ? 'none' : 'block';
 
+	// update from DB
+	this.loadDb();
         // Start the timer if necessary
         if (this.config.timer_autostart) {
           this.toggleTimer();
@@ -1416,6 +1454,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         });
 
       } // end completeLoad
+// -----------------------------------------------------------------------------------------------------------------------      
 
       remove() {
         this.removeListeners();
@@ -2765,7 +2804,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             word = this.clueGroups[this.activeClueGroupIndex].getMatchingWord(x, y);
             if (word) { this.setActiveWord(word); }
 	}
-  } //FUNCTION
+  } //FUNCTION keyPressed
 
       autofill() {
         this.saveGame(); // keep saving
@@ -3692,11 +3731,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // for diagramless purposes
           c.type = cellData.type;
 
+          /* J : not used
           if (cellData.fixed === true) {
             c.fixed = true;
           } else {
             delete c.fixed; // Ensure normal cells are not accidentally flagged
           }
+	  */
         });
       }
 
@@ -3764,6 +3805,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 		// Reconstruct stats from simple arrays [ "x1,y1", "x2,y2" ] => stat_errors ={ "x1,y1": true, ...}
                 this.stat_errors = data.error_list?.length ? Object.fromEntries(data.error_list.map(c => [c, true])) : {};
                 this.stat_cheated = data.cheated_list?.length ? Object.fromEntries(data.cheated_list.map(c => [c, true])) : {};
+		xw_timer_seconds = data.timeplayed ?? 0;
 
           	this.renderCells(); 
 	    }
@@ -3803,7 +3845,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const payload = {
             ...this.jsxw,
             error_list: Object.keys(this.stat_errors),
-            cheated_list: Object.keys(this.stat_cheated)
+            cheated_list: Object.keys(this.stat_cheated),
+	    timeplayed: xw_timer_seconds
         };
     
         try {
@@ -3846,7 +3889,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         })));
 	localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
             stat_cheated: this.stat_cheated,
-            stat_errors: this.stat_errors
+            stat_errors: this.stat_errors,
+	    timeplayed: xw_timer_seconds
         }));
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
@@ -3940,7 +3984,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             `Completed: ${completedPct}%`
              );
      }
-//--------------------------------------------------------------------------------//     
+//-----------------------------------------------CHECK REVEAL ------------------------------------------------//     
 
       check_reveal(to_solve, reveal_or_check, e) {
         var my_cells = [],
@@ -3995,7 +4039,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
 
           if (reveal_or_check === 'clear') {
-            if (c.fixed) continue;
+            if (c.fixed) continue; // will never happen
             // CLEAR
             c.letter = '';
             c.checked = false;
@@ -4069,6 +4113,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         if (reveal_or_check === 'clear') {
+	  this.stat_errors = {};
+       	  this.stat_cheated = {};
+	  xw_timer_seconds = 0 ; 
           this.saveGame();
         }
 
