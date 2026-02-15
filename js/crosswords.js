@@ -2924,6 +2924,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           });
         }
+	if (this.v_autosave) { this.saveDb();}
 
         /* const winSound = new Audio('./sounds/hny.mp3');
            winSound.play();*/
@@ -3791,6 +3792,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 body: JSON.stringify(this.jsxw)
             });
 
+	    if (!response.ok) {
+                alert(`service not available: ${response.status}`);
+                return; 
+            }
             const data = await response.json();
             console.log("json returned by nexus_update:", data);
 	    if (data.status != 0) { alert(data.message); }
@@ -3864,11 +3869,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 body: compressedBody
             });
     
+	    if (!response.ok) {
+                alert(`service not available: ${response.status}`);
+                return; 
+            }
             const data = await response.json();
             if (data.status != 0) { alert(data.message); }
     
         } catch (error) {
-            console.error('Error loading stats:', error);
+            console.error('Error saveDB:', error);
         } finally {
             this.is_saving = false; // Always unlock, even on error
         }
