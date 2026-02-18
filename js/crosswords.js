@@ -53,6 +53,7 @@ try {
 // one-time check for mobile device status
 const IS_MOBILE = CrosswordShared.isMobileDevice();
 
+
 // Helper function for PWA setup
 function setupPWAInstallButton(btn) {
   if (!btn) {
@@ -276,7 +277,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           <div    class = "cw-modal"></div>
           <div    class = "cw-grid">
           <div    class = "cw-buttons-holder">
-          <label class = "cw-autocheck-label">
+          <label class = "cw-autocheck-label" backend-required>
             <input type = "checkbox" class="cw-autosave-checkbox" id="autosave1" >
             Autosave
           </label>
@@ -291,8 +292,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
-                <button class = "cw-menu-item cw-save-db">Save to DB</button>
-                <button class = "cw-menu-item cw-load-db">Load from DB</button>
+                <button class = "cw-menu-item cw-save-db" backend-required>Save to DB</button>
+                <button class = "cw-menu-item cw-load-db" backend-required>Load from DB</button>
                 <button class = "cw-menu-item cw-file-info">Info</button>
                 <button class = "cw-menu-item cw-file-notepad">Notepad</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
@@ -540,6 +541,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     	this.v_autocheck = default_config.autocheck;
     	this.v_autosave = default_config.autosave;
 	this.is_saving = false;
+        this.backendEnabled = false;
 
 	/*
         This code dynamically generates a matching color theme based on a single base color (COLOR_WORD). It uses HSV (Hue, Saturation, Value) transformations to ensure all UI elements (hover states, highlights, buttons) look visually consistent.
@@ -891,11 +893,32 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         setBreakpointClasses(this.root);
         // Place this at the END of the init() method:
         const svg = document.getElementById('cw-puzzle-grid');
-      } // ========>end init
+	initBackend();
+      } // ========> END INIT
 
       error(message) {
         alert(message);
       }
+
+      async initBackend() {
+        try {
+          const response = await fetch('/cgi-lmpuz/conf_back.py2');
+          if (response.ok) {
+            // Backend confirmed: reveal elements
+            document.body.classList.add('backend-active');
+            console.info("Backend features enabled.");
+            const data = await response.json();
+	    this.back_saveDB = data['back_saveDB'];
+	    this.back_loadDB = data['back_loadDB'];
+	    this.backendEnabled = true;
+            return true;
+          }
+        } catch (e) {
+        // Silent fail: elements remain hidden
+        }
+      console.info("Static mode: Backend features disabled.");
+      return false;
+    }
 
       normalizeClueTitle(rawTitle) {
         if (!rawTitle) return '';
@@ -3782,9 +3805,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
       /* load last state from DB */
       async loadDb(e) {
+        if (! this.backendEnabled) return;
         this.fillJsXw();
         try {
-            const response = await fetch('/cgi-lmpuz/nexus_load.py', {
+            const response = await fetch(this.back_loadDB, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3843,6 +3867,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     // Add this property to your class constructor/init:
 
     async saveDb(e) {
+        if (! this.backendEnabled) return;
         if (this.is_saving) return; // Exit if a save is already running
         this.is_saving = true;
     
@@ -3859,7 +3884,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
             const compressedBody = await new Response(compressedStream).blob();
     
-            const response = await fetch('/cgi-lmpuz/nexus_update.py', {
+            const response = await fetch(this.back_saveDB, {
                 method: 'POST',
                 referrerPolicy: 'no-referrer',
                 headers: {
