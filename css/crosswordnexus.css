@@ -15,11 +15,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 **/
 
 [backend-required] {
-  display: none;
+  display: none !important;
 }
 
 body.backend-active [backend-required] {
-  display: block; /* or inline-block/flex */
+  display: block !important; /* or inline-block/flex */
 }
 
 .cw-title,

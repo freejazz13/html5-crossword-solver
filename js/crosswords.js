@@ -541,7 +541,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     	this.v_autocheck = default_config.autocheck;
     	this.v_autosave = default_config.autosave;
 	this.is_saving = false;
-        this.backendEnabled = false;
+        //this.backendEnabled = false;
+	this.backendPromise = null;
 
 	/*
         This code dynamically generates a matching color theme based on a single base color (COLOR_WORD). It uses HSV (Hue, Saturation, Value) transformations to ensure all UI elements (hover states, highlights, buttons) look visually consistent.
@@ -893,16 +894,25 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         setBreakpointClasses(this.root);
         // Place this at the END of the init() method:
         const svg = document.getElementById('cw-puzzle-grid');
-	initBackend();
+	//this.initBackend();
+	this.backendPromise = this.initBackend();
       } // ========> END INIT
 
       error(message) {
         alert(message);
       }
 
+/**
+ * BACKEND INTEGRATION & FAILSAFE ARCHITECTURE: code must provide saveDB and loadDb , which are from a backend, and override local storage (default strategy)
+ * * STRATEGY: "Local-First" with Dynamic Opt-in.
+ * 1. UI: Elements with [data-requires-backend] are hidden by default via CSS (!important). this keep html clean from unusable button and menu elts
+ * 2. DETECTION: initBackend() probes for '/cgi-lmpuz/conf_back.cgi'.
+ * 3. ACTIVATION: If found, .backend-active is added to body to reveal UI via CSS, it also provides urls to save / load on sqlite3 the puzzle states
+ * 4. FALLBACK: If 404.. (ex: github pages etc..) or error, app remains in Static Mode with no errors, the game saves to browser localstorage.
+ */
       async initBackend() {
         try {
-          const response = await fetch('/cgi-lmpuz/conf_back.py2');
+          const response = await fetch('/cgi-lmpuz/conf_back.cgi');
           if (response.ok) {
             // Backend confirmed: reveal elements
             document.body.classList.add('backend-active');
@@ -910,7 +920,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             const data = await response.json();
 	    this.back_saveDB = data['back_saveDB'];
 	    this.back_loadDB = data['back_loadDB'];
-	    this.backendEnabled = true;
+            this.v_autosave = true;
+            $('#autosave1').prop('checked', this.v_autosave);
+	    //this.backendEnabled = true;
             return true;
           }
         } catch (e) {
@@ -3805,7 +3817,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
       /* load last state from DB */
       async loadDb(e) {
-        if (! this.backendEnabled) return;
+        const isAvailable = await this.backendPromise; // will wait until decision about backend is made
+	if (!isAvailable) return;
+        //if (! this.backendEnabled) return; (not working)
         this.fillJsXw();
         try {
             const response = await fetch(this.back_loadDB, {
@@ -3867,7 +3881,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     // Add this property to your class constructor/init:
 
     async saveDb(e) {
-        if (! this.backendEnabled) return;
+        const isAvailable = await this.backendPromise;
+	if (!isAvailable) return;
+        //if (! this.backendEnabled) return; ==> async bug
         if (this.is_saving) return; // Exit if a save is already running
         this.is_saving = true;
     
