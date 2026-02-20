@@ -22,6 +22,18 @@ body.backend-active [backend-required] {
   display: block !important; /* or inline-block/flex */
 }
 
+/* Gray/Dimmed by default */
+.signal-emoji {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+/* Color/Bright when backend active */
+body.backend-active .signal-emoji {
+  filter: grayscale(0);
+  opacity: 1;
+}
+
 .cw-title,
 .cw-author,
 .cw-copyright {
@@ -208,7 +220,6 @@ body.backend-active [backend-required] {
   font-weight: bold;
   font-size: 2.3vmin !important;
   margin-left: 0.3em;
-
 }
 
 

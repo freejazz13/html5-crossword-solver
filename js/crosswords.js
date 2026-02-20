@@ -1357,6 +1357,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                </button>` 
             : ''
         }
+        <span class="cw-header-separator">&nbsp;•&nbsp;</span>
+	<span class="signal-emoji">📶</span>
         <span class="cw-flex-spacer"></span>
         <span class="cw-copyright">${escape(this.copyright)}</span>
         
