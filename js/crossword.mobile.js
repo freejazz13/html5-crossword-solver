@@ -243,7 +243,12 @@ $(document).ready(function() {
       const handle = document.createElement('div');
       handle.className = 'cw-buttons-handle';
 
+      // Add text field above drawer
+      const thisWordLetters = document.createElement('span');
+      thisWordLetters.id = 'this-word-letters-mobile';
+
       // Add drawer to wrapper
+      wrapper.appendChild(thisWordLetters);
       wrapper.appendChild(handle);
       wrapper.appendChild(buttonWrapper);
 
@@ -369,19 +374,23 @@ function createCustomKeyboard() {
     'ASDFGHJKL'.split(''),
     'ZXCVBNM'.split('')
   ];
-  const letterRows = [
-    'AZERTYUIOP'.split(''),
-    'QSDFGHJKLM'.split(''),
-    'WXCVBN'.split('')
-  ];
 
+const letterRows = [
+  'AZERTYUIOP'.split(''),
+  'QSDFGHJKLM'.split(''),
+  ['\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N', '\u{2705}'] // 💡 and ✅
+];
+
+/*
+    '💡🔆🔓︎☢️ ✅ WXCVBN'.split('')
   const symbolRows = [
     ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
     ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')'],
     ['-', '+', '=', '/', '?', ':', ';', '"', "'", '\\']
   ];
 
-  const rows = isAltKeyboard ? symbolRows : letterRows;
+  */
+  const rows =  letterRows;
 
   rows.forEach((row, rowIndex) => {
     const rowDiv = document.createElement('div');
@@ -400,6 +409,7 @@ function createCustomKeyboard() {
     }
 
     // ── BOTTOM ROW: 123/ABC toggle on the far left
+    /*
     if (rowIndex === 2) {
       const altKey = document.createElement('div');
       altKey.className = 'custom-key cw-key-alt-toggle';
@@ -418,6 +428,7 @@ function createCustomKeyboard() {
       });
       rowDiv.appendChild(altKey);
     }
+    */
 
     // main keys for the row
     row.forEach(letter => {
@@ -425,10 +436,20 @@ function createCustomKeyboard() {
       key.className = 'custom-key';
       key.textContent = letter;
       key.addEventListener('click', () => {
-        if (gCrossword?.hidden_input) {
-          gCrossword.hiddenInputChanged(letter);
-	  if (gCrossword.v_autocheck) { gCrossword.check_reveal('puzzle', 'check'); }
-        }
+          if (gCrossword?.hidden_input) {
+            // 1. Check for special emoji keys first
+            if (letter === '💡' || letter === '\u{1F4A1}') {
+              gCrossword.check_reveal('letter', 'reveal');
+            }
+            else if (letter === '✅' || letter === '\u{2705}') {
+              gCrossword.check_reveal('word', 'reveal');
+            }
+            else {
+              // 2. Default behavior for normal letters
+              gCrossword.hiddenInputChanged(letter);
+              if (gCrossword.v_autocheck) { gCrossword.check_reveal('puzzle', 'check'); }
+            }
+          }
       });
       rowDiv.appendChild(key);
     });
@@ -446,6 +467,7 @@ function createCustomKeyboard() {
 
     if (rowIndex === 2) {
       // Period key (bottom row)
+    /*
       const periodKey = document.createElement('div');
       periodKey.className = 'custom-key period-key';
       periodKey.textContent = '.';
@@ -455,11 +477,13 @@ function createCustomKeyboard() {
         }
       });
       rowDiv.appendChild(periodKey);
+      */
 
       // Backspace (bottom row, far right)
       const backspace = document.createElement('div');
       backspace.className = 'custom-key backspace-key';
-      backspace.textContent = '⌫';
+      //backspace.textContent = '⌫';
+      backspace.textContent = '\u274C';
 
       let backspaceTimeout;
       let backspaceInterval;
@@ -521,4 +545,4 @@ function createCustomKeyboard() {
 
   console.log('[MOBILE] crossword.mobile.js loaded');
   return keyboard;
-}
+} // END createCustomKeyboard

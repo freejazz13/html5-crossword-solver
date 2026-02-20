@@ -84,6 +84,17 @@ html.mobile-mode {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.crossword.mobile #this-word-letters-mobile {
+  display: block;  /* or inline-block */
+  width: 100%;
+  background: var(--clue-active-color);
+  letter-spacing: 3px;
+  height: 24px;
+  font-weight: bold;
+  font-size: 16px;
+  text-align: center;
+}
+
 .crossword.mobile .cw-top-text {
   font-weight: bold;
   /*font-size: 2.3vmin !important;*/
@@ -266,6 +277,11 @@ html.mobile-mode {
   margin: 2px;
   padding: 0.65em 0.5em;
   text-align: center;
+
+  display: inline-flex;  /* Or 'flex' if they are in a row */
+  align-items: center;    /* Vertical center */
+  justify-content: center; /* Horizontal center */
+  
   font-size: 1rem;
   background: var(--keyboard-button-bg-color);
   color: var(--button-text-color);

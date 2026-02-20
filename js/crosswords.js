@@ -1923,6 +1923,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	  //console.log(wordString); 
 	  // display in header space:
            $('#this-word-letters').text(wordString);
+           $('#this-word-letters-mobile').text(wordString);
 
           this.selected_word = word;
           if (this.fakeclues) {
