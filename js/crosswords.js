@@ -1681,7 +1681,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         $(document).on('keydown', $.proxy(this.keyPressed, this));
 	$(document).on('keyup', () => {
-          if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+          if (this.v_autocheck) { this.check_reveal('letter', 'check'); } 
 	  });  
           
 

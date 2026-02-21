@@ -378,7 +378,7 @@ function createCustomKeyboard() {
 const letterRows = [
   'AZERTYUIOP'.split(''),
   'QSDFGHJKLM'.split(''),
-  ['\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N', '\u{2705}'] // 💡 and ✅
+  ['\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // 💡 ( ✅ for this one see below)
 ];
 
 /*
@@ -408,28 +408,6 @@ const letterRows = [
       rowDiv.appendChild(leftArrow);
     }
 
-    // ── BOTTOM ROW: 123/ABC toggle on the far left
-    /*
-    if (rowIndex === 2) {
-      const altKey = document.createElement('div');
-      altKey.className = 'custom-key cw-key-alt-toggle';
-      altKey.dataset.key = 'ALT';
-      altKey.textContent = isAltKeyboard ? 'ABC' : '123';
-      altKey.addEventListener('click', () => {
-        isAltKeyboard = !isAltKeyboard;
-
-        const wrapper = document.querySelector('.keyboard-wrapper-placeholder');
-        const oldKeyboard = wrapper.querySelector('#custom-keyboard');
-        if (oldKeyboard) oldKeyboard.remove();
-
-        const newKeyboard = createCustomKeyboard();
-        wrapper.appendChild(newKeyboard);
-        wrapper.style.height = `${newKeyboard.offsetHeight}px`;
-      });
-      rowDiv.appendChild(altKey);
-    }
-    */
-
     // main keys for the row
     row.forEach(letter => {
       const key = document.createElement('div');
@@ -440,14 +418,10 @@ const letterRows = [
             // 1. Check for special emoji keys first
             if (letter === '💡' || letter === '\u{1F4A1}') {
               gCrossword.check_reveal('letter', 'reveal');
-            }
-            else if (letter === '✅' || letter === '\u{2705}') {
-              gCrossword.check_reveal('word', 'reveal');
-            }
-            else {
+            } else {
               // 2. Default behavior for normal letters
               gCrossword.hiddenInputChanged(letter);
-              if (gCrossword.v_autocheck) { gCrossword.check_reveal('puzzle', 'check'); }
+              if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
             }
           }
       });
@@ -479,7 +453,49 @@ const letterRows = [
       rowDiv.appendChild(periodKey);
       */
 
-      // Backspace (bottom row, far right)
+      // ================ solve word with long press ========================
+      const solveword = document.createElement('div');
+      solveword.className = 'custom-key solveword-key';
+      solveword.textContent = '\u{2705}'; // ✅
+
+      let solvewordTimeout;
+      let solvewordInterval;
+      let solvewordHeld = false;
+      let solvewordFired = false;
+
+      function clearsolvewordState() {
+        clearTimeout(solvewordTimeout);
+        clearInterval(solvewordInterval);
+        solvewordHeld = false;
+        solvewordFired = false;
+      }
+
+      function performsolveword() {
+        gCrossword.check_reveal('word', 'reveal');
+        gCrossword.renderCells();
+        gCrossword.checkIfSolved();
+      }
+
+      solveword.addEventListener('pointerdown', () => {
+        solvewordHeld = false;
+        solvewordFired = false;
+        solvewordTimeout = setTimeout(() => {
+          solvewordHeld = true;
+          performsolveword();
+          solvewordFired = true;
+        }, 400);
+      });
+      solveword.addEventListener('pointerup', () => {
+        //if (!solvewordFired) performsolveword();
+        clearsolvewordState();
+      });
+      solveword.addEventListener('pointerleave', clearsolvewordState);
+      solveword.addEventListener('pointercancel', clearsolvewordState);
+
+      rowDiv.appendChild(solveword);
+
+      //===================================================================================
+      // Backspace (bottom row, far right):  implements repeats if long press
       const backspace = document.createElement('div');
       backspace.className = 'custom-key backspace-key';
       //backspace.textContent = '⌫';
