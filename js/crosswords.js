@@ -4125,6 +4125,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 c.letter = c.solution;
                 c.revealed = true;
                 c.checked = false;
+		// advance :
+                const next_cell = this.selected_word.getNextCell(c.x, c.y);
+                this.setActiveCell(next_cell);
               }
             }
           } else if (reveal_or_check === 'check') {

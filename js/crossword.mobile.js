@@ -483,7 +483,7 @@ const letterRows = [
       const backspace = document.createElement('div');
       backspace.className = 'custom-key backspace-key';
       //backspace.textContent = '⌫';
-      backspace.textContent = '\u274C';
+      backspace.textContent = '\u274C'; // ❌
 
       let backspaceTimeout;
       let backspaceInterval;
