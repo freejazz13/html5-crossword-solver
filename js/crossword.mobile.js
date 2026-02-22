@@ -115,9 +115,6 @@ $(document).ready(function() {
     window.gCrossword.syncTopTextWidth = gCrossword.syncTopTextWidth.bind(gCrossword);
   }
 
-  /*if (gCrossword && gCrossword.config) {
-    v_autocheck = gCrossword.config.autocheck;
-  }*/
   if (isMobile && crosswordRoot) {
     const tryWrapLayout = () => {
       const canvas = document.querySelector('.cw-canvas');

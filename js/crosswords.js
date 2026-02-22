@@ -3881,11 +3881,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
   }
 
     /* Save the game state to DB */
-    // Add this property to your class constructor/init:
-
     async saveDb(e) {
         const isAvailable = await this.backendPromise;
-	if (!isAvailable) return;
+	if (! this.v_autosave || !isAvailable) return;
         //if (! this.backendEnabled) return; ==> async bug
         if (this.is_saving) return; // Exit if a save is already running
         this.is_saving = true;
@@ -4041,7 +4039,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
       check_reveal(to_solve, reveal_or_check, e) {
         var my_cells = [],
-          cell;
+            cell;
+	var saveNeeded = false;    
 
         switch (to_solve) {
           case 'letter':
@@ -4125,6 +4124,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 c.letter = c.solution;
                 c.revealed = true;
                 c.checked = false;
+		saveNeeded = true;
 		// advance :
                 const next_cell = this.selected_word.getNextCell(c.x, c.y);
                 this.setActiveCell(next_cell);
@@ -4147,12 +4147,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               if (c.letter) {
                 c.checked = !isCorrect(c.letter, c.solution);
 		if (c.checked) { this.setError(c.x,c.y) } // c.checked is : NOT correct entry
+		saveNeeded = true; 
               } else {
                 c.checked = false;
               }
             }
           }
         }
+	if (saveNeeded) { this.saveGame(); }
 
         // After mass-reveal or clear, renumber
         if (reveal_or_check === 'reveal' && this.diagramless_mode) {
