@@ -53,7 +53,48 @@ async function decryptAndLoad(url, password) {
     const zip = await JSZip.loadAsync(decryptedZip);
     return processZip(zip);
 }
-async function loadArchive(url) {
+async function loadArchive(url, sortOrder = 'asc') {
+    try {
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        const zip = await JSZip.loadAsync(blob);
+
+        const fileGrid = document.getElementById('file-grid');
+        const loading = document.getElementById('loading');
+        fileGrid.innerHTML = '';
+
+        let filesData = await processZip(zip);
+
+        // Sort by filename only (stripping folder paths)
+        filesData.sort((a, b) => {
+            const fileA = (a.path || '').split('/').pop().toLowerCase();
+            const fileB = (b.path || '').split('/').pop().toLowerCase();
+
+            return sortOrder === 'asc'
+                ? fileA.localeCompare(fileB)
+                : fileB.localeCompare(fileA);
+        });
+
+        loading.style.display = 'none';
+
+        if (filesData.length === 0) {
+            fileGrid.innerHTML = '<div class="no-files">No .puz files found in archive</div>';
+            return;
+        }
+
+        document.getElementById('stats-files').textContent = `Files: ${filesData.length}`;
+
+        for (const data of filesData) {
+            const sticker = await createFileSticker(data);
+            fileGrid.appendChild(sticker);
+        }
+
+    } catch (error) {
+        document.getElementById('loading').textContent = 'Error: ' + error.message;
+        console.error('Archive loading error:', error);
+    }
+}
+async function loadArchive000(url) {
     try {
         const resp = await fetch(url);
         const blob = await resp.blob();
