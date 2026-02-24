@@ -561,7 +561,9 @@ div.is-dragover {
   font-weight: 600;
 }
 
-.cw-clue-text {
+.cw-clue-text-up {
+  /*background: var(--clue-active-color);*/
+  background: white;
   flex: 1 1 auto;
   word-wrap: break-word;
   margin-right: 3px;

@@ -339,7 +339,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             <div   class = "cw-puzzle-container">
             <div   class = "cw-top-text-wrapper">
             <div   class = "cw-top-text">
-            <span  class = "cw-clue-text"></span>
+            <span  class = "cw-clue-text-up"></span>
                     </div>
                   </div>
                   <svg id = "cw-puzzle-grid"></svg>
@@ -1930,7 +1930,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             return;
           }
           this.top_text.html(`
-            <span class="cw-clue-text">
+            <span class="cw-clue-text-up">
               ${escape(word.clue.text)}
             </span>
           `);
