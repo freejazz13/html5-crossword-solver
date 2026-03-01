@@ -17,7 +17,7 @@ var gCrossword;
 let isAltKeyboard = false;
 //var v_autocheck;
 
-$(document).ready(function() {
+$(document).ready(function () {
   let initialWindowHeight = window.innerHeight;
   setCSSViewportHeight();
   // Listen to visualViewport resize events
@@ -74,6 +74,13 @@ $(document).ready(function() {
 
     wrapper.appendChild(newKeyboard);
     wrapper.style.height = `${newKeyboard.offsetHeight}px`;
+    window.addEventListener('resize', syncKb);
+  // ── Sync keyboard height to placeholder ──
+  function syncKb() {
+    const keyboard = document.getElementById('custom-keyboard');
+    const h = keyboard.getBoundingClientRect().height;
+    document.getElementById('placeholder').style.height = h + 'px';
+  }
 
     /* // Reattach Rebus key
     newKeyboard.querySelector('.cw-key-rebus')?.addEventListener('click', () => {
@@ -260,6 +267,7 @@ $(document).ready(function() {
       // Rebuild keyboard
       rebuildKeyboardAndPositionDrawer();
 
+   /*
       // === Rebus via long-press on the grid ===
       (function enableRebusLongPressOnCell() {
         // Your grid is the canvas with id 'cw-puzzle-grid' (fallback to .cw-canvas)
@@ -288,13 +296,13 @@ $(document).ready(function() {
           }
         }
 
-        grid.addEventListener('pointerdown', (e) => {
-          if (!gCrossword?.selected_cell || gCrossword.selected_cell.empty) return;
-          startX = e.clientX;
-          startY = e.clientY;
-          clearTimer();
-          timer = setTimeout(openRebusEditor, LP_MS);
-        });
+              grid.addEventListener('pointerdown', (e) => {
+                if (!gCrossword?.selected_cell || gCrossword.selected_cell.empty) return;
+                startX = e.clientX;
+                startY = e.clientY;
+                clearTimer();
+                timer = setTimeout(openRebusEditor, LP_MS);
+              });
 
         grid.addEventListener('pointermove', (e) => {
           if (!timer) return;
@@ -308,6 +316,7 @@ $(document).ready(function() {
         grid.addEventListener('pointercancel', clearTimer);
       })();
 
+   */
 
       // Drawer toggle logic
       drawer = buttonWrapper;
@@ -359,7 +368,123 @@ $(document).ready(function() {
     setTimeout(tryWrapLayout, 300);
   }
   console.log('Is mobile?', isMobile, 'Classes:', document.querySelector('.crossword')?.className);
+  //-------------------------------------------------------------------------------------------------
+  // ── JS pinch-zoom: grid only ────────────────────────────────
+  // CSS touch-action is unreliable when JS touches are involved.
+  // Instead we intercept ALL touch events at document level,
+  // check where the fingers are, and either:
+  //   - allow + handle zoom ourselves (fingers on grid)
+  //   - block zoom entirely (fingers on keyboard)
+
+  const gridInner = document.getElementById('cw-zoom-container');
+
+  let currentScale = 1;
+  let startScale = 1;
+  let startDist = null;
+  let pinchOnGrid = false;
+
+  // Translation state
+  let tx = 0, ty = 0;          // current translation
+  let startTx = 0, startTy = 0; // translation at pan start
+  let panStartX = 0, panStartY = 0; // finger position at pan start
+  let isPanning = false;
+  
+
+
+  function applyTransform() {
+    gridInner.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + currentScale.toFixed(3) + ')';
+    console.log('scale: ' + currentScale.toFixed(2) + '×  tx:' + Math.round(tx) + ' ty:' + Math.round(ty));
+  }
+
+  function clampTranslation() {
+    // Don't allow panning when not zoomed
+    if (currentScale <= 1) { tx = 0; ty = 0; return; }
+    // Compute max allowed translation so grid doesn't leave the zone
+    const zone = document.getElementById('cw-puzzle-grid').getBoundingClientRect();
+    const maxX = (zone.width * (currentScale - 1)) / 2;
+    const maxY = (zone.height * (currentScale - 1)) / 2;
+    tx = Math.min(Math.max(tx, -maxX), maxX);
+    ty = Math.min(Math.max(ty, -maxY), maxY);
+  }
+
+  function touchDist(t1, t2) {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function onKeyboard(touch) {
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const keyboard = document.getElementById('custom-keyboard');
+    return el && keyboard.contains(el);
+  }
+
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      // Stop any panning
+      isPanning = false;
+      const onKb = onKeyboard(e.touches[0]) || onKeyboard(e.touches[1]);
+      if (onKb) {
+        pinchOnGrid = false;
+        //e.preventDefault();
+      } else {
+        pinchOnGrid = true;
+        startDist = touchDist(e.touches[0], e.touches[1]);
+        startScale = currentScale;
+        //e.preventDefault();
+      }
+    } else if (e.touches.length === 1) {
+      pinchOnGrid = false;
+      // Only pan when zoomed in, and finger not on keyboard
+      if (currentScale > 1 && !onKeyboard(e.touches[0])) {
+        isPanning = true;
+        panStartX = e.touches[0].clientX;
+        panStartY = e.touches[0].clientY;
+        startTx = tx;
+        startTy = ty;
+        //e.preventDefault();
+      } else {
+        isPanning = false;
+      }
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      isPanning = false;
+      if (pinchOnGrid && startDist !== null) {
+        const d = touchDist(e.touches[0], e.touches[1]);
+        let s = startScale * (d / startDist);
+        s = Math.min(Math.max(s, 1), 4);
+        currentScale = s;
+        clampTranslation();
+        applyTransform();
+      }
+    } else if (e.touches.length === 1 && isPanning) {
+      e.preventDefault();
+      tx = startTx + (e.touches[0].clientX - panStartX);
+      ty = startTy + (e.touches[0].clientY - panStartY);
+      clampTranslation();
+      applyTransform();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', function (e) {
+    if (e.touches.length < 2) {
+      startDist = null;
+      pinchOnGrid = false;
+    }
+    if (e.touches.length === 0) {
+      isPanning = false;
+      // Snap back to center if scale returned to 1
+      if (currentScale <= 1) { tx = 0; ty = 0; applyTransform(); }
+    }
+  }, { passive: true });
+  //syncKb();
+
 });
+//-------------------------------------------------------------------------------------------------
 
 function createCustomKeyboard() {
   const keyboard = document.createElement('div');
@@ -372,22 +497,22 @@ function createCustomKeyboard() {
     'ZXCVBNM'.split('')
   ];
 
-const letterRows = [
-  'AZERTYUIOP'.split(''),
-  'QSDFGHJKLM'.split(''),
-  ['\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // 💡 ( ✅ for this one see below)
-];
-
-/*
-    '💡🔆🔓︎☢️ ✅ WXCVBN'.split('')
-  const symbolRows = [
-    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-    ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')'],
-    ['-', '+', '=', '/', '?', ':', ';', '"', "'", '\\']
+  const letterRows = [
+    'AZERTYUIOP'.split(''),
+    'QSDFGHJKLM'.split(''),
+    ['\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // 💡 ( ✅ for this one see below)
   ];
 
-  */
-  const rows =  letterRows;
+  /*
+      '💡🔆🔓︎☢️ ✅ WXCVBN'.split('')
+    const symbolRows = [
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+      ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')'],
+      ['-', '+', '=', '/', '?', ':', ';', '"', "'", '\\']
+    ];
+  
+    */
+  const rows = letterRows;
 
   rows.forEach((row, rowIndex) => {
     const rowDiv = document.createElement('div');
@@ -411,16 +536,16 @@ const letterRows = [
       key.className = 'custom-key';
       key.textContent = letter;
       key.addEventListener('click', () => {
-          if (gCrossword?.hidden_input) {
-            // 1. Check for special emoji keys first
-            if (letter === '💡' || letter === '\u{1F4A1}') {
-              gCrossword.check_reveal('letter', 'reveal');
-            } else {
-              // 2. Default behavior for normal letters
-              gCrossword.hiddenInputChanged(letter);
-              if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
-            }
+        if (gCrossword?.hidden_input) {
+          // 1. Check for special emoji keys first
+          if (letter === '💡' || letter === '\u{1F4A1}') {
+            gCrossword.check_reveal('letter', 'reveal');
+          } else {
+            // 2. Default behavior for normal letters
+            gCrossword.hiddenInputChanged(letter);
+            if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
           }
+        }
       });
       rowDiv.appendChild(key);
     });
@@ -438,17 +563,17 @@ const letterRows = [
 
     if (rowIndex === 2) {
       // Period key (bottom row)
-    /*
-      const periodKey = document.createElement('div');
-      periodKey.className = 'custom-key period-key';
-      periodKey.textContent = '.';
-      periodKey.addEventListener('click', () => {
-        if (gCrossword?.hidden_input) {
-          gCrossword.hiddenInputChanged('.');
-        }
-      });
-      rowDiv.appendChild(periodKey);
-      */
+      /*
+        const periodKey = document.createElement('div');
+        periodKey.className = 'custom-key period-key';
+        periodKey.textContent = '.';
+        periodKey.addEventListener('click', () => {
+          if (gCrossword?.hidden_input) {
+            gCrossword.hiddenInputChanged('.');
+          }
+        });
+        rowDiv.appendChild(periodKey);
+        */
 
       // ================ solve word with long press ========================
       const solveword = document.createElement('div');
@@ -513,7 +638,7 @@ const letterRows = [
       function performBackspace() {
         var moveBack = true;;
         if (gCrossword.selected_cell && !gCrossword.selected_cell.fixed) {
-	  // dont move back cursor if cell content was wrong:
+          // dont move back cursor if cell content was wrong:
           if (gCrossword.selected_cell.letter != gCrossword.selected_cell.solution) { moveBack = false; }
           gCrossword.selected_cell.letter = '';
           gCrossword.selected_cell.checked = false;
@@ -523,7 +648,7 @@ const letterRows = [
             // Move to the previous editable cell based on current diagramless direction
             const prev = gCrossword.nextDiagramlessCell(this.selected_cell, this.diagramless_dir, -1);
             if (prev) gCrossword.setActiveCell(prev);
-          // classic grid here:
+            // classic grid here:
           } else if (moveBack && gCrossword.selected_word) {
             const prev_cell = gCrossword.selected_word.getPreviousCell(
               gCrossword.selected_cell.x,

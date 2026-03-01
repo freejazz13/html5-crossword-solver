@@ -336,16 +336,18 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             </div>
             <input type  = "text" class = "cw-hidden-input">
             <div   class = "cw-canvas">
-            <div   class = "cw-puzzle-container">
-            <div   class = "cw-top-text-wrapper">
-            <div   class = "cw-top-text">
-            <span  class = "cw-clue-text-up"></span>
-                    </div>
+              <div   class = "cw-puzzle-container">
+                <div   class = "cw-top-text-wrapper">
+                  <div   class = "cw-top-text">
+                    <span  class = "cw-clue-text-up"></span>
                   </div>
-                  <svg id = "cw-puzzle-grid"></svg>
                 </div>
               </div>
+	      <div id = "cw-zoom-container" >
+                <svg id = "cw-puzzle-grid"></svg>
+              </div>
             </div>
+          </div>
           <div class = "cw-clues-holder"></div>
         </div>
       </div>`;
@@ -880,7 +882,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.is_autofill = false;
 
         this.root.appendTo(this.parent);
-        this.canvas_holder = this.root.find('div.cw-canvas');
+	this.canvas_holder = this.root.find('#cw-zoom-container');
+	console.log('canvas_holder:', this.canvas_holder.length);
         // SVG setup (new)
         this.svgNS = 'http://www.w3.org/2000/svg';
         this.svgContainer = document.createElementNS(this.svgNS, 'svg');
