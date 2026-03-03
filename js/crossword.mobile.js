@@ -369,13 +369,19 @@ $(document).ready(function () {
   }
   console.log('Is mobile?', isMobile, 'Classes:', document.querySelector('.crossword')?.className);
   //-------------------------------------------------------------------------------------------------
-  // ── JS pinch-zoom: grid only ────────────────────────────────
+  // JS pinch-zoom: grid only ────────────────────────────────
   // CSS touch-action is unreliable when JS touches are involved.
   // Instead we intercept ALL touch events at document level,
   // check where the fingers are, and either:
   //   - allow + handle zoom ourselves (fingers on grid)
   //   - block zoom entirely (fingers on keyboard)
-
+  /* The Sequence of Events
+    touchstart (Finger 1): You place your first finger. The browser records the coordinates.
+    touchstart (Finger 2): You place the second finger. The browser now identifies a multi-touch state.
+    touchmove (The Zoom): As you move your fingers apart, hundreds of touchmove events fire per second. 
+    The browser calculates the change in distance between the two sets of coordinates to determine the Scale Factor.
+    touchend: When you lift your fingers, the final scale is set.
+ */
   const gridInner = document.getElementById('cw-zoom-container');
 
   let currentScale = 1;
@@ -418,8 +424,22 @@ $(document).ready(function () {
     const keyboard = document.getElementById('custom-keyboard');
     return el && keyboard.contains(el);
   }
+  function onGrid(touch) {
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const grid = document.getElementById('cw-zoom-container');
+    return el && grid.contains(el);
+  }
 
-  document.addEventListener('touchstart', function (e) {
+  /*
+    When you add an event listener, the browser doesn't know in advance whether your handler will call preventDefault() or not. So it waits for your JS to finish before it performs the default action (scroll, zoom, etc.) — this causes jank.
+    passive: true is a promise to the browser that you will never call preventDefault() inside that handler. The browser can then perform the default action immediately, in parallel with your JS, without waiting. Smoother performance.
+    passive: false is the default — browser waits for your JS before acting.
+    The constraint: if you declare passive: true and then call preventDefault() anyway, the browser ignores the preventDefault() and prints a console warning.
+    That's why all three e.preventDefault() must be removed from touchstart before switching it to passive: true.
+    touchmove stays passive: false because you still need preventDefault() there to block the browser zoom during pinch.
+  */
+  document.addEventListener('touchstart', function (e) { // passive true:browser waits
+    console.log('touchstart');
     if (e.touches.length === 2) {
       // Stop any panning
       isPanning = false;
@@ -427,7 +447,7 @@ $(document).ready(function () {
       if (onKb) {
         pinchOnGrid = false;
         //e.preventDefault();
-      } else {
+      } else if (onGrid(e.touches[0])) {
         pinchOnGrid = true;
         startDist = touchDist(e.touches[0], e.touches[1]);
         startScale = currentScale;
@@ -450,6 +470,7 @@ $(document).ready(function () {
   }, { passive: true });
 
   document.addEventListener('touchmove', function (e) {
+    console.log('touchmove');
     if (e.touches.length === 2) {
       e.preventDefault();
       isPanning = false;
@@ -471,6 +492,7 @@ $(document).ready(function () {
   }, { passive: false });
 
   document.addEventListener('touchend', function (e) {
+    console.log('touchend');
     if (e.touches.length < 2) {
       startDist = null;
       pinchOnGrid = false;
