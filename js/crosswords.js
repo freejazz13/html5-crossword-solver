@@ -545,6 +545,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	this.is_saving = false;
         //this.backendEnabled = false;
 	this.backendPromise = null;
+	this.currentScale = 1.0;
 
 	/*
         This code dynamically generates a matching color theme based on a single base color (COLOR_WORD). It uses HSV (Hue, Saturation, Value) transformations to ensure all UI elements (hover states, highlights, buttons) look visually consistent.
@@ -882,16 +883,16 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.is_autofill = false;
 
         this.root.appendTo(this.parent);
-	this.canvas_holder = this.root.find('#cw-zoom-container');
-	console.log('canvas_holder:', this.canvas_holder.length);
+        this.canvas_holder = this.root.find('div.cw-canvas');
+	this.zoom_container = this.root.find('#cw-zoom-container');
         // SVG setup (new)
         this.svgNS = 'http://www.w3.org/2000/svg';
         this.svgContainer = document.createElementNS(this.svgNS, 'svg');
         this.svgContainer.setAttribute('id', 'cw-puzzle-grid');
         // Preserve existing top text wrapper while replacing only the canvas
-        this.canvas_holder.find('#cw-puzzle-grid').remove(); // Remove old canvas only
+        this.zoom_container.find('#cw-puzzle-grid').remove(); // Remove old canvas only
 
-        this.canvas_holder.append(this.svgContainer); // Add new SVG crossword
+        this.zoom_container.append(this.svgContainer); // Add new SVG crossword
         this.svg = $('#cw-puzzle-grid');
 
         setBreakpointClasses(this.root);
@@ -2511,11 +2512,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
        */
       mouseClicked(e) {
         const offset = this.svg.offset();
-        const mouse_x = e.pageX - offset.left;
-        const mouse_y = e.pageY - offset.top;
+	const scale = this.currentScale; // zoom scale variable
+	const mouse_x = (e.pageX - offset.left) / scale;
+	const mouse_y = (e.pageY - offset.top) / scale;
+        //const mouse_x = e.pageX - offset.left;
+        //const mouse_y = e.pageY - offset.top;
         const index_x = Math.ceil(mouse_x / this.cell_size);
         const index_y = Math.ceil(mouse_y / this.cell_size);
         const clickedCell = this.getCell(index_x, index_y);
+
 
         if (!clickedCell) return;
 

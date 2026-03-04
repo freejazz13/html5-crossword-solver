@@ -384,7 +384,7 @@ $(document).ready(function () {
  */
   const gridInner = document.getElementById('cw-zoom-container');
 
-  let currentScale = 1;
+  gCrossword.currentScale = 1;
   let startScale = 1;
   let startDist = null;
   let pinchOnGrid = false;
@@ -398,17 +398,17 @@ $(document).ready(function () {
 
 
   function applyTransform() {
-    gridInner.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + currentScale.toFixed(3) + ')';
-    console.log('scale: ' + currentScale.toFixed(2) + '×  tx:' + Math.round(tx) + ' ty:' + Math.round(ty));
+    gridInner.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + gCrossword.currentScale.toFixed(3) + ')';
+    console.log('scale: ' + gCrossword.currentScale.toFixed(2) + '×  tx:' + Math.round(tx) + ' ty:' + Math.round(ty));
   }
 
   function clampTranslation() {
     // Don't allow panning when not zoomed
-    if (currentScale <= 1) { tx = 0; ty = 0; return; }
+    if (gCrossword.currentScale <= 1) { tx = 0; ty = 0; return; }
     // Compute max allowed translation so grid doesn't leave the zone
-    const zone = document.getElementById('cw-puzzle-grid').getBoundingClientRect();
-    const maxX = (zone.width * (currentScale - 1)) / 2;
-    const maxY = (zone.height * (currentScale - 1)) / 2;
+    const zone = document.getElementById('cw-puzzle-grid').getBoundingClientRect(); // stays constant across zoom
+    const maxX = (zone.width * (gCrossword.currentScale - 1)) / 2;
+    const maxY = (zone.height * (gCrossword.currentScale - 1)) / 2;
     tx = Math.min(Math.max(tx, -maxX), maxX);
     ty = Math.min(Math.max(ty, -maxY), maxY);
   }
@@ -450,13 +450,13 @@ $(document).ready(function () {
       } else if (onGrid(e.touches[0])) {
         pinchOnGrid = true;
         startDist = touchDist(e.touches[0], e.touches[1]);
-        startScale = currentScale;
+        startScale = gCrossword.currentScale;
         //e.preventDefault();
       }
     } else if (e.touches.length === 1) {
       pinchOnGrid = false;
       // Only pan when zoomed in, and finger not on keyboard
-      if (currentScale > 1 && !onKeyboard(e.touches[0])) {
+      if (gCrossword.currentScale > 1 && !onKeyboard(e.touches[0])) {
         isPanning = true;
         panStartX = e.touches[0].clientX;
         panStartY = e.touches[0].clientY;
@@ -478,7 +478,7 @@ $(document).ready(function () {
         const d = touchDist(e.touches[0], e.touches[1]);
         let s = startScale * (d / startDist);
         s = Math.min(Math.max(s, 1), 4);
-        currentScale = s;
+        gCrossword.currentScale = s;
         clampTranslation();
         applyTransform();
       }
@@ -500,7 +500,7 @@ $(document).ready(function () {
     if (e.touches.length === 0) {
       isPanning = false;
       // Snap back to center if scale returned to 1
-      if (currentScale <= 1) { tx = 0; ty = 0; applyTransform(); }
+      if (gCrossword.currentScale <= 1) { tx = 0; ty = 0; applyTransform(); }
     }
   }, { passive: true });
   //syncKb();
