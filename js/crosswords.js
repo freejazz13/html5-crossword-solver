@@ -2077,8 +2077,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       renderCells() {
         // Responsive SVG sizing
         const canvasRect = this.canvas_holder.get(0).getBoundingClientRect();
-        const svgTopMargin = getComputedStyle(this.svgContainer).marginTop;
-        const maxHeight = canvasRect.height - parseInt(svgTopMargin, 10);
+        //const svgTopMargin = getComputedStyle(this.zoom_container).marginTop;
+	const mtop = parseFloat(this.zoom_container.css('margin-top'));
+	//const svgTopMargin = getComputedStyle(this.svgContainer).marginTop;
+        const maxHeight = canvasRect.height - parseInt(mtop, 10);
         const maxWidth = canvasRect.width;
 
         this.cell_size = Math.floor(
@@ -2092,11 +2094,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const svgHeight = this.grid_height * this.cell_size;
 
         this.svgContainer.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+        //this.zoom_container.setAttribute('width', svgWidth);
+        //this.zoom_container.setAttribute('height', svgHeight);
         this.svgContainer.setAttribute('width', svgWidth);
         this.svgContainer.setAttribute('height', svgHeight);
+	this.zoom_container.css('width',  svgWidth  + 'px');
+        this.zoom_container.css('height', svgHeight + 'px');
 
         if (this.toptext && this.toptext[0]) {
-          this.toptext[0].style.width = svgWidth + 'px';
+          if (! IS_MOBILE) { this.toptext[0].style.width = svgWidth + 'px';} else { this.toptext[0].style.width = '100%';}
         }
 
         const SIZE = this.cell_size;
@@ -2113,7 +2119,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
         }
 
-        const padding = 1;
+        const padding = 0;
         svg.setAttribute(
           'viewBox',
           `-${padding} -${padding} ${this.grid_width * SIZE + padding * 2} ${this.grid_height * SIZE + padding * 2}`
@@ -3239,6 +3245,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       }
 
       syncTopTextWidth() {
+	if (IS_MOBILE) { return;}
         const svgEl = this.svgContainer;
         const wrapper = this.toptext?.get(0);
 

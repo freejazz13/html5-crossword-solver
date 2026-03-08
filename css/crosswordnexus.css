@@ -101,13 +101,16 @@ body.backend-active .signal-emoji {
   margin-top: 5px;
 }
 
+#cw-zoom-container {
+  margin-top: 65px;
+}
 #cw-puzzle-grid {
   display: inline-block;
   width: auto;
-  margin-top: 65px;
+  /*margin-top: 65px;*/
   align-self: center;
   box-shadow: 0px -2px 15px 6px rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 #cw-puzzle-grid text {

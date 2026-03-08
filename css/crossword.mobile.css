@@ -105,8 +105,9 @@ html.mobile-mode {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  margin-left: .5em;
+  /*margin-left: .5em; why waste space ?
   margin-right: .5em;
+  */
 }
 
 .crossword.mobile .cw-canvas {
@@ -182,9 +183,12 @@ html.mobile-mode {
   position: relative;
 }
 
+.crossword.mobile #cw-zoom-container {
+  margin-top: 48px;
+}
 .crossword.mobile #cw-puzzle-grid {
   display: inline-block;
-  margin-top: 48px;
+  /*margin-top: 48px;*/
 }
 
 .crossword.mobile .cw-buttons-holder {

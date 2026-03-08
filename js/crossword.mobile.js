@@ -359,7 +359,11 @@ $(document).ready(function () {
           const gridEl = document.getElementById('cw-puzzle-grid');
           const clueBar = document.querySelector('.cw-top-text-wrapper');
           if (gridEl && clueBar) {
-            clueBar.style.width = gridEl.getBoundingClientRect().width + 'px';
+	    if (! isMobile) {
+                clueBar.style.width = gridEl.getBoundingClientRect().width + 'px';
+            } else {		
+                clueBar.style.width = '100%';
+           }
           }
         }, 100);
       }, 50);
@@ -382,7 +386,8 @@ $(document).ready(function () {
     The browser calculates the change in distance between the two sets of coordinates to determine the Scale Factor.
     touchend: When you lift your fingers, the final scale is set.
  */
-  const gridInner = document.getElementById('cw-zoom-container');
+  const zoomContainer = document.getElementById('cw-zoom-container');
+
 
   gCrossword.currentScale = 1;
   let startScale = 1;
@@ -398,19 +403,26 @@ $(document).ready(function () {
 
 
   function applyTransform() {
-    gridInner.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + gCrossword.currentScale.toFixed(3) + ')';
-    console.log('scale: ' + gCrossword.currentScale.toFixed(2) + '×  tx:' + Math.round(tx) + ' ty:' + Math.round(ty));
+    zoomContainer.style.transform = 'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + gCrossword.currentScale.toFixed(3) + ')';
+    //console.log('scale: ' + gCrossword.currentScale.toFixed(2) + '×  tx:' + Math.round(tx) + ' ty:' + Math.round(ty));
   }
 
   function clampTranslation() {
+    const initialWidth  = zoomContainer.offsetWidth; // original dims 
+    const initialHeight = zoomContainer.offsetHeight;
+    //const initialZoomRect = zoomContainer.getBoundingClientRect();
+    //const initialWidth  = initialZoomRect.width;
+    //const initialHeight = initialZoomRect.height;
     // Don't allow panning when not zoomed
     if (gCrossword.currentScale <= 1) { tx = 0; ty = 0; return; }
     // Compute max allowed translation so grid doesn't leave the zone
-    const zone = document.getElementById('cw-puzzle-grid').getBoundingClientRect(); // stays constant across zoom
-    const maxX = (zone.width * (gCrossword.currentScale - 1)) / 2;
-    const maxY = (zone.height * (gCrossword.currentScale - 1)) / 2;
-    tx = Math.min(Math.max(tx, -maxX), maxX);
+    //const zone = document.getElementById('cw-zoom-container').getBoundingClientRect();
+    //const zone = document.getElementById('cw-puzzle-grid').getBoundingClientRect(); // stays constant across zoom
+    const maxX = (initialWidth * (gCrossword.currentScale - 1)) / 2; // delta = (scale * w - w) so each side grows : delta/2
+    const maxY = (initialHeight * (gCrossword.currentScale - 1)) / 2;
+    tx = Math.min(Math.max(tx, -maxX), maxX); // "compressed" way of ensuring  -maxX <= tx <= maxX
     ty = Math.min(Math.max(ty, -maxY), maxY);
+    //console.log('scale: ' + gCrossword.currentScale.toFixed(2) + 'tx:' + Math.round(tx) + ' ty:' + Math.round(ty)+ 'MaxX:' + Math.round(maxX) + ' maxY:' + Math.round(maxY));
   }
 
   function touchDist(t1, t2) {
