@@ -1581,6 +1581,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         );
 
         // Right-click in the clue list → Ducktiles
+	/*
         if (!IS_MOBILE) {
           this.clues_holder.delegate(
             'div.cw-clues-items div.cw-clue .cw-clue-text',
@@ -1593,6 +1594,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           );
         }
+	*/
 
         if (this.config.hover_enabled) {
           this.svg.on('mousemove', $.proxy(this.mouseMoved, this));
@@ -1764,6 +1766,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         });
 
         // Right-click on the top clue bar → Ducktiles
+	/*
         if (!IS_MOBILE) {
           this.top_text.on('contextmenu', (e) => {
             e.preventDefault();
@@ -1781,6 +1784,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           });
         }
+	*/
       }
 
       handleClickWindow(event) {

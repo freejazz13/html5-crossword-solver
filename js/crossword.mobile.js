@@ -386,7 +386,9 @@ $(document).ready(function () {
     The browser calculates the change in distance between the two sets of coordinates to determine the Scale Factor.
     touchend: When you lift your fingers, the final scale is set.
  */
+  //const zoom_container = this.root.find('#cw-zoom-container');
   const zoomContainer = document.getElementById('cw-zoom-container');
+
 
 
   gCrossword.currentScale = 1;
@@ -408,21 +410,37 @@ $(document).ready(function () {
   }
 
   function clampTranslation() {
-    const initialWidth  = zoomContainer.offsetWidth; // original dims 
+    const initialWidth  = zoomContainer.offsetWidth; // always gives original dims 
     const initialHeight = zoomContainer.offsetHeight;
+
+    const zc_style = window.getComputedStyle(zoomContainer);
+    const mtop = parseFloat(zc_style.marginTop) || 45;
+    const canh = document.querySelector('div.cw-canvas');
+    // "canvas" dims : usable screen rect for grid and top text:
+    const canRect = canh.getBoundingClientRect();
+    const maxH = canRect.height -  parseInt(mtop, 45);
+    const maxW = canRect.width;
+    // not working , doesnt stay constant:
     //const initialZoomRect = zoomContainer.getBoundingClientRect();
     //const initialWidth  = initialZoomRect.width;
     //const initialHeight = initialZoomRect.height;
-    // Don't allow panning when not zoomed
-    if (gCrossword.currentScale <= 1) { tx = 0; ty = 0; return; }
+
+    // Don't allow panning when not zoomed or reduced, or zoomed not enough to fit screen width (maxW)
+    if (gCrossword.currentScale <= 1 || 
+        (gCrossword.currentScale * initialWidth < maxW && gCrossword.currentScale * initialHeight < maxH))
+      { tx = 0; ty = 0; return; }
+
     // Compute max allowed translation so grid doesn't leave the zone
-    //const zone = document.getElementById('cw-zoom-container').getBoundingClientRect();
-    //const zone = document.getElementById('cw-puzzle-grid').getBoundingClientRect(); // stays constant across zoom
-    const maxX = (initialWidth * (gCrossword.currentScale - 1)) / 2; // delta = (scale * w - w) so each side grows : delta/2
-    const maxY = (initialHeight * (gCrossword.currentScale - 1)) / 2;
-    tx = Math.min(Math.max(tx, -maxX), maxX); // "compressed" way of ensuring  -maxX <= tx <= maxX
-    ty = Math.min(Math.max(ty, -maxY), maxY);
-    //console.log('scale: ' + gCrossword.currentScale.toFixed(2) + 'tx:' + Math.round(tx) + ' ty:' + Math.round(ty)+ 'MaxX:' + Math.round(maxX) + ' maxY:' + Math.round(maxY));
+    // excess initial empty space to subtract to max translation if grid didnt fill the space initially 
+    const xSTx = ((maxW - initialWidth) / 2 > 2) ? (maxW - initialWidth) / 2 : 0.0;
+    const xSTy = ((maxH - initialHeight) / 2 > 2) ? (maxH - initialHeight) / 2 : 0.0;
+
+    const TmaxX = (initialWidth * (gCrossword.currentScale - 1)) / 2 - xSTx ; // delta = (scale * w - w) so each side grows : delta/2
+    const TmaxY = (initialHeight * (gCrossword.currentScale - 1)) / 2 - xSTy;
+    tx = Math.min(Math.max(tx, -TmaxX), TmaxX); // "compressed" way of ensuring  -TmaxX <= tx <= TmaxX
+    ty = Math.min(Math.max(ty, -TmaxY), TmaxY);
+    console.log('maxW='+ maxW + ' initialWidth='+initialWidth +' maxH='+maxH+'  initialHeight='+initialHeight)
+    console.log('scale: ' + gCrossword.currentScale.toFixed(2) + 'tx:' + Math.round(tx) + ' ty:' + Math.round(ty)+ ' MaxX:' + Math.round(TmaxX) + ' MaxY:' + Math.round(TmaxY));
   }
 
   function touchDist(t1, t2) {
@@ -436,6 +454,7 @@ $(document).ready(function () {
     const keyboard = document.getElementById('custom-keyboard');
     return el && keyboard.contains(el);
   }
+
   function onGrid(touch) {
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const grid = document.getElementById('cw-zoom-container');
@@ -489,9 +508,13 @@ $(document).ready(function () {
       if (pinchOnGrid && startDist !== null) {
         const d = touchDist(e.touches[0], e.touches[1]);
         let s = startScale * (d / startDist);
-        s = Math.min(Math.max(s, 1), 4);
+	if (s >= 1.0) {
+        	s = Math.min(s, 3);
+	} else {	
+        	s = Math.max(0.5, s);
+	}
         gCrossword.currentScale = s;
-        clampTranslation();
+        //clampTranslation();
         applyTransform();
       }
     } else if (e.touches.length === 1 && isPanning) {
@@ -511,8 +534,9 @@ $(document).ready(function () {
     }
     if (e.touches.length === 0) {
       isPanning = false;
-      // Snap back to center if scale returned to 1
-      if (gCrossword.currentScale <= 1) { tx = 0; ty = 0; applyTransform(); }
+      // recenter if scale snaps from > 1 to < 1 or reverse:
+      if (startScale > 1.0 && gCrossword.currentScale <= 1) { gCrossword.currentScale = 1 ; tx = 0; ty = 0; applyTransform(); }
+      if (startScale < 1.0 && gCrossword.currentScale >= 1) { gCrossword.currentScale = 1 ; tx = 0; ty = 0; applyTransform(); }
     }
   }, { passive: true });
   //syncKb();
