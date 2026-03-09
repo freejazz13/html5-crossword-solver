@@ -286,7 +286,8 @@ html.mobile-mode {
   align-items: center;    /* Vertical center */
   justify-content: center; /* Horizontal center */
   
-  font-size: 1rem;
+  font-size: 1.15rem;
+  font-weight: 500;
   background: var(--keyboard-button-bg-color);
   color: var(--button-text-color);
   border-radius: 6px;

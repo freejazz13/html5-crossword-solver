@@ -402,9 +402,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
     // Breakpoint config for the top clue, as tuples of `[max_width, max_size]`
     const maxClueSizes = [
-      [1080, 15],
-      [1200, 17],
-      [Infinity, 21],
+      [1080, 19],
+      [1200, 22],
+      [Infinity, 23],
     ];
 
     /** Function to resize text **/
@@ -1686,10 +1686,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.notepad_btn.on('click', $.proxy(this.showNotepad, this));
 
         $(document).on('keydown', $.proxy(this.keyPressed, this));
-	$(document).on('keyup', () => {
-          if (this.v_autocheck) { this.check_reveal('letter', 'check'); } 
-	  });  
-          
+	$(document).on('keyup', (e) => { 
+	  const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // check only if a real key was pressed
+          if (isPrintableChar && this.v_autocheck) { this.check_reveal('letter', 'check'); }
+        });  
 
         this.svgContainer.addEventListener('click', (e) => {
           if (e.target.tagName === 'rect') {
@@ -2796,11 +2796,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             break;
           default: {
 	    const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // no junk needed, we only allow a-z keys in cells.
-            // Allow any single printable character except space (space has special meaning)
-            const isPrintableChar000 =
-              e.key.length === 1 &&
-              e.key !== ' ' &&
-              !e.ctrlKey && !e.metaKey && !e.altKey;
 
             if (this.selected_cell && isPrintableChar && !this.selected_cell.fixed) {
               // Uppercase only letters, leave numbers/punctuation unchanged
@@ -3931,7 +3926,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             });
     
 	    if (!response.ok) {
-                alert(`service not available: ${response.status}`);
+                alert(`Backend seems not available: ${response.status}\nAutosave disabled`);
+		this.toggleAutoSave();
                 return; 
             }
             const data = await response.json();
