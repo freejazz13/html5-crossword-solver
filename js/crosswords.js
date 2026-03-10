@@ -295,7 +295,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 <button class = "cw-menu-item cw-save-db" backend-required>Save to DB</button>
                 <button class = "cw-menu-item cw-load-db" backend-required>Load from DB</button>
                 <button class = "cw-menu-item cw-file-info">Info</button>
-                <button class = "cw-menu-item cw-file-notepad">Notepad</button>
+                <button class = "cw-menu-item cw-file-notepad">Notes</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
                 <button class = "cw-menu-item cw-file-print">Print</button>
                 <button class = "cw-menu-item cw-file-save">Save as iPuz</button>
@@ -756,8 +756,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.load_db_btn = this.root.find('.cw-load-db');
         this.download_btn = this.root.find('.cw-file-download');
         this.autocheck_btn = this.root.find('.cw-autocheck-checkbox');
-        this.autosave_btn = this.root.find('.cw-autosave-checkbox');
         this.autocheck2 = this.root.find('#autocheck2');
+        this.autosave_btn = this.root.find('#autosave1');
+        this.autosave_btn2 = this.root.find('#autosave2');
 
         // Notepad button is hidden by default
         this.notepad_btn = this.root.find('.cw-file-notepad');
@@ -926,6 +927,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	    this.back_loadDB = data['back_loadDB'];
             this.v_autosave = true;
             $('#autosave1').prop('checked', this.v_autosave);
+            $('#autosave2').prop('checked', this.v_autosave);
 	    //this.backendEnabled = true;
             return true;
           }
@@ -1531,6 +1533,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.autocheck_btn.off('click');
         this.autocheck2.off('click');
         this.autosave_btn.off('click');
+        this.autosave_btn2.off('click');
         this.timer_button.off('click');
 
         this.settings_btn.off('click');
@@ -1644,6 +1647,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	this.load_db_btn.on('click', (e) => { this.loadDb(e); });
 	this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
 	this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
+	this.autosave_btn2.on('click', (e) => { this.toggleAutoSave(e); });
 
         // LOAD
         this.load_btn.on('click', () => {
@@ -3476,6 +3480,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 </input>
               </label>
             </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="autosave2" checked="" type="checkbox" name="autosave2" class="z-settings-changer">
+                  Autosave Crossword
+                </input>
+              </label>
+            </div>
 
 
             <!--
@@ -3492,6 +3503,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.createModalBox('Settings', settingsHTML);
         $('#autocheck2').prop('checked', this.v_autocheck);
+        $('#autosave2').prop('checked', this.v_autosave);
         $('#display-cn').prop('checked', v_display_cn);
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
@@ -3511,6 +3523,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           .addEventListener('click', (event) => {
             if (event.target.name == 'autocheck2' ) {
 		this.toggleAutoCheck();
+	    }
+            if (event.target.name == 'autosave2' ) {
+		this.toggleAutoSave();
 	    }
             if (event.target.name == 'display-cn' ) {
 		this.toggleClueNumbers();
@@ -3612,6 +3627,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       toggleAutoSave(e) {
       	this.v_autosave = !this.v_autosave;
         $('#autosave1').prop('checked', this.v_autosave);
+        $('#autosave2').prop('checked', this.v_autosave);
       }
 
 
