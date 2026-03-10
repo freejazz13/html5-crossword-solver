@@ -368,8 +368,12 @@ html.mobile-mode {
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
 }
 
+#fake-btn-stats {
+  white-space: nowrap;
+  max-width: none;
+}
 .crossword.mobile .cw-buttons-drawer.open {
-  transform: translateY(-160%);
+  transform: translateY(-120%);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
 }
 

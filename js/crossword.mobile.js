@@ -130,7 +130,7 @@ $(document).ready(function () {
         const allButtons = Array.from(buttons.children);
 
         // Match by text content – you can refine this to use classes if needed
-        const file = allButtons.find(btn => btn.textContent.includes('File'));
+        const file = allButtons.find(btn => btn.textContent.includes('Crossword'));
         const check = allButtons.find(btn => btn.textContent.includes('Check'));
         const reveal = allButtons.find(btn => btn.textContent.includes('Reveal'));
         const settings = allButtons.find(btn => btn.textContent.includes('Settings'));
@@ -139,17 +139,24 @@ $(document).ready(function () {
         // Only reflow if all buttons were found
         if (file && check && reveal && settings && timer) {
 
+          const row0 = document.createElement('div');
+          row0.className = 'cw-buttons-row';
+	  const b = `<button type="button" id="fake-btn-stats" class="cw-button cw-settings-button">
+                    STATS
+                   </button>`;
+	  row0.innerHTML = b;
+
           const row1 = document.createElement('div');
           row1.className = 'cw-buttons-row';
-          row1.append(file, check, reveal);
+          row1.append(file, check, reveal, settings);
 
           const row2 = document.createElement('div');
           row2.className = 'cw-buttons-row';
-          row2.append(settings, timer);
+          row2.append(timer);
 
           // Clear and re-append
           buttons.innerHTML = '';
-          buttons.append(row1, row2);
+          buttons.append(row0, row1, row2);
         }
       }
       const content = document.querySelector('.cw-content');

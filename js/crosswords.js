@@ -288,7 +288,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           <div    class = "cw-menu-container">
           <button type  = "button" class = "cw-button">
             <span class="cw-button-icon">🗄️</span>
-                   File
+                   Crossword
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
@@ -3827,11 +3827,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
          const errorsPct = Math.round((errors / total) * 100);
          const completedPct = Math.round((filled / total) * 100);
      
-	  $('#misc-stats').text(
-            `Cheated: ${cheated} (${cheatedPct}%) • ` +
+	  const stats= `Cheated: ${cheated} (${cheatedPct}%) • ` +
             `Errors: ${errors} (${errorsPct}%) • ` +
-            `Completed: ${completedPct}%`
-             );
+            `Completed: ${completedPct}%`;
+	  $('#misc-stats').text(stats);
+	  $('#fake-btn-stats').text(stats);
+             
      }
 //-----------------------------------------------CHECK REVEAL ------------------------------------------------//     
 
