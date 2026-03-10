@@ -3832,6 +3832,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             `Completed: ${completedPct}%`;
 	  $('#misc-stats').text(stats);
 	  $('#fake-btn-stats').text(stats);
+	  const tit_auth= `${this.title} • ` + `${this.author}`;
+	  $('#fake-btn-tit-auth').text(tit_auth);
              
      }
 //-----------------------------------------------CHECK REVEAL ------------------------------------------------//     

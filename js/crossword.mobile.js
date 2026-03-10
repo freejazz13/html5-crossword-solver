@@ -139,6 +139,13 @@ $(document).ready(function () {
         // Only reflow if all buttons were found
         if (file && check && reveal && settings && timer) {
 
+          const row_ta = document.createElement('div');
+          row_ta.className = 'cw-buttons-row';
+	  const b0 = `<button type="button" id="fake-btn-tit-auth" class="cw-button cw-settings-button">
+                    TITLE AUTHOR
+                   </button>`;
+	  row_ta.innerHTML = b0;
+
           const row0 = document.createElement('div');
           row0.className = 'cw-buttons-row';
 	  const b = `<button type="button" id="fake-btn-stats" class="cw-button cw-settings-button">
@@ -156,7 +163,7 @@ $(document).ready(function () {
 
           // Clear and re-append
           buttons.innerHTML = '';
-          buttons.append(row0, row1, row2);
+          buttons.append(row_ta,row0, row1, row2);
         }
       }
       const content = document.querySelector('.cw-content');
