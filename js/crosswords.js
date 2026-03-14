@@ -180,6 +180,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       forced_theme: null,
       lock_theme: false,
       autocheck: true,
+      displayCheatMarks: false,
       autosave: false,
       display_cn: false,
       min_sidebar_clue_width: 220
@@ -541,6 +542,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
         }
     	this.v_autocheck = default_config.autocheck;
+    	this.v_displayCheatMarks = default_config.displayCheatMarks;
     	this.v_autosave = default_config.autosave;
 	this.is_saving = false;
         //this.backendEnabled = false;
@@ -2335,7 +2337,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
 	    // 1. Error Indicator: Top-Right Orange Triangle
-            if (this.v_autocheck && this.stat_errors[`${x},${y}`] ) {
+            if (this.v_displayCheatMarks && this.v_autocheck && this.stat_errors[`${x},${y}`] ) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY}`;             // Top-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.2}`; // Down the right side
@@ -2347,7 +2349,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
             // 2. Cheated Indicator: Bottom-Right Red Triangle
-            if (this.v_autocheck && this.stat_cheated[`${x},${y}`]) {
+            if (this.v_displayCheatMarks && this.v_autocheck && this.stat_cheated[`${x},${y}`]) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY + SIZE}`;      // Bottom-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.8}`; // Up the right side
@@ -2924,8 +2926,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // and fill them with the same letter
           this.autofill();
 
-          // Within hiddenInputChanged():
-          this.renderCells(); // Re-render SVG grid immediately after user input
+	  // this call can be avoided:
+          //this.renderCells("userInput1"); // Re-render SVG grid immediately after user input
 
           // find empty cell, then next cell
           // Change this depending on config
@@ -2947,7 +2949,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
 
           this.setActiveCell(next_cell);
-          this.renderCells();
+	  // this call can be avoided (setActiveCell has called renderCells)
+          //this.renderCells("userInput2"); // Re-render SVG grid immediately after user input
           this.checkIfSolved()
         }
         this.hidden_input.val('');
@@ -3503,6 +3506,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             </div>
             <div class="settings-option">
               <label class="settings-label">
+                <input id="display-cheats" checked="" type="checkbox" name="display-cheats" class="yy-settings-changer">
+                  Display cheats marks in grid
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
                 <input id="autosave2" checked="" type="checkbox" name="autosave2" class="z-settings-changer">
                   Autosave Crossword
                 </input>
@@ -3526,6 +3536,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         $('#autocheck2').prop('checked', this.v_autocheck);
         $('#autosave2').prop('checked', this.v_autosave);
         $('#display-cn').prop('checked', v_display_cn);
+        $('#display-cheats').prop('checked', this.v_displayCheatMarks);
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
         for (var cc of classChangers) {
@@ -3550,6 +3561,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	    }
             if (event.target.name == 'display-cn' ) {
 		this.toggleClueNumbers();
+	    }
+            if (event.target.name == 'display-cheats' ) {
+		this.toggleDisplayCheats();
 	    }
             if (event.target.className === 'settings-changer') {
               if (event.target.type === 'checkbox') {
@@ -3635,6 +3649,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         } else {
             $('.cw-cell-number').hide();
         }
+        this.renderCells("toggle clue nums"); 
+      }
+      toggleDisplayCheats(e) {
+      	this.v_displayCheatMarks = !this.v_displayCheatMarks;
+        this.renderCells("toggle cheats marks"); 
       }
 
       toggleAutoCheck(e) {

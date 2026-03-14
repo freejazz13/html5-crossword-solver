@@ -573,10 +573,12 @@ function createCustomKeyboard() {
   const letterRows = [
     'AZERTYUIOP'.split(''),
     'QSDFGHJKLM'.split(''),
-    ['\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // 💡 ( ✅ for this one see below)
+    ['\u{2935}\u{FE0F}', '\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // 💡 ( ✅ for this one see below)
   ];
 
   /*
+      //'\u{1F503}';  🔃
+      ⤵️  alternative  "\u{2935}\u{FE0F}";
       '💡🔆🔓︎☢️ ✅ WXCVBN'.split('')
     const symbolRows = [
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
@@ -611,7 +613,11 @@ function createCustomKeyboard() {
       key.addEventListener('click', () => {
         if (gCrossword?.hidden_input) {
           // 1. Check for special emoji keys first
-          if (letter === '💡' || letter === '\u{1F4A1}') {
+          if (letter === "\u{2935}\u{FE0F}" || letter === '⤵️' ) { //|| letter === '\u{1F503}' || letter === '🔃') {
+              gCrossword.changeActiveClues(); // toggle direction
+              gCrossword.renderCells("dir switch"); // re-render after direction switch
+	  }
+          else if (letter === '💡' || letter === '\u{1F4A1}') {
             gCrossword.check_reveal('letter', 'reveal');
           } else {
             // 2. Default behavior for normal letters
@@ -652,6 +658,7 @@ function createCustomKeyboard() {
       const solveword = document.createElement('div');
       solveword.className = 'custom-key solveword-key';
       solveword.textContent = '\u{2705}'; // ✅
+      //'\u{1F503}';  🔃
 
       let solvewordTimeout;
       let solvewordInterval;
