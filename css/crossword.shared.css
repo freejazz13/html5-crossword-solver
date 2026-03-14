@@ -351,6 +351,7 @@ div.is-dragover {
 
 /* When active */
 .cw-menu.open {
+  z-index: 110;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;

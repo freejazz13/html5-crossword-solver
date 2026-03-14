@@ -288,7 +288,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           </label>
           <div    class = "cw-menu-container">
           <button type  = "button" class = "cw-button">
-            <span class="cw-button-icon">🗄️</span>
+            <span class="cw-button-icon">🧩</span>
                    Crossword
                   <span class = "cw-arrow"></span>
                 </button>
@@ -317,7 +317,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               </div>
               <div    class = "cw-menu-container cw-reveal">
               <button type  = "button" class = "cw-button">
-                <span class="cw-button-icon">🎱</span>
+                <span class="cw-button-icon">💡</span>
                    Reveal
                   <span class = "cw-arrow"></span>
                 </button>
