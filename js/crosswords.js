@@ -632,6 +632,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.clueGroups = []; // array of clue groups
         this.displayClueGroups = null; // for "fakeclues" puzzles
         this.activeClueGroupIndex = 0;
+        this.activeWord = null;
 
         this.hovered_x = null;
         this.hovered_y = null;
@@ -901,6 +902,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const svg = document.getElementById('cw-puzzle-grid');
 	//this.initBackend();
 	this.backendPromise = this.initBackend();
+	// hack to avoid the endless renderCells() calls, which kill performance on mobile
+        this.renderCellTS = null;
+        this.renderCellCaller = null;
       } // ========> END INIT
 
       error(message) {
@@ -1741,11 +1745,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               }
 
-              if (newActiveWord) {
+	      if (newActiveWord != this.activeWord) {
+              //if (newActiveWord) {
+	        this.activeWord = newActiveWord;
                 this.activeClueGroupIndex = newGroupIndex;
                 this.setActiveWord(newActiveWord);
                 this.setActiveCell(clickedCell);
-                this.renderCells();
+                //this.renderCells("new activew");
+              } else {
+                this.setActiveCell(clickedCell);
               }
             }
           }
@@ -1764,7 +1772,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.selected_cell.y === y
             ) {
               this.changeActiveClues(); // toggle direction
-              this.renderCells(); // optionally re-render after direction switch
+              this.renderCells("dir switch"); // optionally re-render after direction switch
             }
           }
         });
@@ -1980,8 +1988,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           this.hidden_input.focus();
         }
 
-        this.renderCells();
-      }
+        //console.log(' renderCell cancelled !!!');
+        this.renderCells("setActiveCell");
+     }
 
       renderClues(clues_group, clues_container) {
         const $container = $(clues_container);
@@ -2082,7 +2091,19 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
 
       // Clears canvas and re-renders all cells
-      renderCells() {
+      renderCells(c="UNKNOWN") { // monitor caller
+	const MIN_DELAY = 150;
+        const now = Date.now();
+	// avoid multiple calls from setActiveCell : ex mobile: mouse clicked + click on grid
+        if (c == "setActiveCell" && this.renderCellCaller == c && (now - this.renderCellTS < MIN_DELAY)) {
+            console.log("renderCells < MIN_DELAY");
+            return;
+        }
+
+        this.renderCellTS = now;
+        this.renderCellCaller = c;
+        console.log('=====> caller='+c);
+        //console.time('ExecutionTimer');
         // Responsive SVG sizing
         const canvasRect = this.canvas_holder.get(0).getBoundingClientRect();
         //const svgTopMargin = getComputedStyle(this.zoom_container).marginTop;
@@ -2444,6 +2465,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           this.updateClueAppearance(this.words[wordId]);
         }
 	this.updateStatsUI();
+	//console.timeEnd('ExecutionTimer');
       } // end renderCells
 
       drawSelectedWordBorder(svg, word) {
@@ -2515,7 +2537,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           if (index_x !== this.hovered_x || index_y !== this.hovered_y) {
             this.hovered_x = index_x;
             this.hovered_y = index_y;
-            this.renderCells();
+            this.renderCells("mouseMoved");
           }
         }
       }
@@ -2549,7 +2571,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             clickedCell.type !== 'block'
           ) {
             this.toggleDiagramlessDir(); // <-- Step 2 helper
-            this.renderCells();
+            this.renderCells("mouseClicked");
             if (!isMobile) this.hidden_input.focus();
             return;
           }
@@ -2558,7 +2580,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           this.selected_cell = clickedCell;
           this.selected_word = null;
           this.top_text.html('');
-          this.renderCells();
+          this.renderCells("mouseClicked2");
           if (!isMobile) this.hidden_input.focus();
           return; // prevent falling through to normal-puzzle logic
         }
@@ -2599,7 +2621,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         // Update cell selection and redraw
         this.setActiveCell(clickedCell);
-        this.renderCells();
+        //this.renderCells();
 
         if (!IS_MOBILE) {
           this.hidden_input.focus();
@@ -2660,7 +2682,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.skipToWord(SKIP_DOWN);
             } else {
               this.moveSelectionBy(0, 1);
-              this.renderCells();
+              //this.renderCells("down");
             }
             break;
 
@@ -2670,7 +2692,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               // Toggle direction in diagramless on Space
               if (this.selected_cell) {
                 this.toggleDiagramlessDir();
-                this.renderCells();
+                this.renderCells("space");
               }
               break; // prevent falling into normal space behavior
             }
@@ -2702,7 +2724,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               }
             }
 
-            this.renderCells();
+            this.renderCells("space2");
             this.checkIfSolved(); // update solved status
             break;
 
@@ -2735,7 +2757,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.selected_cell.checked = false;
               this.autofill();
             }
-            this.renderCells();
+            this.renderCells("delete");
             // Update this.isSolved
             this.checkIfSolved();
             break;
@@ -2757,7 +2779,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 this.setActiveCell(prev_cell);
               }
 
-              this.renderCells();
+              this.renderCells("back");
               this.checkIfSolved();
             }
             break;
@@ -2808,7 +2830,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.selected_cell.checked = false;
               this.autofill();
               this.checkIfSolved();
-              this.renderCells();
+              this.renderCells("letter entered");
               if (!IS_MOBILE) {
                 this.hidden_input.focus();
               }
@@ -3017,8 +3039,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 word_cell = word.getFirstEmptyCell() || word.getFirstCell();
                 this.setActiveWord(word);
                 this.setActiveCell(word_cell);
-                this.renderCells();
-                this.renderCells();
+                this.renderCells("skip DIR");
 
                 return true;
               }
@@ -3109,7 +3130,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           const cell = next_word.getFirstEmptyCell() || next_word.getFirstCell();
           this.setActiveWord(next_word);
           this.setActiveCell(cell);
-          this.renderCells();
+          this.renderCells("move to nextw");
         }
       }
 
@@ -3126,7 +3147,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             this.selected_word.getFirstCell();
           if (cell) {
             this.setActiveCell(cell);
-            this.renderCells();
+            this.renderCells("move to 1st cell");
           }
         }
       }
@@ -3236,14 +3257,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         this.setActiveCell(new_cell);
-        this.renderCells();
+        this.renderCells("move selby");
       } // END moveSelectionBy()
 
 
       windowResized() {
         setBreakpointClasses(this.root);
         resizeText(this.root, this.top_text);
-        this.renderCells();
+        this.renderCells("resized");
         this.syncTopTextWidth();
       }
 
@@ -3302,12 +3323,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       mouseEnteredClue(e) {
         var target = $(e.currentTarget);
         this.hilited_word = this.words[target.data('word')];
-        this.renderCells();
+        //this.renderCells("mouseEnteredClue");
       }
 
       mouseLeftClue() {
         this.hilited_word = null;
-        this.renderCells();
+        //this.renderCells("mouseLeftClue");
       }
 
       // callback for clicking a clue in the sidebar
@@ -3332,7 +3353,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.setActiveWord(word);
         this.setActiveCell(cell);
-        this.renderCells();
+        this.renderCells("clue click");
       }
 
       showInfo() {
@@ -3544,12 +3565,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                     });
                     this.config.color_none = '#252624';
                     this.config.font_color_fill = '#ddd4c5';
-                    this.renderCells();
+                    this.renderCells("dark reader");
                   } else {
                     DarkReader.disable();
                     this.config.color_none = default_config.color_none;
                     this.config.font_color_fill = default_config.font_color_fill;
-                    this.renderCells();
+                    this.renderCells("dark_mode_disable");
                   }
                 }
 
@@ -3666,7 +3687,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 this.stat_cheated = data.cheated_list?.length ? Object.fromEntries(data.cheated_list.map(c => [c, true])) : {};
 		xw_timer_seconds = data.timeplayed ?? 0;
 
-          	this.renderCells(); 
+          	this.renderCells("load DB"); 
 	    }
     
         } catch (error) {

@@ -545,6 +545,7 @@ $(document).ready(function () {
     if (e.touches.length < 2) {
       startDist = null;
       pinchOnGrid = false;
+      //gCrossword.renderCells();
     }
     if (e.touches.length === 0) {
       isPanning = false;
