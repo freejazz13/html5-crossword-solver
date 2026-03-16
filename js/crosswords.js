@@ -3265,6 +3265,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
 
       windowResized() {
+	if (IS_MOBILE) { return;}
         setBreakpointClasses(this.root);
         resizeText(this.root, this.top_text);
         this.renderCells("resized");
