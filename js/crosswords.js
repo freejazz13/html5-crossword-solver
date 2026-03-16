@@ -1235,11 +1235,44 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // Initialize clue mapping and groups dynamically
           this.clueGroups = [];
 
+	  // fix incorrect number of dots at end of clue (essentially cosmetic)
+	  const fixEndDots = (str) => {
+           return str.replace(/\s*\.+$/, (match) => {
+             // Trim spaces to get just the dots for counting
+             const dotsOnly = match.trim();
+             const count = dotsOnly.length;
+             if (count === 1 || count === 3) {
+               return dotsOnly; // Returns "." or "..." without the leading space
+             }
+             return ".";
+            });
+          };
+
           // Defensive: if no clues array exists
           const clueSets = puzzle.clues || [];
 
+	  // clean text clues: overwrite only text parts:
+	   /* puzzle.clues obj structure example:
+	   [ {
+              "title": "ACROSS",
+              "clue": [
+                { "word": "1", "number": "1", "text": "Personnel d'entretien.." },
+		{ "word": "71", "number": "60", "text": "Demande une certaine attention ..." },...
+              ]
+	    {
+              "title": "DOWN",..
+	   ]   
+	  */	
+	  const clueSetsCleaned = clueSets.map(group => ({
+               ...group, // Copy title, etc.
+               clue: group.clue.map(item => ({
+               ...item, // Copy word, number, etc.
+               text: fixEndDots(item.text) // fix wrong dots at $
+               }))
+          }));
+
           // Create one CluesGroup per clue set
-          clueSets.forEach((clueSet, index) => {
+          clueSetsCleaned.forEach((clueSet, index) => {
             // Normalize title and word IDs
             const title = this.normalizeClueTitle(clueSet.title || `Clue Set ${index + 1}`);
             const clues = clueSet.clue || [];
