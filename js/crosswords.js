@@ -13,6 +13,29 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/* ==============================================================================
+reminder cell structure:
+
+{
+  "x": 1,          COLONNE
+  "y": 1,          LIGNE
+  "solution": "H", SOLUTION (vraie lettre correcte)
+  "letter": "H",   CURRENT LETTER (maybe wrong)
+  "type": null,    null si lettre, "block" si black square
+  "number": "1",   clue number 
+  "bar": { "top": false, "bottom": false, "left": false, "right": false },
+  "color": null,
+  "shape": null,
+  "image": null,
+  "fixed": false,     => DISCARDED, UNUSED (messes save /load)
+  "shade_highlight_color": "#FEE300",
+  "empty": false,     ??????
+  "clue": false,      ???????
+  "checked": false,   BARREE (wrong entry)
+  "revealed": false   CHEATED
+}
+================================================================================
+*/
 // Settings that we can save
 const CONFIGURABLE_SETTINGS = [
   "skip_filled_letters", "arrow_direction", "space_bar", "tab_key",
@@ -29,6 +52,7 @@ try {
 
 // one-time check for mobile device status
 const IS_MOBILE = CrosswordShared.isMobileDevice();
+
 
 // Helper function for PWA setup
 function setupPWAInstallButton(btn) {
@@ -156,6 +180,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       forced_theme: null,
       lock_theme: false,
       autocheck: true,
+      displayCheatMarks: false,
+      autosave: false,
       display_cn: false,
       min_sidebar_clue_width: 220
     };
@@ -252,25 +278,29 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           <div    class = "cw-modal"></div>
           <div    class = "cw-grid">
           <div    class = "cw-buttons-holder">
+          <label class = "cw-autocheck-label" backend-required>
+            <input type = "checkbox" class="cw-autosave-checkbox" id="autosave1" >
+            Autosave
+          </label>
           <label class = "cw-autocheck-label">
             <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck1" checked>
             Autocheck
           </label>
           <div    class = "cw-menu-container">
           <button type  = "button" class = "cw-button">
-            <span class="cw-button-icon">🗄️</span>
-                   File
+            <span class="cw-button-icon">🧩</span>
+                   Crossword
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
-                <button class = "cw-menu-item cw-save-db">Save state</button>
-                <button class = "cw-menu-item cw-load-db">Load state</button>
+                <button class = "cw-menu-item cw-save-db" backend-required>Save to DB</button>
+                <button class = "cw-menu-item cw-load-db" backend-required>Load from DB</button>
                 <button class = "cw-menu-item cw-file-info">Info</button>
-                <button class = "cw-menu-item cw-file-notepad">Notepad</button>
+                <button class = "cw-menu-item cw-file-notepad">Notes</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
                 <button class = "cw-menu-item cw-file-print">Print</button>
                 <button class = "cw-menu-item cw-file-save">Save as iPuz</button>
-                <button class = "cw-menu-item cw-file-clear">Clear</button>
+                <button class = "cw-menu-item cw-file-clear">Restart</button>
                 </div>
               </div>
               <div    class = "cw-menu-container cw-check">
@@ -287,7 +317,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               </div>
               <div    class = "cw-menu-container cw-reveal">
               <button type  = "button" class = "cw-button">
-                <span class="cw-button-icon">🎱</span>
+                <span class="cw-button-icon">💡</span>
                    Reveal
                   <span class = "cw-arrow"></span>
                 </button>
@@ -307,17 +337,18 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             </div>
             <input type  = "text" class = "cw-hidden-input">
             <div   class = "cw-canvas">
-            <div   class = "cw-puzzle-container">
-            <div   class = "cw-top-text-wrapper">
-            <div   class = "cw-top-text">
-            <span  class = "cw-clue-number"></span>
-            <span  class = "cw-clue-text"></span>
-                    </div>
+              <div   class = "cw-puzzle-container">
+                <div   class = "cw-top-text-wrapper">
+                  <div   class = "cw-top-text">
+                    <span  class = "cw-clue-text-up"></span>
                   </div>
-                  <svg id = "cw-puzzle-grid"></svg>
                 </div>
               </div>
+	      <div id = "cw-zoom-container" >
+                <svg id = "cw-puzzle-grid"></svg>
+              </div>
             </div>
+          </div>
           <div class = "cw-clues-holder"></div>
         </div>
       </div>`;
@@ -372,9 +403,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
     // Breakpoint config for the top clue, as tuples of `[max_width, max_size]`
     const maxClueSizes = [
-      [1080, 15],
-      [1200, 17],
-      [Infinity, 21],
+      [1080, 19],
+      [1200, 22],
+      [Infinity, 23],
     ];
 
     /** Function to resize text **/
@@ -511,7 +542,20 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
         }
     	this.v_autocheck = default_config.autocheck;
+    	this.v_displayCheatMarks = default_config.displayCheatMarks;
+    	this.v_autosave = default_config.autosave;
+	this.is_saving = false;
+        //this.backendEnabled = false;
+	this.backendPromise = null;
+	this.currentScale = 1.0;
 
+	/*
+        This code dynamically generates a matching color theme based on a single base color (COLOR_WORD). It uses HSV (Hue, Saturation, Value) transformations to ensure all UI elements (hover states, highlights, buttons) look visually consistent.
+        Logic: Instead of hardcoding colors like "blue" or "red," it uses Color.applyHsvTransform. This takes your base color and tweaks:
+            dh (Delta Hue): Shifts the actual color (e.g., making it slightly more purple or green).
+            ks (Saturation Factor): Adjusts how "vibrant" or "gray" the color is.
+            kv (Value Factor): Adjusts the brightness.
+	*/
 
         /* Update config values based on `color_word` */
         const COLOR_WORD = this.config.color_word;
@@ -590,6 +634,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.clueGroups = []; // array of clue groups
         this.displayClueGroups = null; // for "fakeclues" puzzles
         this.activeClueGroupIndex = 0;
+        this.activeWord = null;
 
         this.hovered_x = null;
         this.hovered_y = null;
@@ -715,6 +760,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.download_btn = this.root.find('.cw-file-download');
         this.autocheck_btn = this.root.find('.cw-autocheck-checkbox');
         this.autocheck2 = this.root.find('#autocheck2');
+        this.autosave_btn = this.root.find('#autosave1');
+        this.autosave_btn2 = this.root.find('#autosave2');
 
         // Notepad button is hidden by default
         this.notepad_btn = this.root.find('.cw-file-notepad');
@@ -746,7 +793,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
 
-                // Check for bzip2 header "BZh" (0x42 0x5a 0x68) else let as is
+                // Check for bzip2 header "BZh" (0x42 0x5a 0x68)
                 if (bytes[0] === 0x42 && bytes[1] === 0x5a && bytes[2] === 0x68) {
 	            try { 		
 			bytes = bz2.decompress(bytes);
@@ -841,24 +888,61 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.root.appendTo(this.parent);
         this.canvas_holder = this.root.find('div.cw-canvas');
+	this.zoom_container = this.root.find('#cw-zoom-container');
         // SVG setup (new)
         this.svgNS = 'http://www.w3.org/2000/svg';
         this.svgContainer = document.createElementNS(this.svgNS, 'svg');
         this.svgContainer.setAttribute('id', 'cw-puzzle-grid');
         // Preserve existing top text wrapper while replacing only the canvas
-        this.canvas_holder.find('#cw-puzzle-grid').remove(); // Remove old canvas only
+        this.zoom_container.find('#cw-puzzle-grid').remove(); // Remove old canvas only
 
-        this.canvas_holder.append(this.svgContainer); // Add new SVG crossword
+        this.zoom_container.append(this.svgContainer); // Add new SVG crossword
         this.svg = $('#cw-puzzle-grid');
 
         setBreakpointClasses(this.root);
         // Place this at the END of the init() method:
         const svg = document.getElementById('cw-puzzle-grid');
-      } // ========>end init
+	//this.initBackend();
+	this.backendPromise = this.initBackend();
+	// hack to avoid the endless renderCells() calls, which kill performance on mobile
+        this.renderCellTS = null;
+        this.renderCellCaller = null;
+      } // ========> END INIT
 
       error(message) {
         alert(message);
       }
+
+/**
+ * BACKEND INTEGRATION & FAILSAFE ARCHITECTURE: code must provide saveDB and loadDb , which are from a backend, and override local storage (default strategy)
+ * * STRATEGY: "Local-First" with Dynamic Opt-in.
+ * 1. UI: Elements with [data-requires-backend] are hidden by default via CSS (!important). this keep html clean from unusable button and menu elts
+ * 2. DETECTION: initBackend() probes for '/cgi-lmpuz/conf_back.cgi'.
+ * 3. ACTIVATION: If found, .backend-active is added to body to reveal UI via CSS, it also provides urls to save / load on sqlite3 the puzzle states
+ * 4. FALLBACK: If 404.. (ex: github pages etc..) or error, app remains in Static Mode with no errors, the game saves to browser localstorage.
+ */
+      async initBackend() {
+        try {
+          const response = await fetch('/cgi-lmpuz/conf_back.cgi');
+          if (response.ok) {
+            // Backend confirmed: reveal elements
+            document.body.classList.add('backend-active');
+            console.info("Backend features enabled.");
+            const data = await response.json();
+	    this.back_saveDB = data['back_saveDB'];
+	    this.back_loadDB = data['back_loadDB'];
+            this.v_autosave = true;
+            $('#autosave1').prop('checked', this.v_autosave);
+            $('#autosave2').prop('checked', this.v_autosave);
+	    //this.backendEnabled = true;
+            return true;
+          }
+        } catch (e) {
+        // Silent fail: elements remain hidden
+        }
+      console.info("Static mode: Backend features disabled.");
+      return false;
+    }
 
       normalizeClueTitle(rawTitle) {
         if (!rawTitle) return '';
@@ -870,6 +954,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         return rawTitle; // Preserve original if it's custom
       }
 
+//---------------------------------------------------------------------------------------------------
       /**
        * Parse puzzle data into Crossword structure.
        *
@@ -972,6 +1057,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	  if (statObj && Object.keys(statObj).length > 0) {
 	      this.stat_cheated = statObj.stat_cheated;
 	      this.stat_errors = statObj.stat_errors;
+	      xw_timer_seconds = statObj.timeplayed;
+
 	  }
           puzzle.cells = jsxw2_cells;
         }
@@ -1049,7 +1136,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             shape: rawCell['background-shape'] || null,
             image: rawCell['image'] || null,
             top_right_number: rawCell.top_right_number,
-            fixed: rawCell.fixed === true // Preserve fixed flag from saved data
+            fixed: false // ensure always false
           };
 
           /* set a "shade_highlight" color */
@@ -1067,6 +1154,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // ✔ DO NOT reset `c.fixed` to false here!
 
           // Apply rules only if this is a fresh load
+	  // J : we dont use this stuff
+	  /*
           if (!loadedFromStorage && !c.fixed) {
             // Rule 1: Fix punctuation like ‘–’, ‘,’ etc
             if (c.letter && !/[A-Za-z]/.test(c.letter)) {
@@ -1091,6 +1180,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               c.fixed = true;
             }
           }
+	  */
 
           if (this.diagramless_mode) {
             c.type = null;
@@ -1145,11 +1235,44 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // Initialize clue mapping and groups dynamically
           this.clueGroups = [];
 
+	  // fix incorrect number of dots at end of clue (essentially cosmetic)
+	  const fixEndDots = (str) => {
+           return str.replace(/\s*\.+$/, (match) => {
+             // Trim spaces to get just the dots for counting
+             const dotsOnly = match.trim();
+             const count = dotsOnly.length;
+             if (count === 1 || count === 3) {
+               return dotsOnly; // Returns "." or "..." without the leading space
+             }
+             return ".";
+            });
+          };
+
           // Defensive: if no clues array exists
           const clueSets = puzzle.clues || [];
 
+	  // clean text clues: overwrite only text parts:
+	   /* puzzle.clues obj structure example:
+	   [ {
+              "title": "ACROSS",
+              "clue": [
+                { "word": "1", "number": "1", "text": "Personnel d'entretien.." },
+		{ "word": "71", "number": "60", "text": "Demande une certaine attention ..." },...
+              ]
+	    {
+              "title": "DOWN",..
+	   ]   
+	  */	
+	  const clueSetsCleaned = clueSets.map(group => ({
+               ...group, // Copy title, etc.
+               clue: group.clue.map(item => ({
+               ...item, // Copy word, number, etc.
+               text: fixEndDots(item.text) // fix wrong dots at $
+               }))
+          }));
+
           // Create one CluesGroup per clue set
-          clueSets.forEach((clueSet, index) => {
+          clueSetsCleaned.forEach((clueSet, index) => {
             // Normalize title and word IDs
             const title = this.normalizeClueTitle(clueSet.title || `Clue Set ${index + 1}`);
             const clues = clueSet.clue || [];
@@ -1235,8 +1358,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.completeLoad();
 	this.updateStatsUI()
-      }
-
+      } // END parsePuzzle
+// -----------------------------------------------------------------------------------------------------------------------
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
       // dir: 'across' (x+) or 'down' (y+). step = +1 (forward) or -1 (backward)
       nextDiagramlessCell(fromCell, dir = this.diagramless_dir, step = 1) {
@@ -1263,7 +1386,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       toggleDiagramlessDir() {
         this.diagramless_dir = (this.diagramless_dir === 'across') ? 'down' : 'across';
       }
-
+// -----------------------------------------------------------------------------------------------------------------------
       completeLoad() {
         // Force the header to wrap its content
     $('.cw-header').css('flex-wrap', 'wrap');
@@ -1279,6 +1402,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                </button>` 
             : ''
         }
+        <span class="cw-header-separator">&nbsp;•&nbsp;</span>
+	<span class="signal-emoji">📶</span>
         <span class="cw-flex-spacer"></span>
         <span class="cw-copyright">${escape(this.copyright)}</span>
         
@@ -1350,6 +1475,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.v_autocheck ? 'none' : 'block';
 
+	// update from DB
+	this.loadDb();
         // Start the timer if necessary
         if (this.config.timer_autostart) {
           this.toggleTimer();
@@ -1383,9 +1510,33 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         updateClueLayout();
 
         // and whenever window resizes
+	window.addEventListener("blur", () => {
+         if (this.timer_running) {
+             this.toggleTimer();
+         }
+        });
+	window.addEventListener("focus", () => {
+              if (!this.timer_running) {
+                  this.toggleTimer(); 
+              }
+        });
         window.addEventListener('resize', updateClueLayout);
+        document.addEventListener("visibilitychange", () => {
+  	  if (document.hidden) {
+    	      // If the timer is currently running, stop it
+    	      if (this.timer_running) {
+                this.toggleTimer();
+              }
+          } else {
+             // Optional: Resume the timer when they come back
+              if (!this.timer_running) {
+                  this.toggleTimer(); 
+              }
+          }
+        });
 
       } // end completeLoad
+// -----------------------------------------------------------------------------------------------------------------------      
 
       remove() {
         this.removeListeners();
@@ -1420,6 +1571,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.download_btn.off('click');
         this.autocheck_btn.off('click');
         this.autocheck2.off('click');
+        this.autosave_btn.off('click');
+        this.autosave_btn2.off('click');
         this.timer_button.off('click');
 
         this.settings_btn.off('click');
@@ -1470,6 +1623,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         );
 
         // Right-click in the clue list → Ducktiles
+	/*
         if (!IS_MOBILE) {
           this.clues_holder.delegate(
             'div.cw-clues-items div.cw-clue .cw-clue-text',
@@ -1482,6 +1636,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           );
         }
+	*/
 
         if (this.config.hover_enabled) {
           this.svg.on('mousemove', $.proxy(this.mouseMoved, this));
@@ -1527,10 +1682,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         // SAVE
         this.save_btn.on('click', $.proxy(this.saveAsIpuz, this));
-        //this.save_db_btn.on('click', $.proxy(this.saveDb, this));
 	this.save_db_btn.on('click', (e) => { this.saveDb(e); });
 	this.load_db_btn.on('click', (e) => { this.loadDb(e); });
 	this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
+	this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
+	this.autosave_btn2.on('click', (e) => { this.toggleAutoSave(e); });
 
         // LOAD
         this.load_btn.on('click', () => {
@@ -1573,10 +1729,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.notepad_btn.on('click', $.proxy(this.showNotepad, this));
 
         $(document).on('keydown', $.proxy(this.keyPressed, this));
-	$(document).on('keyup', () => {
-          if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
-	  });  
-          
+	$(document).on('keyup', (e) => { 
+	  const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // check only if a real key was pressed
+          if (isPrintableChar && this.v_autocheck) { this.check_reveal('letter', 'check'); }
+        });  
 
         this.svgContainer.addEventListener('click', (e) => {
           if (e.target.tagName === 'rect') {
@@ -1624,11 +1780,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               }
 
-              if (newActiveWord) {
+	      if (newActiveWord != this.activeWord) {
+              //if (newActiveWord) {
+	        this.activeWord = newActiveWord;
                 this.activeClueGroupIndex = newGroupIndex;
                 this.setActiveWord(newActiveWord);
                 this.setActiveCell(clickedCell);
-                this.renderCells();
+                //this.renderCells("new activew");
+              } else {
+                this.setActiveCell(clickedCell);
               }
             }
           }
@@ -1647,12 +1807,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.selected_cell.y === y
             ) {
               this.changeActiveClues(); // toggle direction
-              this.renderCells(); // optionally re-render after direction switch
+              this.renderCells("dir switch"); // optionally re-render after direction switch
             }
           }
         });
 
         // Right-click on the top clue bar → Ducktiles
+	/*
         if (!IS_MOBILE) {
           this.top_text.on('contextmenu', (e) => {
             e.preventDefault();
@@ -1670,6 +1831,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           });
         }
+	*/
       }
 
       handleClickWindow(event) {
@@ -1816,16 +1978,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 	  //console.log(wordString); 
 	  // display in header space:
            $('#this-word-letters').text(wordString);
+           $('#this-word-letters-mobile').text(wordString);
 
           this.selected_word = word;
           if (this.fakeclues) {
             return;
           }
           this.top_text.html(`
-            <span class="cw-clue-number">
-              ${escape(word.clue.number)}
-            </span>
-            <span class="cw-clue-text">
+            <span class="cw-clue-text-up">
               ${escape(word.clue.text)}
             </span>
           `);
@@ -1863,8 +2023,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           this.hidden_input.focus();
         }
 
-        this.renderCells();
-      }
+        //console.log(' renderCell cancelled !!!');
+        this.renderCells("setActiveCell");
+     }
 
       renderClues(clues_group, clues_container) {
         const $container = $(clues_container);
@@ -1965,11 +2126,25 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
 
       // Clears canvas and re-renders all cells
-      renderCells() {
+      renderCells(c="UNKNOWN") { // monitor caller
+	const MIN_DELAY = 150;
+        const now = Date.now();
+	// avoid multiple calls from setActiveCell : ex mobile: mouse clicked + click on grid
+        if (c == "setActiveCell" && this.renderCellCaller == c && (now - this.renderCellTS < MIN_DELAY)) {
+            console.log("renderCells < MIN_DELAY");
+            return;
+        }
+
+        this.renderCellTS = now;
+        this.renderCellCaller = c;
+        console.log('=====> caller='+c);
+        //console.time('ExecutionTimer');
         // Responsive SVG sizing
         const canvasRect = this.canvas_holder.get(0).getBoundingClientRect();
-        const svgTopMargin = getComputedStyle(this.svgContainer).marginTop;
-        const maxHeight = canvasRect.height - parseInt(svgTopMargin, 10);
+        //const svgTopMargin = getComputedStyle(this.zoom_container).marginTop;
+	const mtop = parseFloat(this.zoom_container.css('margin-top'));
+	//const svgTopMargin = getComputedStyle(this.svgContainer).marginTop;
+        const maxHeight = canvasRect.height - parseInt(mtop, 10);
         const maxWidth = canvasRect.width;
 
         this.cell_size = Math.floor(
@@ -1983,11 +2158,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const svgHeight = this.grid_height * this.cell_size;
 
         this.svgContainer.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+        //this.zoom_container.setAttribute('width', svgWidth);
+        //this.zoom_container.setAttribute('height', svgHeight);
         this.svgContainer.setAttribute('width', svgWidth);
         this.svgContainer.setAttribute('height', svgHeight);
+	this.zoom_container.css('width',  svgWidth  + 'px');
+        this.zoom_container.css('height', svgHeight + 'px');
 
         if (this.toptext && this.toptext[0]) {
-          this.toptext[0].style.width = svgWidth + 'px';
+          if (! IS_MOBILE) { this.toptext[0].style.width = svgWidth + 'px';} else { this.toptext[0].style.width = '100%';}
         }
 
         const SIZE = this.cell_size;
@@ -2004,7 +2183,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
         }
 
-        const padding = 1;
+        const padding = 0;
         svg.setAttribute(
           'viewBox',
           `-${padding} -${padding} ${this.grid_width * SIZE + padding * 2} ${this.grid_height * SIZE + padding * 2}`
@@ -2191,7 +2370,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
 	    // 1. Error Indicator: Top-Right Orange Triangle
-            if (this.v_autocheck && this.stat_errors[`${x},${y}`] ) {
+            if (this.v_displayCheatMarks && this.v_autocheck && this.stat_errors[`${x},${y}`] ) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY}`;             // Top-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.2}`; // Down the right side
@@ -2203,7 +2382,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
 
             // 2. Cheated Indicator: Bottom-Right Red Triangle
-            if (this.v_autocheck && this.stat_cheated[`${x},${y}`]) {
+            if (this.v_displayCheatMarks && this.v_autocheck && this.stat_cheated[`${x},${y}`]) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY + SIZE}`;      // Bottom-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.8}`; // Up the right side
@@ -2321,6 +2500,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           this.updateClueAppearance(this.words[wordId]);
         }
 	this.updateStatsUI();
+	//console.timeEnd('ExecutionTimer');
       } // end renderCells
 
       drawSelectedWordBorder(svg, word) {
@@ -2392,7 +2572,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           if (index_x !== this.hovered_x || index_y !== this.hovered_y) {
             this.hovered_x = index_x;
             this.hovered_y = index_y;
-            this.renderCells();
+            this.renderCells("mouseMoved");
           }
         }
       }
@@ -2403,11 +2583,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
        */
       mouseClicked(e) {
         const offset = this.svg.offset();
-        const mouse_x = e.pageX - offset.left;
-        const mouse_y = e.pageY - offset.top;
+	const scale = this.currentScale; // zoom scale variable
+	const mouse_x = (e.pageX - offset.left) / scale;
+	const mouse_y = (e.pageY - offset.top) / scale;
+        //const mouse_x = e.pageX - offset.left;
+        //const mouse_y = e.pageY - offset.top;
         const index_x = Math.ceil(mouse_x / this.cell_size);
         const index_y = Math.ceil(mouse_y / this.cell_size);
         const clickedCell = this.getCell(index_x, index_y);
+
 
         if (!clickedCell) return;
 
@@ -2422,7 +2606,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             clickedCell.type !== 'block'
           ) {
             this.toggleDiagramlessDir(); // <-- Step 2 helper
-            this.renderCells();
+            this.renderCells("mouseClicked");
             if (!isMobile) this.hidden_input.focus();
             return;
           }
@@ -2431,7 +2615,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           this.selected_cell = clickedCell;
           this.selected_word = null;
           this.top_text.html('');
-          this.renderCells();
+          this.renderCells("mouseClicked2");
           if (!isMobile) this.hidden_input.focus();
           return; // prevent falling through to normal-puzzle logic
         }
@@ -2472,7 +2656,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         // Update cell selection and redraw
         this.setActiveCell(clickedCell);
-        this.renderCells();
+        //this.renderCells();
 
         if (!IS_MOBILE) {
           this.hidden_input.focus();
@@ -2533,7 +2717,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.skipToWord(SKIP_DOWN);
             } else {
               this.moveSelectionBy(0, 1);
-              this.renderCells();
+              //this.renderCells("down");
             }
             break;
 
@@ -2543,7 +2727,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               // Toggle direction in diagramless on Space
               if (this.selected_cell) {
                 this.toggleDiagramlessDir();
-                this.renderCells();
+                this.renderCells("space");
               }
               break; // prevent falling into normal space behavior
             }
@@ -2575,7 +2759,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               }
             }
 
-            this.renderCells();
+            this.renderCells("space2");
             this.checkIfSolved(); // update solved status
             break;
 
@@ -2608,7 +2792,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.selected_cell.checked = false;
               this.autofill();
             }
-            this.renderCells();
+            this.renderCells("delete");
             // Update this.isSolved
             this.checkIfSolved();
             break;
@@ -2630,7 +2814,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 this.setActiveCell(prev_cell);
               }
 
-              this.renderCells();
+              this.renderCells("back");
               this.checkIfSolved();
             }
             break;
@@ -2673,11 +2857,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             break;
           default: {
 	    const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // no junk needed, we only allow a-z keys in cells.
-            // Allow any single printable character except space (space has special meaning)
-            const isPrintableChar000 =
-              e.key.length === 1 &&
-              e.key !== ' ' &&
-              !e.ctrlKey && !e.metaKey && !e.altKey;
 
             if (this.selected_cell && isPrintableChar && !this.selected_cell.fixed) {
               // Uppercase only letters, leave numbers/punctuation unchanged
@@ -2686,7 +2865,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.selected_cell.checked = false;
               this.autofill();
               this.checkIfSolved();
-              this.renderCells();
+              this.renderCells("letter entered");
               if (!IS_MOBILE) {
                 this.hidden_input.focus();
               }
@@ -2737,7 +2916,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             word = this.clueGroups[this.activeClueGroupIndex].getMatchingWord(x, y);
             if (word) { this.setActiveWord(word); }
 	}
-  } //FUNCTION
+  } //FUNCTION keyPressed
 
       autofill() {
         this.saveGame(); // keep saving
@@ -2780,8 +2959,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // and fill them with the same letter
           this.autofill();
 
-          // Within hiddenInputChanged():
-          this.renderCells(); // Re-render SVG grid immediately after user input
+	  // this call can be avoided:
+          //this.renderCells("userInput1"); // Re-render SVG grid immediately after user input
 
           // find empty cell, then next cell
           // Change this depending on config
@@ -2803,7 +2982,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
 
           this.setActiveCell(next_cell);
-          this.renderCells();
+	  // this call can be avoided (setActiveCell has called renderCells)
+          //this.renderCells("userInput2"); // Re-render SVG grid immediately after user input
           this.checkIfSolved()
         }
         this.hidden_input.val('');
@@ -2857,6 +3037,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           });
         }
+	if (this.v_autosave) { this.saveDb();}
 
         /* const winSound = new Audio('./sounds/hny.mp3');
            winSound.play();*/
@@ -2894,8 +3075,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 word_cell = word.getFirstEmptyCell() || word.getFirstCell();
                 this.setActiveWord(word);
                 this.setActiveCell(word_cell);
-                this.renderCells();
-                this.renderCells();
+                this.renderCells("skip DIR");
 
                 return true;
               }
@@ -2986,7 +3166,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           const cell = next_word.getFirstEmptyCell() || next_word.getFirstCell();
           this.setActiveWord(next_word);
           this.setActiveCell(cell);
-          this.renderCells();
+          this.renderCells("move to nextw");
         }
       }
 
@@ -3003,7 +3183,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             this.selected_word.getFirstCell();
           if (cell) {
             this.setActiveCell(cell);
-            this.renderCells();
+            this.renderCells("move to 1st cell");
           }
         }
       }
@@ -3113,18 +3293,20 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         this.setActiveCell(new_cell);
-        this.renderCells();
+        this.renderCells("move selby");
       } // END moveSelectionBy()
 
 
       windowResized() {
+	if (IS_MOBILE) { return;}
         setBreakpointClasses(this.root);
         resizeText(this.root, this.top_text);
-        this.renderCells();
+        this.renderCells("resized");
         this.syncTopTextWidth();
       }
 
       syncTopTextWidth() {
+	if (IS_MOBILE) { return;}
         const svgEl = this.svgContainer;
         const wrapper = this.toptext?.get(0);
 
@@ -3178,12 +3360,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       mouseEnteredClue(e) {
         var target = $(e.currentTarget);
         this.hilited_word = this.words[target.data('word')];
-        this.renderCells();
+        //this.renderCells("mouseEnteredClue");
       }
 
       mouseLeftClue() {
         this.hilited_word = null;
-        this.renderCells();
+        //this.renderCells("mouseLeftClue");
       }
 
       // callback for clicking a clue in the sidebar
@@ -3208,7 +3390,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.setActiveWord(word);
         this.setActiveCell(cell);
-        this.renderCells();
+        this.renderCells("clue click");
       }
 
       showInfo() {
@@ -3235,223 +3417,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           .replace(/[^A-Z]/g, "");
       }
 
-      /**
-       * Open an overlay with Ducktiles embedded via <iframe>.
-       * Falls back to "open in new tab" if the iframe is blocked by browser policy.
-       */
-      async openDucktilesOverlayWithClipboard(rawText) {
-        // Hard-disable Ducktiles overlay on mobile
-        if (IS_MOBILE) {
-          // Optional: show a polite message instead of silently doing nothing
-          // this.createModalBox('Ducktiles', 'This helper is disabled on mobile.', 'OK');
-          return;
-        }
-        // Normalize the selected letters & upper-case them
-        const letters = (rawText || "").replace(/[^A-Za-z]/g, "").toUpperCase();
-        const isMac = navigator.platform?.toLowerCase().includes("mac");
-        const pasteKeys = isMac ? "⌘+V" : "Ctrl+V";
-
-        const content = `
-          <div class="dt-wrapper">
-            <div class="dt-toolbar">
-              <div class="dt-field" style="flex:1 1 420px;">
-                <label class="dt-label">Letters (auto-copied)</label>
-                <input id="dt-letters" class="cw-input" value="${letters}" />
-                <div style="opacity:.7;font-size:.85em;margin-top:.25em">
-                  If paste doesn’t work, select and copy the letters above manually.
-                </div>
-              </div>
-              <div class="dt-actions" style="align-self:flex-end;">
-                <button class="cw-button" id="dt-open-tab">Open in new tab</button>
-              </div>
-            </div>
-
-            <div class="dt-howto">
-              <b>How to use:</b>
-              Click <b>Add tiles</b> in Ducktiles, then press <b>${pasteKeys}</b> to paste your letters.
-            </div>
-
-            <div class="dt-iframe-wrapper">
-              <iframe
-                id="ducktiles-frame"
-                class="dt-iframe"
-                src="https://www.ducktiles.com/"
-                title="Ducktiles Anagram Helper"
-                allow="clipboard-read; clipboard-write"
-                sandbox="allow-scripts allow-same-origin allow-forms"
-                referrerpolicy="no-referrer"
-              ></iframe>
-              <div class="dt-iframe-help" id="dt-help" style="display:none">
-                If the area above is blank, your browser prevented embedding Ducktiles
-                (site disallows iframes). Use <b>Open in new tab</b> instead.
-              </div>
-            </div>
-          </div>
-        `;
-
-        // Open modal and make it wide like before
-        this.createModalBox("Ducktiles", content, "Close");
-        const modalContent = this.root.find(".cw-modal .modal-content").get(0);
-        modalContent?.classList?.add("modal-large");
-
-        // Make the modal movable without changing size
-        (() => {
-          const modalEl = this.root.find(".cw-modal").get(0);
-          const box = modalContent;
-          if (!modalEl || !box) return;
-
-          // mark as draggable and use fixed positioning
-          box.classList.add("modal-draggable");
-          box.style.position = "fixed";
-
-          // initial center (one-time) if not previously positioned
-          if (!box.dataset.positioned) {
-            const vw = window.innerWidth,
-              vh = window.innerHeight;
-            const bw = box.offsetWidth,
-              bh = box.offsetHeight;
-            const left = Math.max(8, Math.round((vw - bw) / 2));
-            const top = Math.max(8, Math.round((vh - bh) / 10)); // slightly high
-            box.style.left = left + "px";
-            box.style.top = top + "px";
-            box.style.margin = "0"; // cancel auto-centering
-            box.dataset.positioned = "1";
-          }
-
-          // drag by header only (so iframe doesn't swallow events)
-          const header = box.querySelector(".modal-header");
-          if (!header) return;
-
-          let startX = 0,
-            startY = 0,
-            startLeft = 0,
-            startTop = 0,
-            dragging = false;
-
-          const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
-
-          const onMouseMove = (e) => {
-            if (!dragging) return;
-
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-
-            // Allow dragging off-screen but keep a small "grab" area visible
-            const GUARD_X = 28; // px that must remain visible horizontally
-            const GUARD_Y = 28; // px that must remain visible vertically
-
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
-            const bw = box.offsetWidth;
-            const bh = box.offsetHeight;
-
-            // New bounds: you can push the box so that only GUARD_* px remain visible
-            const minLeft = -(bw - GUARD_X);
-            const maxLeft = vw - GUARD_X;
-            const minTop = -(bh - GUARD_Y);
-            const maxTop = vh - GUARD_Y;
-
-            const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
-
-            const newLeft = clamp(startLeft + dx, minLeft, maxLeft);
-            const newTop = clamp(startTop + dy, minTop, maxTop);
-
-            box.style.left = newLeft + "px";
-            box.style.top = newTop + "px";
-          };
-
-          const endDrag = () => {
-            if (!dragging) return;
-            dragging = false;
-            window.removeEventListener("mousemove", onMouseMove, true);
-            window.removeEventListener("mouseup", endDrag, true);
-          };
-
-          const onMouseDown = (e) => {
-            // only left button
-            if (e.button !== 0) return;
-            dragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            // get numeric left/top (fallback to computed)
-            const rect = box.getBoundingClientRect();
-            startLeft = rect.left;
-            startTop = rect.top;
-
-            // capture so we beat the grid handlers
-            window.addEventListener("mousemove", onMouseMove, true);
-            window.addEventListener("mouseup", endDrag, true);
-
-            e.preventDefault();
-            e.stopPropagation();
-          };
-
-          header.addEventListener("mousedown", onMouseDown, true);
-
-          // If the modal closes, ensure drag listeners are gone (belt & suspenders)
-          const observer = new MutationObserver(() => {
-            if (modalEl.style.display === "none") {
-              endDrag();
-              observer.disconnect();
-            }
-          });
-          observer.observe(modalEl, {
-            attributes: true,
-            attributeFilter: ["style"]
-          });
-        })();
-
-        // Fallback button: open in new tab
-        document.getElementById("dt-open-tab")?.addEventListener("click", () => {
-          window.open("https://www.ducktiles.com/", "_blank", "noopener");
-        });
-
-        // Auto-copy immediately (will often succeed thanks to user gesture)
-        const input = document.getElementById("dt-letters");
-        const copyToClipboard = async () => {
-          try {
-            if (letters) await navigator.clipboard.writeText(letters);
-          } catch {}
-        };
-        copyToClipboard();
-
-        // If user edits the letters, try to keep clipboard in sync (best effort)
-        input?.addEventListener("input", async () => {
-          try {
-            const val = (input.value || "").replace(/[^A-Za-z]/g, "").toUpperCase();
-            await navigator.clipboard.writeText(val);
-          } catch {}
-        });
-
-        // Hint if the iframe is blocked by X-Frame-Options/CSP (blank in many browsers)
-        const iframe = document.getElementById("ducktiles-frame");
-        const help = document.getElementById("dt-help");
-        let hinted = false;
-        const showHelpIfBlank = () => {
-          if (!hinted) {
-            help.style.display = "block";
-            hinted = true;
-          }
-        };
-        setTimeout(showHelpIfBlank, 1500);
-        iframe?.addEventListener("load", () => {
-          help.style.display = "none";
-          hinted = true;
-        });
-
-        // Allow Escape key to close the modal
-        const modalEl = this.root.find('.cw-modal').get(0);
-        const escHandler = (evt) => {
-          if (evt.key === 'Escape') {
-            modalEl.style.display = 'none';
-            window.removeEventListener('keydown', escHandler);
-            if (!IS_MOBILE) {
-              this.hidden_input.focus();
-            }
-          }
-        };
-        window.addEventListener('keydown', escHandler);
-      }
 
       openSettings() {
         // Create a modal box
@@ -3573,6 +3538,20 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 </input>
               </label>
             </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="display-cheats" checked="" type="checkbox" name="display-cheats" class="yy-settings-changer">
+                  Display cheats marks in grid
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="autosave2" checked="" type="checkbox" name="autosave2" class="z-settings-changer">
+                  Autosave Crossword
+                </input>
+              </label>
+            </div>
 
 
             <!--
@@ -3589,7 +3568,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.createModalBox('Settings', settingsHTML);
         $('#autocheck2').prop('checked', this.v_autocheck);
+        $('#autosave2').prop('checked', this.v_autosave);
         $('#display-cn').prop('checked', v_display_cn);
+        $('#display-cheats').prop('checked', this.v_displayCheatMarks);
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
         for (var cc of classChangers) {
@@ -3609,8 +3590,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             if (event.target.name == 'autocheck2' ) {
 		this.toggleAutoCheck();
 	    }
+            if (event.target.name == 'autosave2' ) {
+		this.toggleAutoSave();
+	    }
             if (event.target.name == 'display-cn' ) {
 		this.toggleClueNumbers();
+	    }
+            if (event.target.name == 'display-cheats' ) {
+		this.toggleDisplayCheats();
 	    }
             if (event.target.className === 'settings-changer') {
               if (event.target.type === 'checkbox') {
@@ -3626,12 +3613,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                     });
                     this.config.color_none = '#252624';
                     this.config.font_color_fill = '#ddd4c5';
-                    this.renderCells();
+                    this.renderCells("dark reader");
                   } else {
                     DarkReader.disable();
                     this.config.color_none = default_config.color_none;
                     this.config.font_color_fill = default_config.font_color_fill;
-                    this.renderCells();
+                    this.renderCells("dark_mode_disable");
                   }
                 }
 
@@ -3664,11 +3651,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // for diagramless purposes
           c.type = cellData.type;
 
+          /* J : not used
           if (cellData.fixed === true) {
             c.fixed = true;
           } else {
             delete c.fixed; // Ensure normal cells are not accidentally flagged
           }
+	  */
         });
       }
 
@@ -3694,6 +3683,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         } else {
             $('.cw-cell-number').hide();
         }
+        this.renderCells("toggle clue nums"); 
+      }
+      toggleDisplayCheats(e) {
+      	this.v_displayCheatMarks = !this.v_displayCheatMarks;
+        this.renderCells("toggle cheats marks"); 
       }
 
       toggleAutoCheck(e) {
@@ -3704,12 +3698,21 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
       }
 
+      toggleAutoSave(e) {
+      	this.v_autosave = !this.v_autosave;
+        $('#autosave1').prop('checked', this.v_autosave);
+        $('#autosave2').prop('checked', this.v_autosave);
+      }
+
 
       /* load last state from DB */
       async loadDb(e) {
+        const isAvailable = await this.backendPromise; // will wait until decision about backend is made
+	if (!isAvailable) return;
+        //if (! this.backendEnabled) return; (not working)
         this.fillJsXw();
         try {
-            const response = await fetch('/cgi-lmpuz/nexus_load.py', {
+            const response = await fetch(this.back_loadDB, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3717,6 +3720,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 body: JSON.stringify(this.jsxw)
             });
 
+	    if (!response.ok) {
+                alert(`service not available: ${response.status}`);
+                return; 
+            }
             const data = await response.json();
             console.log("json returned by nexus_update:", data);
 	    if (data.status != 0) { alert(data.message); }
@@ -3731,8 +3738,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 		// Reconstruct stats from simple arrays [ "x1,y1", "x2,y2" ] => stat_errors ={ "x1,y1": true, ...}
                 this.stat_errors = data.error_list?.length ? Object.fromEntries(data.error_list.map(c => [c, true])) : {};
                 this.stat_cheated = data.cheated_list?.length ? Object.fromEntries(data.cheated_list.map(c => [c, true])) : {};
+		xw_timer_seconds = data.timeplayed ?? 0;
 
-          	this.renderCells(); 
+          	this.renderCells("load DB"); 
 	    }
     
         } catch (error) {
@@ -3759,32 +3767,51 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     console.log("Grid updated.");
   }
 
-      /* Save the game state to DB */
-      async saveDb(e) {
+    /* Save the game state to DB */
+    async saveDb(e) {
+        const isAvailable = await this.backendPromise;
+	if (! this.v_autosave || !isAvailable) return;
+        //if (! this.backendEnabled) return; ==> async bug
+        if (this.is_saving) return; // Exit if a save is already running
+        this.is_saving = true;
+    
         this.fillJsXw();
-	const payload = {
-            ...this.jsxw, // Spread existing properties
-	    error_list: Object.keys(this.stat_errors),
-            cheated_list: Object.keys(this.stat_cheated)
-            };
+        const payload = {
+            ...this.jsxw,
+            error_list: Object.keys(this.stat_errors),
+            cheated_list: Object.keys(this.stat_cheated),
+	    timeplayed: xw_timer_seconds
+        };
+    
         try {
-            const response = await fetch('/cgi-lmpuz/nexus_update.py', {
+            const stream = new Blob([JSON.stringify(payload)], { type: 'application/json' }).stream();
+            const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+            const compressedBody = await new Response(compressedStream).blob();
+    
+            const response = await fetch(this.back_saveDB, {
                 method: 'POST',
+                referrerPolicy: 'no-referrer',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Content-Encoding': 'gzip'
                 },
-                body: JSON.stringify(payload)
+                body: compressedBody
             });
-
-            // Response is defined here
+    
+	    if (!response.ok) {
+                alert(`Backend seems not available: ${response.status}\nAutosave disabled`);
+		this.toggleAutoSave();
+                return; 
+            }
             const data = await response.json();
-            console.log("json returned by nexus_update:", data);
-	    if (data.status != 0) { alert(data.message); }
+            if (data.status != 0) { alert(data.message); }
     
         } catch (error) {
-            console.error('Error loading stats:', error);
+            console.error('Error saveDB:', error);
+        } finally {
+            this.is_saving = false; // Always unlock, even on error
         }
-     }
+    }
 
       /* Save the game to local storage */
       saveGame() {
@@ -3801,10 +3828,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         })));
 	localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
             stat_cheated: this.stat_cheated,
-            stat_errors: this.stat_errors
+            stat_errors: this.stat_errors,
+	    timeplayed: xw_timer_seconds
         }));
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
+	if (this.v_autosave) { this.saveDb();}
       }
 
       /* Show "load game" menu" */
@@ -3888,17 +3917,22 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
          const errorsPct = Math.round((errors / total) * 100);
          const completedPct = Math.round((filled / total) * 100);
      
-	  $('#misc-stats').text(
-            `Cheated: ${cheated} (${cheatedPct}%) • ` +
+	  const stats= `Cheated: ${cheated} (${cheatedPct}%) • ` +
             `Errors: ${errors} (${errorsPct}%) • ` +
-            `Completed: ${completedPct}%`
-             );
+            `Completed: ${completedPct}%`;
+	  $('#misc-stats').text(stats);
+	  $('#fake-btn-stats').text(stats);
+	  const tit_auth= `${this.title} • ` + `${this.author}`+ ' • <span class="signal-emoji">📶</span>';
+	  //$('#fake-btn-tit-auth').text(tit_auth);
+	  $('#fake-btn-tit-auth').html(tit_auth);
+             
      }
-//--------------------------------------------------------------------------------//     
+//-----------------------------------------------CHECK REVEAL ------------------------------------------------//     
 
       check_reveal(to_solve, reveal_or_check, e) {
         var my_cells = [],
-          cell;
+            cell;
+	var saveNeeded = false;    
 
         switch (to_solve) {
           case 'letter':
@@ -3949,7 +3983,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
 
           if (reveal_or_check === 'clear') {
-            if (c.fixed) continue;
+            if (c.fixed) continue; // will never happen
             // CLEAR
             c.letter = '';
             c.checked = false;
@@ -3982,6 +4016,10 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 c.letter = c.solution;
                 c.revealed = true;
                 c.checked = false;
+		saveNeeded = true;
+		// advance :
+                const next_cell = this.selected_word.getNextCell(c.x, c.y);
+                this.setActiveCell(next_cell);
               }
             }
           } else if (reveal_or_check === 'check') {
@@ -4001,12 +4039,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               if (c.letter) {
                 c.checked = !isCorrect(c.letter, c.solution);
 		if (c.checked) { this.setError(c.x,c.y) } // c.checked is : NOT correct entry
+		saveNeeded = true; 
               } else {
                 c.checked = false;
               }
             }
           }
         }
+	if (saveNeeded) { this.saveGame(); }
 
         // After mass-reveal or clear, renumber
         if (reveal_or_check === 'reveal' && this.diagramless_mode) {
@@ -4023,6 +4063,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         if (reveal_or_check === 'clear') {
+	  this.stat_errors = {};
+       	  this.stat_cheated = {};
+	  xw_timer_seconds = 0 ; 
           this.saveGame();
         }
 
@@ -4072,6 +4115,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         // Cleanup
         URL.revokeObjectURL(url);
       }
+
 
       toggleTimer() {
         var display_seconds, display_minutes;

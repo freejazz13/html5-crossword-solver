@@ -84,14 +84,30 @@ html.mobile-mode {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.crossword.mobile #this-word-letters-mobile {
+  display: block;  /* or inline-block */
+  width: 100%;
+  background: var(--clue-active-color);
+  letter-spacing: 3px;
+  height: 24px;
+  font-weight: bold;
+  font-size: 18px;
+  text-align: center;
+}
+
+.crossword.mobile .cw-top-text {
+  font-weight: bold;
+  /*font-size: 2.3vmin !important;*/
+}
 .crossword.mobile .cw-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  margin-left: .5em;
+  /*margin-left: .5em; why waste space ?
   margin-right: .5em;
+  */
 }
 
 .crossword.mobile .cw-canvas {
@@ -167,9 +183,12 @@ html.mobile-mode {
   position: relative;
 }
 
+.crossword.mobile #cw-zoom-container {
+  margin-top: 48px;
+}
 .crossword.mobile #cw-puzzle-grid {
   display: inline-block;
-  margin-top: 48px;
+  /*margin-top: 48px;*/
 }
 
 .crossword.mobile .cw-buttons-holder {
@@ -183,7 +202,7 @@ html.mobile-mode {
   padding-right: 4px;
   padding-bottom: 2px;
   flex-wrap: wrap;
-  gap: 1.8em;
+  gap: 1.0em;
   z-index: 30;
   flex-shrink: 0;
   overflow: visible;
@@ -262,7 +281,13 @@ html.mobile-mode {
   margin: 2px;
   padding: 0.65em 0.5em;
   text-align: center;
-  font-size: 1rem;
+
+  display: inline-flex;  /* Or 'flex' if they are in a row */
+  align-items: center;    /* Vertical center */
+  justify-content: center; /* Horizontal center */
+  
+  font-size: 1.15rem;
+  font-weight: 500;
   background: var(--keyboard-button-bg-color);
   color: var(--button-text-color);
   border-radius: 6px;
@@ -343,8 +368,14 @@ html.mobile-mode {
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
 }
 
+#fake-btn-tit-auth,
+#fake-btn-stats {
+  white-space: nowrap;
+  max-width: none;
+  font-weight: bold;
+}
 .crossword.mobile .cw-buttons-drawer.open {
-  transform: translateY(-160%);
+  transform: translateY(-100%);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
 }
 

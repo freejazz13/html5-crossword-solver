@@ -53,8 +53,10 @@ This file contains shared styles always loaded (mobile or desktop)
 .selected-word-border {
   animation: glow 1.5s ease-in-out infinite;
   stroke-linejoin: round;
+  /* css error
   rx: 2;
   ry: 2;
+  */
   pointer-events: none;
 }
 
@@ -88,7 +90,7 @@ div.crossword {
   height: 16px;
   padding: 4px 4px;
   border-radius: 4px;
-  background-color: none;
+  /*background-color: none; CSS ERROR */
   background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAXAAAAFwBhyfMcAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAACXSURBVDiNzdI9CsJQEEXhzyI7CP5sxYXYuA4t3JO9XbS21ARBXILgAoRYJA9CiOElNh6YZuDcO8UwjBkyPLEZ6EpwQdmYbayc1gFrvBsBrxh5iiv2HSFZrBwaQ8iq3i+GyO2QpE+eo+iQy3qfjmkucRt79p/LCfIvcqF6316WY5sDu19kOLTkPObswAQP3HHCEWfVr0fxAbSiWClHz+v4AAAAAElFTkSuQmCC');
   background-position: center;
   background-repeat: no-repeat;
@@ -187,7 +189,7 @@ div.is-dragover {
   /* Hidden by default */
   position: fixed;
   /* Stay in place */
-  z-index: 1;
+  z-index: 110;
   /* Sit on top */
   padding-top: 30px;
   /* location of the box */
@@ -351,6 +353,7 @@ div.is-dragover {
 
 /* When active */
 .cw-menu.open {
+  z-index: 110;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
@@ -538,6 +541,7 @@ div.is-dragover {
 
 /** Top text **/
 .cw-top-text-wrapper {
+  z-index: 100;
   position: absolute;
   width: 100%;
   top: 0;
@@ -561,7 +565,9 @@ div.is-dragover {
   font-weight: 600;
 }
 
-.cw-clue-text {
+.cw-clue-text-up {
+  /*background: var(--clue-active-color);*/
+  background: white;
   flex: 1 1 auto;
   word-wrap: break-word;
   margin-right: 3px;

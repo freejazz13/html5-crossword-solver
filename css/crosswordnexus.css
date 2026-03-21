@@ -14,6 +14,26 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+[backend-required] {
+  display: none !important;
+}
+
+body.backend-active [backend-required] {
+  display: block !important; /* or inline-block/flex */
+}
+
+/* Gray/Dimmed by default */
+.signal-emoji {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+/* Color/Bright when backend active */
+body.backend-active .signal-emoji {
+  filter: grayscale(0);
+  opacity: 1;
+}
+
 .cw-title,
 .cw-author,
 .cw-copyright {
@@ -81,13 +101,16 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
   margin-top: 5px;
 }
 
+#cw-zoom-container {
+  margin-top: 65px;
+}
 #cw-puzzle-grid {
   display: inline-block;
   width: auto;
-  margin-top: 65px;
+  /*margin-top: 65px;*/
   align-self: center;
   box-shadow: 0px -2px 15px 6px rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
 #cw-puzzle-grid text {
@@ -197,6 +220,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
   display: flex;
   text-align: left;
   line-height: 1.2;
+  font-weight: bold;
+  font-size: 2.3vmin !important;
+  margin-left: 0.3em;
 }
 
 
