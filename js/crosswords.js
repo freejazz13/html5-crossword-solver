@@ -1968,17 +1968,21 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         return this.cells[x] ? this.cells[x][y] : null;
       }
 
-      setActiveWord(word) {
-        if (word) {
-	  // get current word state as string: "W_O_RD"
+      // display current state of word as "W_O_R_D" in the relevant $#
+      showCurrentWordStateAsString(word) {
 	  const wordString = word.cell_ranges.map(range => {
     	     const cell = this.cells[range.x][range.y];
              return (cell.letter && cell.letter !== "") ? cell.letter : "_"; 
 	     }).join("");
 	  //console.log(wordString); 
 	  // display in header space:
-           $('#this-word-letters').text(wordString);
-           $('#this-word-letters-mobile').text(wordString);
+          $('#this-word-letters').text(wordString);
+          $('#this-word-letters-mobile').text(wordString);
+      }
+
+      setActiveWord(word) {
+        if (word) {
+	  showCurrentWordStateAsString(word);
 
           this.selected_word = word;
           if (this.fakeclues) {
@@ -4056,7 +4060,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           this.renumberGrid();
         }
 
-        this.renderCells();
+        this.renderCells("check_reveal");
+	this.showCurrentWordStateAsString(this.selected_word);
 
         if (reveal_or_check === 'reveal') {
           this.checkIfSolved(false);

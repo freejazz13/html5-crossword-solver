@@ -89,9 +89,9 @@ html.mobile-mode {
   width: 100%;
   background: var(--clue-active-color);
   letter-spacing: 3px;
-  height: 24px;
+  height: 28px;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 22px;
   text-align: center;
 }
 
