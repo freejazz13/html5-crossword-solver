@@ -934,6 +934,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             this.v_autosave = true;
             $('#autosave1').prop('checked', this.v_autosave);
             $('#autosave2').prop('checked', this.v_autosave);
+            document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
             //this.backendEnabled = true;
             return true;
           }
@@ -1406,6 +1407,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
         <span class="cw-header-separator">&nbsp;•&nbsp;</span>
         <span class="signal-emoji">📶</span>
+        <span class="sync-emoji">&#8597;&#65039;</span>
         <span class="cw-flex-spacer"></span>
         <span class="cw-copyright">${escape(this.copyright)}</span>
         
@@ -3577,6 +3579,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         $('#autosave2').prop('checked', this.v_autosave);
         $('#display-cn').prop('checked', v_display_cn);
         $('#display-cheats').prop('checked', this.v_displayCheatMarks);
+        document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
         for (var cc of classChangers) {
@@ -3708,6 +3711,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.v_autosave = !this.v_autosave;
         $('#autosave1').prop('checked', this.v_autosave);
         $('#autosave2').prop('checked', this.v_autosave);
+        document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
       }
 
 
@@ -3928,7 +3932,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             `Completed: ${completedPct}%`;
           $('#misc-stats').text(stats);
           $('#fake-btn-stats').text(stats);
-          const tit_auth= `${this.title} • ` + `${this.author}`+ ' • <span class="signal-emoji">📶</span>';
+          const tit_auth= `${this.title} • ` + `${this.author}`+ ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>';
           //$('#fake-btn-tit-auth').text(tit_auth);
           $('#fake-btn-tit-auth').html(tit_auth);
              

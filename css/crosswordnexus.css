@@ -22,6 +22,10 @@ body.backend-active [backend-required] {
   display: block !important; /* or inline-block/flex */
 }
 
+body:not(.backend-active) .sync-emoji {
+  display: none;
+}
+
 /* Gray/Dimmed by default */
 .signal-emoji {
   filter: grayscale(1);

@@ -212,7 +212,8 @@ html.mobile-mode {
 .crossword.mobile .cw-buttons-row {
   display: flex;
   justify-content: center;
-  gap: 5.5em;
+  /*gap: 5.5em;*/
+  gap: clamp(0.5em, 4vw, 2em);
 }
 
 /* Smaller mobile buttons */
@@ -482,9 +483,11 @@ html.mobile-mode {
     /* gap: 2.8em !important; */
   }
 
+  /*
   .cw-buttons-row {
     gap: 2em !important;
   }
+  */
 }
 
 @media (min-width: 768px) and (max-width: 1024px) {
