@@ -170,7 +170,7 @@ body.backend-active .signal-emoji {
   transition: scrollbar-color 0.3s ease-out;
 }
 
-.cw-clues-items::-webkit-scrollbar-thumb:hover {
+.cw-clues-items:hover::-webkit-scrollbar-thumb {
   background-color: var(--clue-scrollbar-color-thumb)
 }
 

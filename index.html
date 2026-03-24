@@ -87,6 +87,7 @@
                 cw.renderCells();
                 cw.windowResized?.();
                 cw.syncTopTextWidth?.();
+                if (cw.v_autocheck) cw.check_reveal('puzzle', 'check');
               } else {
                 console.warn('[Fix] Skipping renderCells — grid size not yet initialized', {
                   grid_width: cw?.grid_width,

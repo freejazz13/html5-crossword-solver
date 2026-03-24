@@ -141,17 +141,17 @@ $(document).ready(function () {
 
           const row_ta = document.createElement('div');
           row_ta.className = 'cw-buttons-row';
-	  const b0 = `<button type="button" id="fake-btn-tit-auth" class="cw-button cw-settings-button">
+          const b0 = `<button type="button" id="fake-btn-tit-auth" class="cw-button cw-settings-button">
                     TITLE AUTHOR
                    </button>`;
-	  row_ta.innerHTML = b0;
+          row_ta.innerHTML = b0;
 
           const row0 = document.createElement('div');
           row0.className = 'cw-buttons-row';
-	  const b = `<button type="button" id="fake-btn-stats" class="cw-button cw-settings-button">
+          const b = `<button type="button" id="fake-btn-stats" class="cw-button cw-settings-button">
                     STATS
                    </button>`;
-	  row0.innerHTML = b;
+          row0.innerHTML = b;
 
           const row1 = document.createElement('div');
           row1.className = 'cw-buttons-row';
@@ -366,20 +366,21 @@ $(document).ready(function () {
         gCrossword.setActiveWord(firstWord);
         gCrossword.setActiveCell(firstWord.getFirstCell());
         gCrossword.renderCells();
+        if (gCrossword.v_autocheck) { gCrossword.check_reveal('puzzle', 'check'); }
         // Match the width of the top clue bar to the grid
         setTimeout(() => {
           const gridEl = document.getElementById('cw-puzzle-grid');
           const clueBar = document.querySelector('.cw-top-text-wrapper');
           if (gridEl && clueBar) {
-	    if (! isMobile) {
+            if (! isMobile) {
                 clueBar.style.width = gridEl.getBoundingClientRect().width + 'px';
-            } else {		
+            } else {            
                 clueBar.style.width = '100%';
            }
           }
         }, 100);
       }, 50);
-    };
+    }; // end tryWrapLayout
 
     setTimeout(tryWrapLayout, 300);
   }
@@ -520,11 +521,11 @@ $(document).ready(function () {
       if (pinchOnGrid && startDist !== null) {
         const d = touchDist(e.touches[0], e.touches[1]);
         let s = startScale * (d / startDist);
-	if (s >= 1.0) {
-        	s = Math.min(s, 3);
-	} else {	
-        	s = Math.max(0.5, s);
-	}
+        if (s >= 1.0) {
+                s = Math.min(s, 3);
+        } else {        
+                s = Math.max(0.5, s);
+        }
         gCrossword.currentScale = s;
         //clampTranslation();
         applyTransform();
@@ -614,7 +615,7 @@ function createCustomKeyboard() {
           if (letter === "\u{2935}\u{FE0F}" || letter === '⤵️' ) { //|| letter === '\u{1F503}' || letter === '🔃') {
               gCrossword.changeActiveClues(); // toggle direction
               gCrossword.renderCells("dir switch"); // re-render after direction switch
-	  }
+          }
           else if (letter === '💡' || letter === '\u{1F4A1}') {
             gCrossword.check_reveal('letter', 'reveal');
           } else {

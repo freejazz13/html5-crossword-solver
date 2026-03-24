@@ -344,7 +344,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                   </div>
                 </div>
               </div>
-	      <div id = "cw-zoom-container" >
+              <div id = "cw-zoom-container" >
                 <svg id = "cw-puzzle-grid"></svg>
               </div>
             </div>
@@ -541,21 +541,21 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           }
         }
-    	this.v_autocheck = default_config.autocheck;
-    	this.v_displayCheatMarks = default_config.displayCheatMarks;
-    	this.v_autosave = default_config.autosave;
-	this.is_saving = false;
+        this.v_autocheck = default_config.autocheck;
+        this.v_displayCheatMarks = default_config.displayCheatMarks;
+        this.v_autosave = default_config.autosave;
+        this.is_saving = false;
         //this.backendEnabled = false;
-	this.backendPromise = null;
-	this.currentScale = 1.0;
+        this.backendPromise = null;
+        this.currentScale = 1.0;
 
-	/*
+        /*
         This code dynamically generates a matching color theme based on a single base color (COLOR_WORD). It uses HSV (Hue, Saturation, Value) transformations to ensure all UI elements (hover states, highlights, buttons) look visually consistent.
         Logic: Instead of hardcoding colors like "blue" or "red," it uses Color.applyHsvTransform. This takes your base color and tweaks:
             dh (Delta Hue): Shifts the actual color (e.g., making it slightly more purple or green).
             ks (Saturation Factor): Adjusts how "vibrant" or "gray" the color is.
             kv (Value Factor): Adjusts the brightness.
-	*/
+        */
 
         /* Update config values based on `color_word` */
         const COLOR_WORD = this.config.color_word;
@@ -654,7 +654,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.windowResized = this.windowResized.bind(this);
 
         this.init();
-      }
+      } // END OF Constructor
 
       make_fake_clues(puzzle, clue_mapping = {}) {
 
@@ -714,7 +714,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         var parsePUZZLE_callback = $.proxy(this.parsePuzzle, this);
         var error_callback = $.proxy(this.error, this);
 
-	// --- MODS, BASE64 & BZIP2 LOGIC ---
+        // --- MODS, BASE64 & BZIP2 LOGIC ---
         const params = new URLSearchParams(window.location.search);
 
         if (this.root) {
@@ -787,7 +787,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         if (b64Data) {
             try {
                 this.root.addClass('loading');
-		const binaryString = atob(decodeURIComponent(b64Data));
+                const binaryString = atob(decodeURIComponent(b64Data));
                 let bytes = new Uint8Array(binaryString.length);
                 for (let i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
@@ -795,13 +795,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
                 // Check for bzip2 header "BZh" (0x42 0x5a 0x68)
                 if (bytes[0] === 0x42 && bytes[1] === 0x5a && bytes[2] === 0x68) {
-	            try { 		
-			bytes = bz2.decompress(bytes);
+                    try {               
+                        bytes = bz2.decompress(bytes);
                     }catch (e) {
                      console.error("bzip2 library error",e);
                     }
                 }
-		Promise.resolve(bytes)
+                Promise.resolve(bytes)
                 .then(parsePUZZLE_callback)
                 .catch(error_callback);
             } catch (e) {
@@ -888,7 +888,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.root.appendTo(this.parent);
         this.canvas_holder = this.root.find('div.cw-canvas');
-	this.zoom_container = this.root.find('#cw-zoom-container');
+        this.zoom_container = this.root.find('#cw-zoom-container');
         // SVG setup (new)
         this.svgNS = 'http://www.w3.org/2000/svg';
         this.svgContainer = document.createElementNS(this.svgNS, 'svg');
@@ -902,9 +902,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         setBreakpointClasses(this.root);
         // Place this at the END of the init() method:
         const svg = document.getElementById('cw-puzzle-grid');
-	//this.initBackend();
-	this.backendPromise = this.initBackend();
-	// hack to avoid the endless renderCells() calls, which kill performance on mobile
+        //this.initBackend();
+        this.backendPromise = this.initBackend();
+        // hack to avoid the endless renderCells() calls, which kill performance on mobile
         this.renderCellTS = null;
         this.renderCellCaller = null;
       } // ========> END INIT
@@ -929,12 +929,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             document.body.classList.add('backend-active');
             console.info("Backend features enabled.");
             const data = await response.json();
-	    this.back_saveDB = data['back_saveDB'];
-	    this.back_loadDB = data['back_loadDB'];
+            this.back_saveDB = data['back_saveDB'];
+            this.back_loadDB = data['back_loadDB'];
             this.v_autosave = true;
             $('#autosave1').prop('checked', this.v_autosave);
             $('#autosave2').prop('checked', this.v_autosave);
-	    //this.backendEnabled = true;
+            //this.backendEnabled = true;
             return true;
           }
         } catch (e) {
@@ -966,6 +966,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
        */
       parsePuzzle(data) {
         // if it's already a JSCrossword, return it as-is
+        //console.log("INFO in parsePuzzle");
         var puzzle;
         if (data instanceof JSCrossword) {
           puzzle = data;
@@ -1042,8 +1043,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
         */
 
-	this.stat_errors = {};
-       	this.stat_cheated = {};
+        this.stat_errors = {};
+        this.stat_cheated = {};
         const jsxw2_cells = this.loadGame();
         if (jsxw2_cells) {
           console.log('Loading puzzle from localStorage');
@@ -1054,12 +1055,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           }
           var statObj = JSON.parse(localStorage.getItem(this.savegame_name + "_misc"));
-	  if (statObj && Object.keys(statObj).length > 0) {
-	      this.stat_cheated = statObj.stat_cheated;
-	      this.stat_errors = statObj.stat_errors;
-	      xw_timer_seconds = statObj.timeplayed;
+          if (statObj && Object.keys(statObj).length > 0) {
+              this.stat_cheated = statObj.stat_cheated;
+              this.stat_errors = statObj.stat_errors;
+              xw_timer_seconds = statObj.timeplayed;
 
-	  }
+          }
           puzzle.cells = jsxw2_cells;
         }
 
@@ -1154,8 +1155,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // ✔ DO NOT reset `c.fixed` to false here!
 
           // Apply rules only if this is a fresh load
-	  // J : we dont use this stuff
-	  /*
+          // J : we dont use this stuff
+          /*
           if (!loadedFromStorage && !c.fixed) {
             // Rule 1: Fix punctuation like ‘–’, ‘,’ etc
             if (c.letter && !/[A-Za-z]/.test(c.letter)) {
@@ -1180,7 +1181,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               c.fixed = true;
             }
           }
-	  */
+          */
 
           if (this.diagramless_mode) {
             c.type = null;
@@ -1235,8 +1236,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // Initialize clue mapping and groups dynamically
           this.clueGroups = [];
 
-	  // fix incorrect number of dots at end of clue (essentially cosmetic)
-	  const fixEndDots = (str) => {
+          // fix incorrect number of dots at end of clue (essentially cosmetic)
+          const fixEndDots = (str) => {
            return str.replace(/\s*\.+$/, (match) => {
              // Trim spaces to get just the dots for counting
              const dotsOnly = match.trim();
@@ -1251,19 +1252,19 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // Defensive: if no clues array exists
           const clueSets = puzzle.clues || [];
 
-	  // clean text clues: overwrite only text parts:
-	   /* puzzle.clues obj structure example:
-	   [ {
+          // clean text clues: overwrite only text parts:
+           /* puzzle.clues obj structure example:
+           [ {
               "title": "ACROSS",
               "clue": [
                 { "word": "1", "number": "1", "text": "Personnel d'entretien.." },
-		{ "word": "71", "number": "60", "text": "Demande une certaine attention ..." },...
+                { "word": "71", "number": "60", "text": "Demande une certaine attention ..." },...
               ]
-	    {
+            {
               "title": "DOWN",..
-	   ]   
-	  */	
-	  const clueSetsCleaned = clueSets.map(group => ({
+           ]   
+          */    
+          const clueSetsCleaned = clueSets.map(group => ({
                ...group, // Copy title, etc.
                clue: group.clue.map(item => ({
                ...item, // Copy word, number, etc.
@@ -1354,10 +1355,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.stat_errors = {};
         this.stat_cheated = {}; 
 
-	this.nonBlackCells=this.getNonBlackCells();
+        this.nonBlackCells=this.getNonBlackCells();
 
         this.completeLoad();
-	this.updateStatsUI()
+        this.updateStatsUI()
+        //if (this.v_autocheck) { this.check_reveal( 'puzzle', 'check'); this.renderCells() ; }
       } // END parsePuzzle
 // -----------------------------------------------------------------------------------------------------------------------
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
@@ -1403,7 +1405,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             : ''
         }
         <span class="cw-header-separator">&nbsp;•&nbsp;</span>
-	<span class="signal-emoji">📶</span>
+        <span class="signal-emoji">📶</span>
         <span class="cw-flex-spacer"></span>
         <span class="cw-copyright">${escape(this.copyright)}</span>
         
@@ -1475,8 +1477,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.v_autocheck ? 'none' : 'block';
 
-	// update from DB
-	this.loadDb();
+        // update from DB
+        this.loadDb();
         // Start the timer if necessary
         if (this.config.timer_autostart) {
           this.toggleTimer();
@@ -1510,21 +1512,21 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         updateClueLayout();
 
         // and whenever window resizes
-	window.addEventListener("blur", () => {
+        window.addEventListener("blur", () => {
          if (this.timer_running) {
              this.toggleTimer();
          }
         });
-	window.addEventListener("focus", () => {
+        window.addEventListener("focus", () => {
               if (!this.timer_running) {
                   this.toggleTimer(); 
               }
         });
         window.addEventListener('resize', updateClueLayout);
         document.addEventListener("visibilitychange", () => {
-  	  if (document.hidden) {
-    	      // If the timer is currently running, stop it
-    	      if (this.timer_running) {
+          if (document.hidden) {
+              // If the timer is currently running, stop it
+              if (this.timer_running) {
                 this.toggleTimer();
               }
           } else {
@@ -1623,7 +1625,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         );
 
         // Right-click in the clue list → Ducktiles
-	/*
+        /*
         if (!IS_MOBILE) {
           this.clues_holder.delegate(
             'div.cw-clues-items div.cw-clue .cw-clue-text',
@@ -1636,7 +1638,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           );
         }
-	*/
+        */
 
         if (this.config.hover_enabled) {
           this.svg.on('mousemove', $.proxy(this.mouseMoved, this));
@@ -1682,11 +1684,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         // SAVE
         this.save_btn.on('click', $.proxy(this.saveAsIpuz, this));
-	this.save_db_btn.on('click', (e) => { this.saveDb(e); });
-	this.load_db_btn.on('click', (e) => { this.loadDb(e); });
-	this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
-	this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
-	this.autosave_btn2.on('click', (e) => { this.toggleAutoSave(e); });
+        this.save_db_btn.on('click', (e) => { this.saveDb(e); });
+        this.load_db_btn.on('click', (e) => { this.loadDb(e); });
+        this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
+        this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
+        this.autosave_btn2.on('click', (e) => { this.toggleAutoSave(e); });
 
         // LOAD
         this.load_btn.on('click', () => {
@@ -1729,8 +1731,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.notepad_btn.on('click', $.proxy(this.showNotepad, this));
 
         $(document).on('keydown', $.proxy(this.keyPressed, this));
-	$(document).on('keyup', (e) => { 
-	  const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // check only if a real key was pressed
+        $(document).on('keyup', (e) => { 
+          const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // check only if a real key was pressed
           if (isPrintableChar && this.v_autocheck) { this.check_reveal('letter', 'check'); }
         });  
 
@@ -1780,9 +1782,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               }
 
-	      if (newActiveWord != this.activeWord) {
+              if (newActiveWord != this.activeWord) {
               //if (newActiveWord) {
-	        this.activeWord = newActiveWord;
+                this.activeWord = newActiveWord;
                 this.activeClueGroupIndex = newGroupIndex;
                 this.setActiveWord(newActiveWord);
                 this.setActiveCell(clickedCell);
@@ -1813,7 +1815,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         });
 
         // Right-click on the top clue bar → Ducktiles
-	/*
+        /*
         if (!IS_MOBILE) {
           this.top_text.on('contextmenu', (e) => {
             e.preventDefault();
@@ -1831,7 +1833,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           });
         }
-	*/
+        */
       }
 
       handleClickWindow(event) {
@@ -1970,19 +1972,19 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
       // display current state of word as "W_O_R_D" in the relevant $#
       showCurrentWordStateAsString(word) {
-	  const wordString = word.cell_ranges.map(range => {
-    	     const cell = this.cells[range.x][range.y];
+          const wordString = word.cell_ranges.map(range => {
+             const cell = this.cells[range.x][range.y];
              return (cell.letter && cell.letter !== "") ? cell.letter : "_"; 
-	     }).join("");
-	  //console.log(wordString); 
-	  // display in header space:
+             }).join("");
+          //console.log(wordString); 
+          // display in header space:
           $('#this-word-letters').text(wordString);
           $('#this-word-letters-mobile').text(wordString);
       }
 
       setActiveWord(word) {
         if (word) {
-	  showCurrentWordStateAsString(word);
+          this.showCurrentWordStateAsString(word);
 
           this.selected_word = word;
           if (this.fakeclues) {
@@ -2131,9 +2133,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
       // Clears canvas and re-renders all cells
       renderCells(c="UNKNOWN") { // monitor caller
-	const MIN_DELAY = 150;
+        const MIN_DELAY = 150;
         const now = Date.now();
-	// avoid multiple calls from setActiveCell : ex mobile: mouse clicked + click on grid
+        // avoid multiple calls from setActiveCell : ex mobile: mouse clicked + click on grid
         if (c == "setActiveCell" && this.renderCellCaller == c && (now - this.renderCellTS < MIN_DELAY)) {
             console.log("renderCells < MIN_DELAY");
             return;
@@ -2146,8 +2148,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         // Responsive SVG sizing
         const canvasRect = this.canvas_holder.get(0).getBoundingClientRect();
         //const svgTopMargin = getComputedStyle(this.zoom_container).marginTop;
-	const mtop = parseFloat(this.zoom_container.css('margin-top'));
-	//const svgTopMargin = getComputedStyle(this.svgContainer).marginTop;
+        const mtop = parseFloat(this.zoom_container.css('margin-top'));
+        //const svgTopMargin = getComputedStyle(this.svgContainer).marginTop;
         const maxHeight = canvasRect.height - parseInt(mtop, 10);
         const maxWidth = canvasRect.width;
 
@@ -2166,7 +2168,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         //this.zoom_container.setAttribute('height', svgHeight);
         this.svgContainer.setAttribute('width', svgWidth);
         this.svgContainer.setAttribute('height', svgHeight);
-	this.zoom_container.css('width',  svgWidth  + 'px');
+        this.zoom_container.css('width',  svgWidth  + 'px');
         this.zoom_container.css('height', svgHeight + 'px');
 
         if (this.toptext && this.toptext[0]) {
@@ -2373,14 +2375,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               svg.appendChild(text);
             }
 
-	    // 1. Error Indicator: Top-Right Orange Triangle
+            // 1. Error Indicator: Top-Right Orange Triangle
             if (this.v_displayCheatMarks && this.v_autocheck && this.stat_errors[`${x},${y}`] ) {
                 const triangle = document.createElementNS(this.svgNS, 'polygon');
                 const p1 = `${cellX + SIZE},${cellY}`;             // Top-right corner
                 const p2 = `${cellX + SIZE},${cellY + SIZE * 0.2}`; // Down the right side
                 const p3 = `${cellX + SIZE * 0.8},${cellY}`;       // Left along the top
                 triangle.setAttribute('points', `${p1} ${p2} ${p3}`);
-		// can be RGB: '#FF4500':
+                // can be RGB: '#FF4500':
                 triangle.setAttribute('fill', 'orange');
                 svg.appendChild(triangle);
             }
@@ -2503,8 +2505,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         for (const wordId in this.words) {
           this.updateClueAppearance(this.words[wordId]);
         }
-	this.updateStatsUI();
-	//console.timeEnd('ExecutionTimer');
+        this.updateStatsUI();
+        //console.timeEnd('ExecutionTimer');
       } // end renderCells
 
       drawSelectedWordBorder(svg, word) {
@@ -2587,9 +2589,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
        */
       mouseClicked(e) {
         const offset = this.svg.offset();
-	const scale = this.currentScale; // zoom scale variable
-	const mouse_x = (e.pageX - offset.left) / scale;
-	const mouse_y = (e.pageY - offset.top) / scale;
+        const scale = this.currentScale; // zoom scale variable
+        const mouse_x = (e.pageX - offset.left) / scale;
+        const mouse_y = (e.pageY - offset.top) / scale;
         //const mouse_x = e.pageX - offset.left;
         //const mouse_y = e.pageY - offset.top;
         const index_x = Math.ceil(mouse_x / this.cell_size);
@@ -2670,7 +2672,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       /*keyPressedThenCheck(e) {
         this.keyPressed(e);
         }
-	*/
+        */
       keyPressed(e) {
         if (this.settings_open) {
           return;
@@ -2780,11 +2782,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           case 45:            // insert -- reveal letter
-	    if (e.shiftKey) { // SHIFT insert -- reveal word
-            	this.check_reveal( 'word', 'reveal');
-	    } else {
-            	this.check_reveal( 'letter', 'reveal');
-	    }
+            if (e.shiftKey) { // SHIFT insert -- reveal word
+                this.check_reveal( 'word', 'reveal');
+            } else {
+                this.check_reveal( 'letter', 'reveal');
+            }
             if (false &&(this.selected_cell && (this.selected_word || this.diagramless_mode))) {
               var rebus_entry = prompt('Rebus entry', '');
               this.hiddenInputChanged(rebus_entry);
@@ -2860,7 +2862,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             prevent = true;
             break;
           default: {
-	    const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // no junk needed, we only allow a-z keys in cells.
+            const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // no junk needed, we only allow a-z keys in cells.
 
             if (this.selected_cell && isPrintableChar && !this.selected_cell.fixed) {
               // Uppercase only letters, leave numbers/punctuation unchanged
@@ -2897,7 +2899,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               }
 
-	      // dont change cell if wrong:
+              // dont change cell if wrong:
               if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) next_cell=null;
               if (next_cell) {
                 this.setActiveCell(next_cell);
@@ -2905,13 +2907,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           }
-	} //SWITCH
+        } //SWITCH
         if (prevent) {
           e.preventDefault();
           e.stopPropagation();
         }
 
-	// redisplay word in the upper box:
+        // redisplay word in the upper box:
         if (this.selected_cell && this.selected_word) {
           var i,
             word,
@@ -2919,7 +2921,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             y = this.selected_cell.y;
             word = this.clueGroups[this.activeClueGroupIndex].getMatchingWord(x, y);
             if (word) { this.setActiveWord(word); }
-	}
+        }
   } //FUNCTION keyPressed
 
       autofill() {
@@ -2945,11 +2947,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           if (rebus_string && rebus_string.trim()) { //mobile case rebus_string= letter entered
             this.selected_cell.letter = rebus_string.toUpperCase(); // ✅ Use rebus string if available
             if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) {
-	        next_cell=null;
+                next_cell=null;
                 this.renderCells();
                 this.hidden_input.val('');
-		return;
-		}
+                return;
+                }
           } else {
             const mychar = this.hidden_input.val().slice(0, 1).toUpperCase();
             if (mychar) {
@@ -2963,7 +2965,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // and fill them with the same letter
           this.autofill();
 
-	  // this call can be avoided:
+          // this call can be avoided:
           //this.renderCells("userInput1"); // Re-render SVG grid immediately after user input
 
           // find empty cell, then next cell
@@ -2986,7 +2988,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
 
           this.setActiveCell(next_cell);
-	  // this call can be avoided (setActiveCell has called renderCells)
+          // this call can be avoided (setActiveCell has called renderCells)
           //this.renderCells("userInput2"); // Re-render SVG grid immediately after user input
           this.checkIfSolved()
         }
@@ -3041,7 +3043,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           });
         }
-	if (this.v_autosave) { this.saveDb();}
+        if (this.v_autosave) { this.saveDb();}
 
         /* const winSound = new Audio('./sounds/hny.mp3');
            winSound.play();*/
@@ -3302,7 +3304,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
 
       windowResized() {
-	if (IS_MOBILE) { return;}
+        if (IS_MOBILE) { return;}
         setBreakpointClasses(this.root);
         resizeText(this.root, this.top_text);
         this.renderCells("resized");
@@ -3310,7 +3312,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       }
 
       syncTopTextWidth() {
-	if (IS_MOBILE) { return;}
+        if (IS_MOBILE) { return;}
         const svgEl = this.svgContainer;
         const wrapper = this.toptext?.get(0);
 
@@ -3592,17 +3594,17 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           .get(0)
           .addEventListener('click', (event) => {
             if (event.target.name == 'autocheck2' ) {
-		this.toggleAutoCheck();
-	    }
+                this.toggleAutoCheck();
+            }
             if (event.target.name == 'autosave2' ) {
-		this.toggleAutoSave();
-	    }
+                this.toggleAutoSave();
+            }
             if (event.target.name == 'display-cn' ) {
-		this.toggleClueNumbers();
-	    }
+                this.toggleClueNumbers();
+            }
             if (event.target.name == 'display-cheats' ) {
-		this.toggleDisplayCheats();
-	    }
+                this.toggleDisplayCheats();
+            }
             if (event.target.className === 'settings-changer') {
               if (event.target.type === 'checkbox') {
                 this.config[event.target.name] = event.target.checked;
@@ -3661,7 +3663,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           } else {
             delete c.fixed; // Ensure normal cells are not accidentally flagged
           }
-	  */
+          */
         });
       }
 
@@ -3690,12 +3692,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.renderCells("toggle clue nums"); 
       }
       toggleDisplayCheats(e) {
-      	this.v_displayCheatMarks = !this.v_displayCheatMarks;
+        this.v_displayCheatMarks = !this.v_displayCheatMarks;
         this.renderCells("toggle cheats marks"); 
       }
 
       toggleAutoCheck(e) {
-      	this.v_autocheck = !this.v_autocheck;
+        this.v_autocheck = !this.v_autocheck;
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.v_autocheck ? 'none' : 'block';
         $('#autocheck1').prop('checked', this.v_autocheck);
@@ -3703,7 +3705,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       }
 
       toggleAutoSave(e) {
-      	this.v_autosave = !this.v_autosave;
+        this.v_autosave = !this.v_autosave;
         $('#autosave1').prop('checked', this.v_autosave);
         $('#autosave2').prop('checked', this.v_autosave);
       }
@@ -3712,7 +3714,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       /* load last state from DB */
       async loadDb(e) {
         const isAvailable = await this.backendPromise; // will wait until decision about backend is made
-	if (!isAvailable) return;
+        if (!isAvailable) return;
         //if (! this.backendEnabled) return; (not working)
         this.fillJsXw();
         try {
@@ -3724,28 +3726,28 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 body: JSON.stringify(this.jsxw)
             });
 
-	    if (!response.ok) {
+            if (!response.ok) {
                 alert(`service not available: ${response.status}`);
                 return; 
             }
             const data = await response.json();
             console.log("json returned by nexus_update:", data);
-	    if (data.status != 0) { alert(data.message); }
-	    else {
-	    	const state = data.state
-		this.updateCellsFromState(this.cells, state);
+            if (data.status != 0) { alert(data.message); }
+            else {
+                const state = data.state
+                this.updateCellsFromState(this.cells, state);
 
                 this.stat_errors = {};
                 this.stat_cheated = {};
 
-		// ?.length (Optional Chaining): This safely checks if the list exists and has items in one short expression. If error_list is undefined, it simply skips the block.
-		// Reconstruct stats from simple arrays [ "x1,y1", "x2,y2" ] => stat_errors ={ "x1,y1": true, ...}
+                // ?.length (Optional Chaining): This safely checks if the list exists and has items in one short expression. If error_list is undefined, it simply skips the block.
+                // Reconstruct stats from simple arrays [ "x1,y1", "x2,y2" ] => stat_errors ={ "x1,y1": true, ...}
                 this.stat_errors = data.error_list?.length ? Object.fromEntries(data.error_list.map(c => [c, true])) : {};
                 this.stat_cheated = data.cheated_list?.length ? Object.fromEntries(data.cheated_list.map(c => [c, true])) : {};
-		xw_timer_seconds = data.timeplayed ?? 0;
+                xw_timer_seconds = data.timeplayed ?? 0;
 
-          	this.renderCells("load DB"); 
-	    }
+                this.renderCells("load DB"); 
+            }
     
         } catch (error) {
             console.error('Error loading stats:', error);
@@ -3774,7 +3776,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     /* Save the game state to DB */
     async saveDb(e) {
         const isAvailable = await this.backendPromise;
-	if (! this.v_autosave || !isAvailable) return;
+        if (! this.v_autosave || !isAvailable) return;
         //if (! this.backendEnabled) return; ==> async bug
         if (this.is_saving) return; // Exit if a save is already running
         this.is_saving = true;
@@ -3784,7 +3786,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             ...this.jsxw,
             error_list: Object.keys(this.stat_errors),
             cheated_list: Object.keys(this.stat_cheated),
-	    timeplayed: xw_timer_seconds
+            timeplayed: xw_timer_seconds
         };
     
         try {
@@ -3802,9 +3804,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 body: compressedBody
             });
     
-	    if (!response.ok) {
+            if (!response.ok) {
                 alert(`Backend seems not available: ${response.status}\nAutosave disabled`);
-		this.toggleAutoSave();
+                this.toggleAutoSave();
                 return; 
             }
             const data = await response.json();
@@ -3830,14 +3832,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             value: n[1]
           }
         })));
-	localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
+        localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
             stat_cheated: this.stat_cheated,
             stat_errors: this.stat_errors,
-	    timeplayed: xw_timer_seconds
+            timeplayed: xw_timer_seconds
         }));
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
-	if (this.v_autosave) { this.saveDb();}
+        if (this.v_autosave) { this.saveDb();}
       }
 
       /* Show "load game" menu" */
@@ -3909,26 +3911,26 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
          const errors = this.total_errors();
 
          // Count cells that have a letter entered
-	 const filled = Object.values(this.cells).flatMap(col => Object.values(col)).filter(c => c.solution !== null && c.letter && c.letter === c.solution ).length;
+         const filled = Object.values(this.cells).flatMap(col => Object.values(col)).filter(c => c.solution !== null && c.letter && c.letter === c.solution ).length;
 
          // Calculate percentages
-	 /*
+         /*
          const cheatedPct = ((cheated / total) * 100).toFixed(1);
          const errorsPct = ((errors / total) * 100).toFixed(1);
          const completedPct = ((filled / total) * 100).toFixed(1);
-	 */
-	 const cheatedPct = Math.round((cheated / total) * 100);
+         */
+         const cheatedPct = Math.round((cheated / total) * 100);
          const errorsPct = Math.round((errors / total) * 100);
          const completedPct = Math.round((filled / total) * 100);
      
-	  const stats= `Cheated: ${cheated} (${cheatedPct}%) • ` +
+          const stats= `Cheated: ${cheated} (${cheatedPct}%) • ` +
             `Errors: ${errors} (${errorsPct}%) • ` +
             `Completed: ${completedPct}%`;
-	  $('#misc-stats').text(stats);
-	  $('#fake-btn-stats').text(stats);
-	  const tit_auth= `${this.title} • ` + `${this.author}`+ ' • <span class="signal-emoji">📶</span>';
-	  //$('#fake-btn-tit-auth').text(tit_auth);
-	  $('#fake-btn-tit-auth').html(tit_auth);
+          $('#misc-stats').text(stats);
+          $('#fake-btn-stats').text(stats);
+          const tit_auth= `${this.title} • ` + `${this.author}`+ ' • <span class="signal-emoji">📶</span>';
+          //$('#fake-btn-tit-auth').text(tit_auth);
+          $('#fake-btn-tit-auth').html(tit_auth);
              
      }
 //-----------------------------------------------CHECK REVEAL ------------------------------------------------//     
@@ -3936,7 +3938,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       check_reveal(to_solve, reveal_or_check, e) {
         var my_cells = [],
             cell;
-	var saveNeeded = false;    
+        var saveNeeded = false;    
 
         switch (to_solve) {
           case 'letter':
@@ -4016,12 +4018,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 c.revealed = false;
                 c.checked = false;
               } else {
-		if (c.letter != c.solution) { this.setCheated(c.x,c.y); }
+                if (c.letter != c.solution) { this.setCheated(c.x,c.y); }
                 c.letter = c.solution;
                 c.revealed = true;
                 c.checked = false;
-		saveNeeded = true;
-		// advance :
+                saveNeeded = true;
+                // advance :
                 const next_cell = this.selected_word.getNextCell(c.x, c.y);
                 this.setActiveCell(next_cell);
               }
@@ -4042,15 +4044,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               // Regular crossword
               if (c.letter) {
                 c.checked = !isCorrect(c.letter, c.solution);
-		if (c.checked) { this.setError(c.x,c.y) } // c.checked is : NOT correct entry
-		saveNeeded = true; 
+                if (c.checked) { this.setError(c.x,c.y) } // c.checked is : NOT correct entry
+                saveNeeded = true; 
               } else {
                 c.checked = false;
               }
             }
           }
         }
-	if (saveNeeded) { this.saveGame(); }
+        if (saveNeeded) { this.saveGame(); }
 
         // After mass-reveal or clear, renumber
         if (reveal_or_check === 'reveal' && this.diagramless_mode) {
@@ -4061,16 +4063,16 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         this.renderCells("check_reveal");
-	this.showCurrentWordStateAsString(this.selected_word);
+        this.showCurrentWordStateAsString(this.selected_word);
 
         if (reveal_or_check === 'reveal') {
           this.checkIfSolved(false);
         }
 
         if (reveal_or_check === 'clear') {
-	  this.stat_errors = {};
-       	  this.stat_cheated = {};
-	  xw_timer_seconds = 0 ; 
+          this.stat_errors = {};
+          this.stat_cheated = {};
+          xw_timer_seconds = 0 ; 
           this.saveGame();
         }
 
