@@ -552,8 +552,10 @@ div.is-dragover {
   background: var(--top-text-wrapper-bg-color);
   color: var(--top-text-wrapper-text-color);
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: 10px;
   box-shadow: 0px -2px 15px 6px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  border: 0.11em solid black;
 }
 
 .cw-clue-number {
@@ -567,7 +569,7 @@ div.is-dragover {
 
 .cw-clue-text-up {
   /*background: var(--clue-active-color);*/
-  background: white;
+  /*background: white; */
   flex: 1 1 auto;
   word-wrap: break-word;
   margin-right: 3px;

@@ -216,6 +216,9 @@ html.mobile-mode {
   gap: clamp(0.5em, 4vw, 2em);
 }
 
+.crossword.mobile .cw-button-timer {
+  max-width: 2em !important;
+  }
 /* Smaller mobile buttons */
 .crossword.mobile .cw-button {
   flex: 1;
@@ -369,6 +372,11 @@ html.mobile-mode {
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
 }
 
+#drawer-handle-infos {
+  padding: 0 !important;
+  font-weight: normal !important;
+  }
+#drawer-handle-infos,
 #fake-btn-tit-auth,
 #fake-btn-stats {
   white-space: nowrap;
@@ -376,7 +384,7 @@ html.mobile-mode {
   font-weight: bold;
 }
 .crossword.mobile .cw-buttons-drawer.open {
-  transform: translateY(-100%);
+  transform: translateY(-150%);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
 }
 
@@ -394,8 +402,10 @@ html.mobile-mode {
   border-top-right-radius: 6px;
   cursor: pointer;
   z-index: 21;
+  padding: 8px;
 }
 
+/*
 .crossword.mobile .cw-buttons-handle::before {
   content: '';
   display: block;
@@ -403,8 +413,9 @@ html.mobile-mode {
   height: 4px;
   background: var(--top-text-wrapper-text-color);
   border-radius: 2px;
-  margin: 8px auto;
+  margin: 0 auto 8px;
 }
+*/
 
 .crossword.mobile .cw-modal {
   z-index: 1000;

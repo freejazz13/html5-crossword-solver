@@ -782,7 +782,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           );
         }
 
-        const volt = params.get('voltitle');
+        const volt = params.get('voltitle')?.trim();
         this.voltitle = volt ? `${escape(volt)}&nbsp;•&nbsp;` : '';
         // preload one puzzle
         const b64Data = params.get('data');
@@ -1408,8 +1408,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             : ''
         }
         <span class="cw-header-separator">&nbsp;•&nbsp;</span>
-        <span class="signal-emoji">📶</span>
-        <span class="sync-emoji">&#8597;&#65039;</span>
+        <span class="autocheck-emoji" title="Autocheck On" >🅰️</span>
+        <span class="signal-emoji" title="Backend present" >📶</span>
+        <span class="sync-emoji" title="Autosync on">&#8597;&#65039;</span>
         <span class="cw-flex-spacer"></span>
         <span class="cw-copyright">${escape(this.copyright)}</span>
         
@@ -1701,7 +1702,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         });
 
         // TIMER
-        this.timer_button.on('click', $.proxy(this.toggleTimer, this));
+        //this.timer_button.on('click', $.proxy(this.toggleTimer, this));
+        this.timer_button.on('click', (e) => { this.toggleTimer(e); });
 
         // SETTINGS
         this.settings_btn.on('click', $.proxy(this.openSettings, this));
@@ -2786,14 +2788,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           case 45:            // insert -- reveal letter
-            if (e.shiftKey) { // SHIFT insert -- reveal word
+            if (e.shiftKey) { // SHIFT insert -- reveal word, BUT do not count as cheat : typing accelerator
+                this.check_reveal( 'word', 'reveal', true); // 3rd parameter will be treated NOT as event but as boolean skipCheat = true
+            } else if (e.ctrlKey) { // CTRL insert : real cheating.
                 this.check_reveal( 'word', 'reveal');
             } else {
                 this.check_reveal( 'letter', 'reveal');
-            }
-            if (false &&(this.selected_cell && (this.selected_word || this.diagramless_mode))) {
-              var rebus_entry = prompt('Rebus entry', '');
-              this.hiddenInputChanged(rebus_entry);
             }
             break;
           case 46: // delete
@@ -3537,7 +3537,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             <div class="settings-option">
               <label class="settings-label">
                 <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
-                  Autocheck
+                  Autocheck (🅰️)
                 </input>
               </label>
             </div>
@@ -3558,7 +3558,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             <div class="settings-option">
               <label class="settings-label">
                 <input id="autosave2" checked="" type="checkbox" name="autosave2" class="z-settings-changer">
-                  Autosave Crossword
+                  Autosave Crossword (&#8597;&#65039;)
                 </input>
               </label>
             </div>
@@ -3582,6 +3582,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         $('#display-cn').prop('checked', v_display_cn);
         $('#display-cheats').prop('checked', this.v_displayCheatMarks);
         document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
+        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.v_autocheck ? '' : 'none'; });
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
         for (var cc of classChangers) {
@@ -3707,6 +3708,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         menu.style.display = this.v_autocheck ? 'none' : 'block';
         $('#autocheck1').prop('checked', this.v_autocheck);
         if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.v_autocheck ? '' : 'none'; });
       }
 
       toggleAutoSave(e) {
@@ -3934,14 +3936,18 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             `Completed: ${completedPct}%`;
           $('#misc-stats').text(stats);
           $('#fake-btn-stats').text(stats);
-          const tit_auth= `${this.voltitle}${this.title} • ` + `${this.author}`+ ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>';
-          //$('#fake-btn-tit-auth').text(tit_auth);
+          const tit_auth= `${this.voltitle}${this.title} • ` + `${this.author}`;//+ ' • <span class="autocheck-emoji">🅰️</span> <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>'; // = fleche bidirectionnelle (autosave)
           $('#fake-btn-tit-auth').html(tit_auth);
+          //$('#drawer-handle-infos').html(tit_auth);
              
      }
 //-----------------------------------------------CHECK REVEAL ------------------------------------------------//     
 
-      check_reveal(to_solve, reveal_or_check, e) {
+      check_reveal(to_solve, reveal_or_check, e, skipCheat = false) {
+        if (typeof e === 'boolean') {
+            skipCheat = e;
+            e = null;
+        }
         var my_cells = [],
             cell;
         var saveNeeded = false;    
@@ -4024,7 +4030,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 c.revealed = false;
                 c.checked = false;
               } else {
-                if (c.letter != c.solution) { this.setCheated(c.x,c.y); }
+                if ( (c.letter != c.solution) && !skipCheat ) { this.setCheated(c.x,c.y); }
                 c.letter = c.solution;
                 c.revealed = true;
                 c.checked = false;
@@ -4130,26 +4136,25 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       }
 
 
-      toggleTimer() {
+      toggleTimer(e) {
         var display_seconds, display_minutes;
         var timer_btn = this.timer_button;
+        if (e) e.stopPropagation();
 
         function add() {
-          xw_timer_seconds = xw_timer_seconds + 1;
-          display_seconds = xw_timer_seconds % 60;
-          display_minutes = (xw_timer_seconds - display_seconds) / 60;
+            xw_timer_seconds++;
 
-          var display =
-            (display_minutes ?
-              display_minutes > 9 ?
-              display_minutes :
-              '0' + display_minutes :
-              '00') +
-            ':' +
-            (display_seconds > 9 ? display_seconds : '0' + display_seconds);
+            const h = Math.floor(xw_timer_seconds / 3600);
+            const m = Math.floor((xw_timer_seconds % 3600) / 60);
+            const s = xw_timer_seconds % 60;
 
-          timer_btn.html(display);
-          timer();
+            // Converts number to string and pads with '0' if length is less than 2
+            const mm = String(m).padStart(2, '0');
+            const ss = String(s).padStart(2, '0');
+            
+            var display = h > 0 ? `${h}:${mm}:${ss}`: `${mm}:${ss}`; 
+            timer_btn.html(display);
+            timer();
         }
 
         function timer() {
@@ -4203,7 +4208,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           });
         }
       }
-    }
+    } 
 
     // CluesGroup stores clues and map of words
     class CluesGroup {

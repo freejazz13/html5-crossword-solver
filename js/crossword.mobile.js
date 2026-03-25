@@ -124,8 +124,10 @@ $(document).ready(function () {
 
   if (isMobile && crosswordRoot) {
     const tryWrapLayout = () => {
+      let timer;
       const canvas = document.querySelector('.cw-canvas');
       const buttons = document.querySelector('.cw-buttons-holder');
+      //const dhi = document.querySelector('#drawer-handle-infos');
       if (buttons && buttons.children.length) {
         const allButtons = Array.from(buttons.children);
 
@@ -134,7 +136,7 @@ $(document).ready(function () {
         const check = allButtons.find(btn => btn.textContent.includes('Check'));
         const reveal = allButtons.find(btn => btn.textContent.includes('Reveal'));
         const settings = allButtons.find(btn => btn.textContent.includes('Settings'));
-        const timer = allButtons.find(btn => btn.textContent.match(/[\d:]+/)); // crude match for timer
+        timer = allButtons.find(btn => btn.textContent.match(/[\d:]+/)); // crude match for timer
 
         // Only reflow if all buttons were found
         if (file && check && reveal && settings && timer) {
@@ -157,13 +159,17 @@ $(document).ready(function () {
           row1.className = 'cw-buttons-row';
           row1.append(file, check, reveal, settings);
 
+          /*
           const row2 = document.createElement('div');
           row2.className = 'cw-buttons-row';
           row2.append(timer);
+          */
 
           // Clear and re-append
           buttons.innerHTML = '';
-          buttons.append(row_ta,row0, row1, row2);
+          //buttons.append(row_ta,row0, row1, row2);
+          buttons.append(row_ta,row0, row1 );
+
         }
       }
       const content = document.querySelector('.cw-content');
@@ -175,6 +181,7 @@ $(document).ready(function () {
       if (!canvas || !buttons || !content || !clues || !clues.querySelector(".cw-clues, .cw-clues-top, .cw-clues-bottom")) {
         return setTimeout(tryWrapLayout, 50);
       }
+
 
       // Safe to remove .cw-grid AFTER canvas is grabbed
       const grid = document.querySelector('.cw-grid');
@@ -259,6 +266,26 @@ $(document).ready(function () {
       const handle = document.createElement('div');
       handle.className = 'cw-buttons-handle';
 
+      const bt1 = document.createElement('div');
+      bt1.className = 'cw-buttons-row';
+      handle.appendChild(bt1);
+      const dhi = document.createElement('button');
+      dhi.id = 'drawer-handle-infos';
+      
+      //🔤🅰️
+      dhi.className = 'cw-button';
+      const tit_auth= '<span class="autocheck-emoji">🅰️</span> • ' + `${gCrossword.title} • ` + `${gCrossword.author}`+ ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>';
+      dhi.innerHTML = `<span>${tit_auth}</span>&nbsp;`;
+      if (timer) {
+          dhi.appendChild(timer); 
+      }
+      bt1.appendChild(dhi);
+
+
+      //const row2 = document.createElement('div');
+      //row2.className = 'cw-buttons-row';
+      //row2.append(timer);
+
       // Add text field above drawer
       const thisWordLetters = document.createElement('span');
       thisWordLetters.id = 'this-word-letters-mobile';
@@ -279,56 +306,6 @@ $(document).ready(function () {
       // Rebuild keyboard
       rebuildKeyboardAndPositionDrawer();
 
-   /*
-      // === Rebus via long-press on the grid ===
-      (function enableRebusLongPressOnCell() {
-        // Your grid is the canvas with id 'cw-puzzle-grid' (fallback to .cw-canvas)
-        const grid = document.getElementById('cw-puzzle-grid') || document.querySelector('.cw-canvas');
-        if (!grid || grid.dataset.rebusLpAttached === '1') return; // guard against double binding
-        grid.dataset.rebusLpAttached = '1';
-
-        const LP_MS = 450; // long-press threshold
-        const MAX_MOVE = 8; // cancel if finger moves too much (px)
-        let timer = null;
-        let startX = 0,
-          startY = 0;
-
-        function openRebusEditor() {
-          if (!gCrossword?.selected_cell || gCrossword.selected_cell.empty) return;
-          const val = prompt('Rebus entry', gCrossword.selected_cell.letter || '');
-          if (val && gCrossword?.hiddenInputChanged) {
-            gCrossword.hiddenInputChanged(val.toUpperCase());
-          }
-        }
-
-        function clearTimer() {
-          if (timer) {
-            clearTimeout(timer);
-            timer = null;
-          }
-        }
-
-              grid.addEventListener('pointerdown', (e) => {
-                if (!gCrossword?.selected_cell || gCrossword.selected_cell.empty) return;
-                startX = e.clientX;
-                startY = e.clientY;
-                clearTimer();
-                timer = setTimeout(openRebusEditor, LP_MS);
-              });
-
-        grid.addEventListener('pointermove', (e) => {
-          if (!timer) return;
-          const dx = Math.abs(e.clientX - startX);
-          const dy = Math.abs(e.clientY - startY);
-          if (dx > MAX_MOVE || dy > MAX_MOVE) clearTimer(); // treat as scroll/drag, cancel LP
-        });
-
-        grid.addEventListener('pointerup', clearTimer);
-        grid.addEventListener('pointerleave', clearTimer);
-        grid.addEventListener('pointercancel', clearTimer);
-      })();
-
-   */
 
       // Drawer toggle logic
       drawer = buttonWrapper;
@@ -383,7 +360,9 @@ $(document).ready(function () {
     }; // end tryWrapLayout
 
     setTimeout(tryWrapLayout, 300);
-  }
+    //gCrossword.timer_button = document.querySelector('.cw-button-timer');
+    //gCrossword.timer_button.addEventListener('click', gCrossword.toggleTimer);
+  } // end isMobile
   console.log('Is mobile?', isMobile, 'Classes:', document.querySelector('.crossword')?.className);
   //-------------------------------------------------------------------------------------------------
   // JS pinch-zoom: grid only ────────────────────────────────
@@ -572,7 +551,7 @@ function createCustomKeyboard() {
   const letterRows = [
     'AZERTYUIOP'.split(''),
     'QSDFGHJKLM'.split(''),
-    ['\u{2935}\u{FE0F}', '\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // 💡 ( ✅ for this one see below)
+    ['\u{2935}\u{FE0F}', '\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // ⤵️💡W...  ✅ for this one see below)
   ];
 
   /*
@@ -606,27 +585,77 @@ function createCustomKeyboard() {
 
     // main keys for the row
     row.forEach(letter => {
-      const key = document.createElement('div');
-      key.className = 'custom-key';
-      key.textContent = letter;
-      key.addEventListener('click', () => {
-        if (gCrossword?.hidden_input) {
-          // 1. Check for special emoji keys first
-          if (letter === "\u{2935}\u{FE0F}" || letter === '⤵️' ) { //|| letter === '\u{1F503}' || letter === '🔃') {
-              gCrossword.changeActiveClues(); // toggle direction
-              gCrossword.renderCells("dir switch"); // re-render after direction switch
+      if (letter === '💡' || letter === '\u{1F4A1}') { // special long/short press : see solveLetterWord
+        solveLetterWord(rowDiv,letter);
+      } else {
+        const key = document.createElement('div');
+        key.className = 'custom-key';
+        key.textContent = letter;
+        key.addEventListener('click', () => {
+          if (gCrossword?.hidden_input) {
+            // 1. Check for special emoji keys first
+            if (letter === "\u{2935}\u{FE0F}" || letter === '⤵️' ) { //|| letter === '\u{1F503}' || letter === '🔃') {
+                gCrossword.changeActiveClues(); // toggle direction
+                gCrossword.renderCells("dir switch"); // re-render after direction switch
+            //}
+            //else if (letter === '💡' || letter === '\u{1F4A1}') {
+              //gCrossword.check_reveal('letter', 'reveal');
+            } else {
+              // 2. Default behavior for normal letters
+              gCrossword.hiddenInputChanged(letter);
+              if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
+            }
           }
-          else if (letter === '💡' || letter === '\u{1F4A1}') {
-            gCrossword.check_reveal('letter', 'reveal');
-          } else {
-            // 2. Default behavior for normal letters
-            gCrossword.hiddenInputChanged(letter);
-            if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
-          }
-        }
-      });
-      rowDiv.appendChild(key);
+        });
+        rowDiv.appendChild(key);
+      }
     });
+      // ================ 💡 : solve letter / word with short / long press : COUNTING CHEAT ========================
+      function solveLetterWord(rowDiv, letter) {
+        const solveLW = document.createElement('div');
+        solveLW.className = 'custom-key solveword-key';
+        solveLW.textContent = letter; // 💡
+
+        let solvewordTimeout;
+        let solvewordFired = false;
+
+        function clearsolvewordState() {
+            clearTimeout(solvewordTimeout);
+            solvewordFired = false;
+        }
+
+        // Helper to trigger reveal and refresh UI
+        function triggerReveal(type) {
+            gCrossword.check_reveal(type, 'reveal');
+            gCrossword.renderCells();
+            gCrossword.checkIfSolved();
+        }
+
+          solveLW.addEventListener('pointerdown', (e) => {
+            e.preventDefault(); // Prevent ghost clicks
+            solvewordFired = false;
+
+            solvewordTimeout = setTimeout(() => {
+            triggerReveal('word'); // Long press = WORD
+            solvewordFired = true;
+            }, 400);
+        });
+
+        solveLW.addEventListener('pointerup', () => {
+            if (!solvewordFired) {
+            // If the 400ms timer hasn't finished, it's a short tap
+            clearTimeout(solvewordTimeout);
+            triggerReveal('letter'); // Short tap = LETTER
+            }
+            clearsolvewordState();
+        });
+
+        solveLW.addEventListener('pointerleave', clearsolvewordState);
+        solveLW.addEventListener('pointercancel', clearsolvewordState);
+        
+        rowDiv.appendChild(solveLW); // Fixed variable name from 'solveword' to 'solveLW'
+        }
+      // ===============================================================================================
 
     if (rowIndex === 0) {
       const rightArrow = document.createElement('div');
@@ -640,20 +669,7 @@ function createCustomKeyboard() {
     }
 
     if (rowIndex === 2) {
-      // Period key (bottom row)
-      /*
-        const periodKey = document.createElement('div');
-        periodKey.className = 'custom-key period-key';
-        periodKey.textContent = '.';
-        periodKey.addEventListener('click', () => {
-          if (gCrossword?.hidden_input) {
-            gCrossword.hiddenInputChanged('.');
-          }
-        });
-        rowDiv.appendChild(periodKey);
-        */
-
-      // ================ solve word with long press ========================
+      // ================ ✅ : solve word with long press NOT COUNTING CHEAT ========================
       const solveword = document.createElement('div');
       solveword.className = 'custom-key solveword-key';
       solveword.textContent = '\u{2705}'; // ✅
@@ -672,7 +688,7 @@ function createCustomKeyboard() {
       }
 
       function performsolveword() {
-        gCrossword.check_reveal('word', 'reveal');
+        gCrossword.check_reveal('word', 'reveal', true); // NOT COUNTING CHEAT
         gCrossword.renderCells();
         gCrossword.checkIfSolved();
       }
