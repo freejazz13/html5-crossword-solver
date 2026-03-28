@@ -401,9 +401,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       return deferred;
     }
 
-    // Breakpoint config for the top clue, as tuples of `[max_width, max_size]`
+    // Breakpoint config for the top clue, as tuples of `[max_width, max_font_size]`
     const maxClueSizes = [
-      [1080, 19],
+      [1080, 19], // If width ≤1080px, max font is 19px ...
       [1200, 22],
       [Infinity, 23],
     ];
@@ -2149,7 +2149,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.renderCellTS = now;
         this.renderCellCaller = c;
-        console.log('=====> caller='+c);
+        // debug:
+        //console.log('=====> caller='+c);
+
         //console.time('ExecutionTimer');
         // Responsive SVG sizing
         const canvasRect = this.canvas_holder.get(0).getBoundingClientRect();

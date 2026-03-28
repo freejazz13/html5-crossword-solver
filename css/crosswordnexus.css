@@ -225,7 +225,7 @@ body.backend-active .signal-emoji {
   text-align: left;
   line-height: 1.2;
   font-weight: bold;
-  font-size: 2.3vmin !important;
+  /*font-size: 2.3vmin !important;  (triggers huge overflows on super long clues => Nouvel Obs 24-11-2022) */
   margin-left: 0.3em;
 }
 

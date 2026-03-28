@@ -597,11 +597,7 @@ function createCustomKeyboard() {
             if (letter === "\u{2935}\u{FE0F}" || letter === '⤵️' ) { //|| letter === '\u{1F503}' || letter === '🔃') {
                 gCrossword.changeActiveClues(); // toggle direction
                 gCrossword.renderCells("dir switch"); // re-render after direction switch
-            //}
-            //else if (letter === '💡' || letter === '\u{1F4A1}') {
-              //gCrossword.check_reveal('letter', 'reveal');
-            } else {
-              // 2. Default behavior for normal letters
+            } else { // 2. Default behavior for normal letters
               gCrossword.hiddenInputChanged(letter);
               if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
             }
@@ -738,6 +734,8 @@ function createCustomKeyboard() {
           gCrossword.selected_cell.letter = '';
           gCrossword.selected_cell.checked = false;
           gCrossword.autofill();
+          // update $('#this-word-letters-mobile'):
+          if (gCrossword.selected_word) gCrossword.showCurrentWordStateAsString(gCrossword.selected_word);
 
           if (gCrossword.diagramless_mode) {
             // Move to the previous editable cell based on current diagramless direction
