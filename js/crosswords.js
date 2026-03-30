@@ -174,7 +174,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       timer_autostart: true,
       confetti_enabled: true,
       dark_mode_enabled: false,
-      tab_key: 'tab_noskip',
+      tab_key: 'tab_skip',
       bar_linewidth: 3.2,
       gray_completed_clues: false,
       forced_theme: null,
@@ -1081,7 +1081,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.copyright = puzzle.metadata.copyright || '';
         this.crossword_type = puzzle.metadata.crossword_type;
         this.fakeclues = puzzle.metadata.fakeclues || false;
-        this.notepad = puzzle.metadata.description || '';
+        //this.notepad = puzzle.metadata.description || ''; = notes
+        this.notepad = ''; // no button needed
+        this.puznotes = puzzle.metadata.description || ''; //= puz.notes, for info modal
         this.grid_width = puzzle.metadata.width;
         this.grid_height = puzzle.metadata.height;
         this.completion_message = puzzle.metadata.completion_message || "Puzzle solved!";
@@ -1239,8 +1241,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // Initialize clue mapping and groups dynamically
           this.clueGroups = [];
 
-          // fix incorrect number of dots at end of clue (essentially cosmetic)
-          const fixEndDots = (str) => {
+          /* fix 3 things:
+          ! or ? followed by dots at $
+          incorrect number of dots at end of clue (essentially cosmetic)
+          incorrect hyphenation : "import- antes"
+          */
+          const fixClues = (str00) => {
+           const str = str00.replace(/(\p{L}+)-\s+(\p{L}+)/gu, '$1$2').replace(/([!?])\.+$/, '$1');
            return str.replace(/\s*\.+$/, (match) => {
              // Trim spaces to get just the dots for counting
              const dotsOnly = match.trim();
@@ -1271,7 +1278,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                ...group, // Copy title, etc.
                clue: group.clue.map(item => ({
                ...item, // Copy word, number, etc.
-               text: fixEndDots(item.text) // fix wrong dots at $
+               text: fixClues(item.text) // fix wrong dots at $
                }))
           }));
 
@@ -3409,9 +3416,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.createModalBox(
           'Info',
           `
-            <p><b>${this.voltitle}${escape(this.title)}</b></p>
-            <p>${escape(this.author)}</p>
-            <p><i>${escape(this.copyright)}</i></p>
+            <p><b>Title: ${this.title}</b></p>
+            ${this.voltitle ? `<p><b>Volume: </b>${this.voltitle}</p>` : ''}
+            <p><b>Author:</b> ${escape(this.author)}</p>
+            <p><b>Notes:</b> ${escape(this.puznotes)}</p>
+            <p><b>Dimensions:</b> ${this.grid_width}x${this.grid_height}</b></p>
           `
         );
       }
