@@ -2204,7 +2204,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
         }
 
-        const padding = 0;
+        //const padding = 0;
+        const padding= (IS_MOBILE ? 0 : 10);
         svg.setAttribute(
           'viewBox',
           `-${padding} -${padding} ${this.grid_width * SIZE + padding * 2} ${this.grid_height * SIZE + padding * 2}`

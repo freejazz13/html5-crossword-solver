@@ -113,7 +113,7 @@ body.backend-active .signal-emoji {
   width: auto;
   /*margin-top: 65px;*/
   align-self: center;
-  box-shadow: 0px -2px 15px 6px rgba(0, 0, 0, 0.15);
+  /*box-shadow: 0px -2px 15px 6px rgba(0, 0, 0, 0.15);*/
   border-radius: 2px;
 }
 

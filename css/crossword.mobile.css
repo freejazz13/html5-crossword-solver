@@ -95,6 +95,10 @@ html.mobile-mode {
   text-align: center;
 }
 
+.crossword.mobile .cw-cell-letter {
+  font-weight: 600;
+  }
+
 .crossword.mobile .cw-top-text {
   font-weight: bold;
   /*font-size: 2.3vmin !important;*/
