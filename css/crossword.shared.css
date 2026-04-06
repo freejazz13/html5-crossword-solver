@@ -68,6 +68,31 @@ This file contains shared styles always loaded (mobile or desktop)
     --border-color: rgba(0, 0, 0, 0.1);
 }
 
+/* "Hidden by Default" logic. */
+[backend-required] {
+  display: none !important;
+}
+
+body.backend-active [backend-required] {
+  display: block !important; /* or inline-block/flex */
+}
+
+body:not(.backend-active) .sync-emoji {
+  display: none;
+}
+
+/* Gray/Dimmed by default */
+.signal-emoji {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+/* Color/Bright when backend active */
+body.backend-active .signal-emoji {
+  filter: grayscale(0);
+  opacity: 1;
+}
+
 body.dark-mode {
     --main-bg-color: #121212;
     --header-bg-color: #1e1e1e;

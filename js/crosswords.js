@@ -922,6 +922,7 @@ function setupPWAInstallButton(btn) {
             $('#autosave1').prop('checked', this.v_autosave);
             $('#autosave2').prop('checked', this.v_autosave);
             document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
+            document.querySelectorAll('.signal-emoji').forEach(el => { el.title = "Backend present"; });
             //this.backendEnabled = true;
             return true;
           }
@@ -1114,7 +1115,7 @@ function setupPWAInstallButton(btn) {
             x: rawCell.x + 1,
             y: rawCell.y + 1,
             solution: rawCell.solution,
-            letter: rawCell.value || '',
+            letter: rawCell.letter || '',
             type: rawCell.type || null,
             number: rawCell.number || null,
             bar: {
@@ -1346,14 +1347,10 @@ function setupPWAInstallButton(btn) {
 
         //console.log(this);
 
-        // Initialize stat structures
-        this.stat_errors = {};
-        this.stat_cheated = {}; 
-
         this.nonBlackCells=this.getNonBlackCells();
 
-        this.completeLoad();
-        //this.updateStatsUI()
+        this.completeLoad(); // will try to loadDb
+        this.updateStatsUI()
         //if (this.v_autocheck) { this.check_reveal( 'puzzle', 'check'); this.renderCells() ; }
       } // END parsePuzzle
 // -----------------------------------------------------------------------------------------------------------------------
@@ -1408,7 +1405,7 @@ function setupPWAInstallButton(btn) {
         }
         <span class="cw-header-separator">&nbsp;•&nbsp;</span>
         <span class="autocheck-emoji" title="Autocheck On" >🅰️</span>
-        <span class="signal-emoji" title="Backend present" >📶</span>
+        <span class="signal-emoji" title="No Backend" >📶</span>
         <span class="sync-emoji" title="Autosync on">&#8597;&#65039;</span>
         <span class="cw-flex-spacer"></span>
         <span class="cw-copyright">${escape(this.copyright)}</span>
@@ -2987,7 +2984,7 @@ function setupPWAInstallButton(btn) {
           if (rebus_string && rebus_string.trim()) { //mobile case rebus_string= letter entered
             this.selected_cell.letter = rebus_string.toUpperCase(); // ✅ Use rebus string if available
             if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) { // wrong entry
-              this.updateCell(this.selected_cell, { letter: '' });
+              this.updateCell(this.selected_cell, { letter: this.selected_cell.letter,  checked: true });
               next_cell=null;
               return;
               }
@@ -2997,7 +2994,9 @@ function setupPWAInstallButton(btn) {
               this.updateCell(this.selected_cell, { letter: mychar });
             }
           }
-          this.selected_cell.checked = false;
+          this.updateCell(this.selected_cell, {
+            checked: false
+          });
 
           // If this is a coded or acrostic
           // find all cells with this number
@@ -3589,7 +3588,7 @@ function setupPWAInstallButton(btn) {
               </label>
             </div>
             <div class="settings-option">
-              <label class="settings-label">
+              <label class="settings-label" backend-required>
                 <input id="autosave2" checked="" type="checkbox" name="autosave2" class="z-settings-changer">
                   Autosave Crossword (&#8597;&#65039;)
                 </input>
@@ -3742,7 +3741,6 @@ function setupPWAInstallButton(btn) {
       async loadDb(e) {
         const isAvailable = await this.backendPromise; // will wait until decision about backend is made
         if (!isAvailable) return;
-        //if (! this.backendEnabled) return; (not working)
         this.fillJsXw();
         try {
             const response = await fetch(this.back_loadDB, {
@@ -3805,7 +3803,6 @@ function setupPWAInstallButton(btn) {
     async saveDb(e) {
         const isAvailable = await this.backendPromise;
         if (! this.v_autosave || !isAvailable) return;
-        //if (! this.backendEnabled) return; ==> async bug
         if (this.is_saving) return; // Exit if a save is already running
         this.is_saving = true;
     
@@ -3948,7 +3945,7 @@ function setupPWAInstallButton(btn) {
          const errorsPct = Math.round((errors / total) * 100);
          const completedPct = Math.round((filled / total) * 100);
      
-          const stats= `Cheated: ${cheated} (${cheatedPct}%) • ` +
+         const stats= `Cheated: ${cheated} (${cheatedPct}%) • ` +
             `Errors: ${errors} (${errorsPct}%) • ` +
             `Completed: ${completedPct}%`;
           //$('#misc-stats').text(stats);
@@ -3957,12 +3954,15 @@ function setupPWAInstallButton(btn) {
           //$('#fake-btn-tit-auth').html(tit_auth);
           //$('#drawer-handle-infos').html(tit_auth);
           const domOK = setInterval(() => {
-              const el = document.getElementById('misc-stats');
-              if (el) {
+              const el1 =  document.getElementById('misc-stats');
+              const el2 = document.getElementById('fake-btn-stats');
+              const el3 = document.getElementById('fake-btn-tit-auth');
+              if (el1) el1.innerHTML = stats;
+              if (el2) el2.textContent = stats;
+              if (el3) el3.innerHTML = tit_auth;
+
+              if (( !IS_MOBILE && el1) || (IS_MOBILE && el2 && el3)) {
                   clearInterval(domOK);
-                  el.innerHTML = stats;
-                  document.getElementById('fake-btn-stats').textContent = stats;
-                  document.getElementById('fake-btn-tit-auth').innerHTML = tit_auth;
               }
           }, 200); // Checks every 200ms
              
@@ -4101,7 +4101,7 @@ function setupPWAInstallButton(btn) {
             } else {
               // Regular crossword
               if (c.letter) {
-		const ckd = !isCorrect(c.letter, c.solution);
+		        const ckd = !isCorrect(c.letter, c.solution);
                 this.updateCell(c, {
                   checked: ckd
                 });
