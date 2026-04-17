@@ -84,6 +84,9 @@ html.mobile-mode {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.crossword.mobile #twlm-container {
+  background: var(--clue-active-color);
+  }
 .crossword.mobile #this-word-letters-mobile {
   display: block;  /* or inline-block */
   width: 100%;
@@ -522,4 +525,65 @@ html.mobile-mode {
   justify-content: center;
   font-size: 1em;
   white-space: nowrap;
+}
+
+/* === Clue List View === */
+.crossword.mobile .cw-clue-list-view {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 4px 4px;
+  background: var(--main-bg-color, #fff);
+}
+
+.crossword.mobile .cw-clue-list-view.active {
+  display: flex;
+}
+
+.crossword.mobile .cw-clue-list-group-title {
+  font-size: 0.75em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 2px 4px;
+  color: var(--clue-title-color, #555);
+  border-bottom: 2px solid var(--grid-stroke-color, #ccc);
+  margin-bottom: 2px;
+  position: sticky;
+  top: 0;
+  background: var(--main-bg-color, #fff);
+  z-index: 1;
+}
+
+.crossword.mobile .cw-clue-list-item {
+  padding: 5px 2px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.crossword.mobile .cw-clue-list-item.cw-clue-list-active {
+  /*background: var(--grid-selected-word-color, #b3d9ff);*/
+  border-radius: 4px;
+}
+
+.crossword.mobile .cw-clue-list-clue-text {
+  font-size: 0.9em;
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+
+.crossword.mobile .cw-clue-list-clue-text .cw-clue-number {
+  font-weight: bold;
+  margin-right: 4px;
+}
+
+.crossword.mobile .cw-clue-word-svg {
+  display: block;
+  height: 28px;
+  overflow: visible;
 }

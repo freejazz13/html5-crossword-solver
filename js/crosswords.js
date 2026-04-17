@@ -364,6 +364,7 @@ function setupPWAInstallButton(btn) {
       const maxSize = maxClueSizes.find(bp => bp[0] > rootWidth)?.[1] ?? 24;
       const unit = 'px';
 
+      if (nodeList[0].scrollHeight == 0) return; // do nothing in listView mode
       for (var j = 0; j < nodeList.length; j++) {
         const el = nodeList[j];
         const parent = el.parentNode;
@@ -4550,7 +4551,16 @@ function setupPWAInstallButton(btn) {
       // get first empty cell in word
       // if x and y given - get first empty cell after cell with coordinates x,y
       // if there's no empty cell after those coordinates - search from begin
-      getFirstEmptyCell(x, y) {
+      /*
+      check_reveal(to_solve, reveal_or_check, e, skipCheat = false) {
+        if (typeof e === 'boolean') {
+            skipCheat = e;
+            e = null;
+        }
+      */
+      getFirstEmptyCell(x, y, checkedIsEmpty = false) { // if checkedIsEmpty = true : consider checked cell as empty
+        if (typeof x === 'boolean') { checkedIsEmpty = x ; x = null ; } // when only 1 param : its checkedIsEmpty
+              //
         // Return null if there are no cells in the word
         if (!this.cells || this.cells.length === 0) return null;
 
@@ -4576,7 +4586,7 @@ function setupPWAInstallButton(btn) {
           const cell = this.getCellByCoordinates(coordinates);
 
           // Return the first cell without a letter
-          if (cell && !cell.letter) {
+          if (cell && (!cell.letter || (checkedIsEmpty && cell.checked)) ) {
             return cell;
           }
         }
