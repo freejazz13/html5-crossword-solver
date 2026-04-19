@@ -1078,9 +1078,11 @@ function setupPWAInstallButton(btn) {
         if (this.title) {
           document.title = 'Nexus : ' + this.title ;
         }
+        /*
         if (this.crossword_type == 'acrostic' || this.crossword_type == 'coded') {
           this.is_autofill = true;
         }
+        */
 
         if (this.fakeclues || this.crossword_type === 'diagramless' || this.crossword_type === 'coded') {
           // top-text is meaningless for fakeclues and diagramless puzzles (and coded!)
@@ -2777,7 +2779,7 @@ function setupPWAInstallButton(btn) {
               } else {
                 // --- normal space behavior: clear and move to next cell
                 this.updateCell(this.selected_cell, { letter: '', checked: false });
-                this.autofill();
+                this.saveAndUpdateStats();
                 const next_cell = this.selected_word.getNextCell(
                   this.selected_cell.x,
                   this.selected_cell.y
@@ -2816,7 +2818,7 @@ function setupPWAInstallButton(btn) {
                 letter: '',
                 checked: false
               });
-              this.autofill();
+              this.saveAndUpdateStats();
             }
             // Update this.isSolved
             this.checkIfSolved();
@@ -2827,7 +2829,7 @@ function setupPWAInstallButton(btn) {
                 letter: '',
                 checked: false
               });
-              this.autofill();
+              this.saveAndUpdateStats();
 
               if (this.diagramless_mode) {
                 // Move to the previous editable cell based on current diagramless direction
@@ -2897,16 +2899,14 @@ function setupPWAInstallButton(btn) {
             prevent = true;
             break;
           default: {
-            const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // no junk needed, we only allow a-z keys in cells.
-
-            if (this.selected_cell && isPrintableChar && !this.selected_cell.fixed) {
-              // Uppercase only letters, leave numbers/punctuation unchanged
-              const ch = /[a-z]/i.test(e.key) ? e.key.toUpperCase() : e.key;
+             const isLetter = e.key.length === 1 && /^[a-z]$/i.test(e.key);
+             if (this.selected_cell && isLetter && !this.selected_cell.fixed) {
+               const ch = e.key.toUpperCase();
               this.updateCell(this.selected_cell, {
                 letter: ch,
                 checked: false
               });
-              this.autofill();
+              this.saveAndUpdateStats();
               this.checkIfSolved();
               if (!IS_MOBILE) {
                 this.hidden_input.focus();
@@ -2960,9 +2960,11 @@ function setupPWAInstallButton(btn) {
         }
   } //FUNCTION keyPressed
 
-      autofill() {
-        this.saveGame(); // keep saving
+      saveAndUpdateStats() {
+        this.saveGame(); // save locally and to backend if present
+        this.updateStatsUI();
 
+        /* unused code for us
         if (this.is_autofill && this.selected_cell) {
           const key = this.selected_cell.number || this.selected_cell.top_right_number;
           const same_number_cells = this.number_to_cells[key] || [];
@@ -2976,6 +2978,7 @@ function setupPWAInstallButton(btn) {
             }
           }
         }
+       */
       }
 
       // Detects user inputs to hidden input element
@@ -3002,7 +3005,7 @@ function setupPWAInstallButton(btn) {
           // If this is a coded or acrostic
           // find all cells with this number
           // and fill them with the same letter
-          this.autofill();
+          this.saveAndUpdateStats();
 
           // this call can be avoided:
           //this.renderCells("userInput1"); // Re-render SVG grid immediately after user input
@@ -3801,13 +3804,17 @@ function setupPWAInstallButton(btn) {
   }
 
     /* Save the game state to DB */
-    async saveDb(e) {
+    async saveDb(e, mustFill=true) {
+        if (typeof e === 'boolean') {
+            mustFill = e;
+            e = null;
+        }
         const isAvailable = await this.backendPromise;
         if (! this.v_autosave || !isAvailable) return;
         if (this.is_saving) return; // Exit if a save is already running
         this.is_saving = true;
     
-        this.fillJsXw();
+        if (mustFill) this.fillJsXw();
         const payload = {
             ...this.jsxw,
             error_list: Object.keys(this.stat_errors),
@@ -3865,7 +3872,7 @@ function setupPWAInstallButton(btn) {
         }));
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
-        if (this.v_autosave) { this.saveDb();}
+        if (this.v_autosave) { this.saveDb(false);} // no fillJsXw required its just been done
       }
 
       /* Show "load game" menu" */
@@ -3913,12 +3920,10 @@ function setupPWAInstallButton(btn) {
 // ----------------------- cheat & errors helpers -------------------------------//
       setError(x, y) {
           this.stat_errors[`${x},${y}`] = true;
-          this.updateStatsUI();
       }
 
       setCheated(x, y) {
           this.stat_cheated[`${x},${y}`] = true;
-          this.updateStatsUI();
       }
 
       total_errors() {
@@ -3934,40 +3939,47 @@ function setupPWAInstallButton(btn) {
      }
 
      updateStatsUI() {
-         const total = this.nonBlackCells;
-         const cheated = this.total_cheated();
-         const errors = this.total_errors();
+        // 1. DOM Guard: Find elements first
+        const el1 = document.getElementById('misc-stats');
+        const el2 = document.getElementById('fake-btn-stats');
 
-         // Count cells that have a letter entered
-         const filled = Object.values(this.cells).flatMap(col => Object.values(col)).filter(c => c.solution !== null && c.letter && c.letter === c.solution ).length;
+        // on mobile: update only when drawer is opened
+        if (IS_MOBILE && !document.querySelector('.cw-buttons-drawer')?.classList.contains('open')) {
+            return;
+        }
 
-         // Calculate percentages
-         const cheatedPct = Math.round((cheated / total) * 100);
-         const errorsPct = Math.round((errors / total) * 100);
-         const completedPct = Math.round((filled / total) * 100);
-     
-         const stats= `Cheated: ${cheated} (${cheatedPct}%) • ` +
-            `Errors: ${errors} (${errorsPct}%) • ` +
-            `Completed: ${completedPct}%`;
-          //$('#misc-stats').text(stats);
-          //$('#fake-btn-stats').text(stats);
-          const tit_auth= `${this.voltitle}${this.title} • ` + `${this.author}`;
-          //$('#fake-btn-tit-auth').html(tit_auth);
-          //$('#drawer-handle-infos').html(tit_auth);
-          const domOK = setInterval(() => {
-              const el1 =  document.getElementById('misc-stats');
-              const el2 = document.getElementById('fake-btn-stats');
-              const el3 = document.getElementById('fake-btn-tit-auth');
-              if (el1) el1.innerHTML = stats;
-              if (el2) el2.textContent = stats;
-              if (el3) el3.innerHTML = tit_auth;
+        // 3. Exit if nowhere to print the data
+        if (!el1 && !el2) return;
 
-              if (( !IS_MOBILE && el1) || (IS_MOBILE && el2 && el3)) {
-                  clearInterval(domOK);
-              }
-          }, 200); // Checks every 200ms
-             
-     }
+        // 4. Data Crunching only if elements exist
+        const total = this.nonBlackCells;
+        const cheated = this.total_cheated();
+        const errors = this.total_errors();
+
+        // Count cells that have a correct letter entered 
+        let filled = 0;
+        for (const col in this.cells) {
+            for (const row in this.cells[col]) {
+                const c = this.cells[col][row];
+                if (c.solution !== null && c.letter === c.solution) filled++;
+            }
+        }
+
+        // 5. Formatting
+        const cheatedPct = Math.round((cheated / total) * 100);
+        const errorsPct = Math.round((errors / total) * 100);
+        const completedPct = Math.floor((filled / total) * 100);
+
+        const stats = `Cheated: ${cheated} (${cheatedPct}%) • Errors: ${errors} (${errorsPct}%) • Completed: ${completedPct}%`;
+        const tit_auth = `${this.voltitle}${this.title} • ${this.author}`;
+        
+        // 6. UI Update
+        if (el1) el1.innerHTML = stats;
+        if (el2) el2.textContent = stats;
+        const el3 = document.getElementById('fake-btn-tit-auth');
+        if (el3) el3.innerHTML = tit_auth;
+        }
+
 //-----------------------------------------------CHECK REVEAL ------------------------------------------------//     
 
       check_reveal(to_solve, reveal_or_check, e, skipCheat = false) {
@@ -4005,6 +4017,7 @@ function setupPWAInstallButton(btn) {
         }
 
         // Expand autofill cells (if needed)
+        /*
         if (this.is_autofill) {
           const extra_cells = [];
           for (let c of my_cells) {
@@ -4021,6 +4034,7 @@ function setupPWAInstallButton(btn) {
           }
           my_cells = my_cells.concat(extra_cells);
         }
+        */
 
         for (let c of my_cells) {
           if (reveal_or_check !== 'clear' && !c.solution) {
@@ -4116,7 +4130,7 @@ function setupPWAInstallButton(btn) {
             }
           }
         }
-        if (saveNeeded) { this.saveGame(); }
+        if (saveNeeded) { this.saveAndUpdateStats(); }
 
         // After mass-reveal or clear, renumber
         if (reveal_or_check === 'reveal' && this.diagramless_mode) {
@@ -4136,7 +4150,7 @@ function setupPWAInstallButton(btn) {
           this.stat_errors = {};
           this.stat_cheated = {};
           xw_timer_seconds = 0 ; 
-          this.saveGame();
+          this.saveAndUpdateStats();
         }
 
         if (!IS_MOBILE) {

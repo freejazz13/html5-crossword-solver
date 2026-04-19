@@ -610,6 +610,7 @@ $(document).ready(function () {
       handle.addEventListener('click', () => {
         drawerOpen = !drawerOpen;
         drawer.classList.toggle('open', drawerOpen);
+        if (drawerOpen) gCrossword.updateStatsUI();
       });
 
       // Swipe gesture
@@ -622,6 +623,7 @@ $(document).ready(function () {
         const deltaY = touchStartY - e.changedTouches[0].clientY;
         if (deltaY > 30) {
           drawerOpen = true;
+          gCrossword.updateStatsUI();
         } else if (deltaY < -30) {
           drawer.classList.remove('open');
           drawerOpen = false;
@@ -1025,7 +1027,7 @@ function createCustomKeyboard() {
                 letter: '',
                 checked: false
               });
-          gCrossword.autofill();
+          gCrossword.saveAndUpdateStats();
           // update $('#this-word-letters-mobile'):
           if (gCrossword.selected_word) gCrossword.showCurrentWordStateAsString(gCrossword.selected_word);
 
