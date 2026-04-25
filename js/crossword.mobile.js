@@ -13,6 +13,28 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/*
+- structure of the container hierarchy with new list view container:
+  .cw-grid-wrapper                    ← outer flex column container
+    └─ .cw-grid-clue-wrapper          ← inner flex row: grid + optional side clues
+         ├─ <canvas>                   ← the crossword grid
+         └─ .cw-mobile-clues-side      ← side clue panel (hidden on phones <767px)
+    └─ #cw-clue-list-view             ← alternate "list view" SVG (toggled, hidden by default)
+         └─ .cw-clue-list-group            (one per ACROSS / DOWN)
+              ├─ .cw-clue-list-group-title  ← sticky header, z-index: 1 ; values : "ACROSS" OR "DOWN"
+              └─ .cw-clue-list-item[data-word-id][data-group-id]   (one per clue)
+                   ├─ .cw-clue-list-clue-text
+                   │    ├─ <span.cw-clue-number>  ← bold number
+                   │    └─ <span>  ← clue text
+                   └─ <svg.cw-clue-word-svg>  ← horizontal cell row
+                        ├─ <rect data-cx data-cy>  ← background fill
+                        └─ <text data-cx data-cy>  ← letter
+
+
+  - .cw-grid-clue-wrapper is a flex-row holding the canvas and the side clue panel side-by-side. On tablets/desktop it shows both; on phones (<767px) the side panel is hidden.
+  - #cw-clue-list-view sits outside .cw-grid-clue-wrapper, as a sibling inside .cw-grid-wrapper. It's an SVG-based alternate view toggled by the "List" button — when active, cw-grid-clue-wrapper is hidden and this takes over.
+*/
+
 var gCrossword;
 let isAltKeyboard = false;
 //var v_autocheck;
@@ -123,9 +145,228 @@ $(document).ready(function () {
   }
 
   if (isMobile && crosswordRoot) {
+    // ── Clue List View helpers ──────────────────────────────────────
+    let clueListViewActive = false;
+
+    function buildClueListView() {
+      const container = document.getElementById('cw-clue-list-view');
+      if (!container || !gCrossword?.clueGroups) return;
+      const initialWidth = document.querySelector('.cw-grid-clue-wrapper')?.offsetWidth
+                        ?? container.parentElement?.offsetWidth
+                        ?? 0;
+      // 2*4 = CSS padding l/r 
+      //  1 = stroke-width
+      const LIST_CELL_SIZE = Math.ceil((initialWidth - (2 * 4) )/ gCrossword.grid_width) - 1 ;
+      gCrossword.listCellSize = LIST_CELL_SIZE; // to be used in updateClueListView
+            
+      container.innerHTML = '';
+      const ns = 'http://www.w3.org/2000/svg';
+
+      gCrossword.clueGroups.forEach(group => {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'cw-clue-list-group';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'cw-clue-list-group-title';
+        titleEl.textContent = group.title;
+        groupEl.appendChild(titleEl);
+
+        group.clues.forEach(clue => {
+          const word = gCrossword.words[clue.word];
+          if (!word) return;
+
+          const item = document.createElement('div');
+          item.className = 'cw-clue-list-item';
+          item.dataset.wordId = clue.word;
+          item.dataset.groupId = group.id;
+
+          // Clue text row
+          const textEl = document.createElement('div');
+          textEl.className = 'cw-clue-list-clue-text';
+          const numSpan = document.createElement('span');
+          numSpan.className = 'cw-clue-number';
+          numSpan.textContent = clue.number;
+          const txtSpan = document.createElement('span');
+          txtSpan.textContent = clue.text;
+          textEl.appendChild(numSpan);
+          textEl.appendChild(txtSpan);
+          item.appendChild(textEl);
+
+          // SVG word cells (always rendered as a horizontal row)
+          const n = word.cells.length;
+          const svgW = n * LIST_CELL_SIZE;
+          const svg = document.createElementNS(ns, 'svg');
+          //svg.setAttribute('viewBox', `0 0 ${svgW} ${LIST_CELL_SIZE}`);
+          svg.setAttribute('viewBox', `-0.5 -0.5 ${svgW + 1} ${LIST_CELL_SIZE + 1}`);
+          svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+          svg.setAttribute('width', svgW);
+          svg.setAttribute('height', LIST_CELL_SIZE);
+          svg.classList.add('cw-clue-word-svg');
+          svg.dataset.wordId = clue.word; // will add data-word-id="n" where n is word number
+
+          word.cells.forEach((cellKey, i) => {
+            const [cx, cy] = cellKey.split('-').map(Number);
+            const cell = gCrossword.cells[cx]?.[cy];
+            if (!cell) return;
+            const px = i * LIST_CELL_SIZE;
+            const fill = cell.type === 'block'
+              ? 'var(--grid-block-color)'
+              : (cell.color || 'var(--grid-none-color)');
+
+            const rect = document.createElementNS(ns, 'rect');
+            rect.setAttribute('x', px);
+            rect.setAttribute('y', 0);
+            rect.setAttribute('width', LIST_CELL_SIZE);
+            rect.setAttribute('height', LIST_CELL_SIZE);
+            rect.setAttribute('fill', fill);
+            rect.setAttribute('stroke', 'var(--grid-stroke-color)');
+            rect.setAttribute('stroke-width', '1');
+            rect.setAttribute('data-cx', cx);
+            rect.setAttribute('data-cy', cy);
+            rect.setAttribute('class', 'cw-cell');
+            svg.appendChild(rect);
+
+            const txt = document.createElementNS(ns, 'text');
+            txt.setAttribute('x', px + LIST_CELL_SIZE / 2);
+            txt.setAttribute('y', LIST_CELL_SIZE * 0.78);
+            txt.setAttribute('text-anchor', 'middle');
+            txt.setAttribute('font-family', 'Arial, sans-serif');
+            txt.setAttribute('font-size', LIST_CELL_SIZE * 0.62);
+            txt.setAttribute('fill', 'var(--grid-none-text-color)');
+            txt.setAttribute('data-cx', cx);
+            txt.setAttribute('data-cy', cy);
+            rect.setAttribute('class', 'cw-cell-letter');
+            txt.textContent = cell.letter || '';
+            svg.appendChild(txt);
+          });
+
+          item.appendChild(svg);
+
+          //item is 'cw-clue-list-item' 
+          item.addEventListener('click', () => {
+            const w = gCrossword.words[item.dataset.wordId];
+            if (!w) return;
+            // true => consider checked as empty, click event isnt on cell, so we'll position on wrong cell directly
+            const c = w.getFirstEmptyCell(true) || w.getFirstCell();
+            if (!c) return;
+            gCrossword.setActiveWord(w);
+            gCrossword.setActiveCell(c);
+            if (gCrossword.clueGroups[gCrossword.activeClueGroupIndex]?.id !== item.dataset.groupId) {
+              gCrossword.changeActiveClues();
+            }
+            //gCrossword.renderCells();
+          });
+
+          groupEl.appendChild(item);
+        });
+        container.appendChild(groupEl);
+      });
+    }
+
+          
+    function updateClueListView() {
+        if (!clueListViewActive) return;
+        const listView = document.getElementById('cw-clue-list-view');
+        if (!listView) return;
+    
+        // 1. First, sync all Rects and Text
+        listView.querySelectorAll('rect[data-cx]').forEach(rect => {
+            const cx = rect.getAttribute('data-cx');
+            const cy = rect.getAttribute('data-cy');
+            const gridCell = document.querySelector(`rect.cw-cell[data-x="${cx}"][data-y="${cy}"]`);
+            if (gridCell) {
+                // 1. Sync visual attributes
+                const attrs = ['fill', 'stroke'];
+                attrs.forEach(attr => rect.setAttribute(attr, gridCell.getAttribute(attr)));
+                // 2. Sync classes (crucial for 'selected' and 'linked' states)
+                rect.className.baseVal = gridCell.className.baseVal;
+            }
+        });
+    
+        listView.querySelectorAll('text[data-cx]').forEach(txt => {
+            const cx = txt.getAttribute('data-cx');
+            const cy = txt.getAttribute('data-cy');
+            const cell = gCrossword.cells[cx]?.[cy];
+            if (cell) txt.textContent = cell.letter || '';
+        });
+    
+        // NOW draw the slashes on top of EVERYTHING
+        listView.querySelectorAll('rect[data-cx]').forEach(rect => {
+            const cx = rect.getAttribute('data-cx');
+            const cy = rect.getAttribute('data-cy');
+            const cell = gCrossword.cells[cx]?.[cy];
+            //const wordId = rect.parentElement.getAttribute('data-word-id');
+            //const svg = document.querySelector(`.cw-clue-word-svg[data-word-id="${wordId}"]`);
+            const svg = rect.closest('svg');
+            const wordId = svg.getAttribute('data-word-id');
+            const ns = 'http://www.w3.org/2000/svg';
+    
+            // Remove existing slash for this specific cell
+            const slashSelector = `line[data-word-id="${wordId}"][data-cx="${cx}"][data-cy="${cy}"]`;
+            const slashExist = svg.querySelector(slashSelector);
+            if (slashExist) { slashExist.remove(); }
+    
+            if (cell && cell.checked) {
+                const slash = document.createElementNS(ns, 'line');
+                const x = parseFloat(rect.getAttribute('x'));
+                const y = parseFloat(rect.getAttribute('y'));
+                const w = parseFloat(rect.getAttribute('width'));
+                const h = parseFloat(rect.getAttribute('height'));
+    
+                slash.setAttribute('x1', x + 2);
+                slash.setAttribute('y1', y + 2);
+                slash.setAttribute('x2', x + w - 2);
+                slash.setAttribute('y2', y + h - 2);
+                slash.setAttribute('stroke-linecap', 'round');
+                slash.setAttribute('stroke', 'var(--grid-none-text-color)');
+                slash.setAttribute('stroke-width', 2);
+                
+                // Add identifiers so we can find/remove it later
+                slash.dataset.wordId = wordId;
+                slash.dataset.cx = cx;
+                slash.dataset.cy = cy;
+    
+                // Appending last ensures it is at the top of the Z-stack
+                svg.appendChild(slash);
+            }
+        });
+    
+        // 3. Highlight active word
+        const activeId = String(gCrossword.selected_word?.id ?? '');
+        listView.querySelectorAll('.cw-clue-list-item').forEach(item => {
+            item.classList.toggle('cw-clue-list-active', item.dataset.wordId === activeId);
+        });
+    }
+
+    function toggleClueListView() {
+      clueListViewActive = !clueListViewActive;
+      const gridWrapper = document.querySelector('.cw-grid-clue-wrapper');
+      const listView = document.getElementById('cw-clue-list-view');
+      const btn = document.getElementById('btn-clue-list-toggle');
+      if (!gridWrapper || !listView) return;
+
+      if (clueListViewActive) {
+        gridWrapper.style.display = 'none';
+        listView.classList.add('active');
+        if (btn) btn.textContent = 'Grid';
+        updateClueListView();
+        const activeItem = listView.querySelector('.cw-clue-list-active');
+        if (activeItem) activeItem.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      } else {
+        gridWrapper.style.display = '';
+        listView.classList.remove('active');
+        if (btn) btn.textContent = 'List';
+        gCrossword.setActiveWord(gCrossword.selected_word); //resize text correctly
+        gCrossword.renderCells();
+      }
+    }
+    // ── End Clue List View ──────────────────────────────────────────
+
     const tryWrapLayout = () => {
+      let timer;
       const canvas = document.querySelector('.cw-canvas');
       const buttons = document.querySelector('.cw-buttons-holder');
+      //const dhi = document.querySelector('#drawer-handle-infos');
       if (buttons && buttons.children.length) {
         const allButtons = Array.from(buttons.children);
 
@@ -134,36 +375,46 @@ $(document).ready(function () {
         const check = allButtons.find(btn => btn.textContent.includes('Check'));
         const reveal = allButtons.find(btn => btn.textContent.includes('Reveal'));
         const settings = allButtons.find(btn => btn.textContent.includes('Settings'));
-        const timer = allButtons.find(btn => btn.textContent.match(/[\d:]+/)); // crude match for timer
+        timer = allButtons.find(btn => btn.textContent.match(/[\d:]+/)); // crude match for timer
 
         // Only reflow if all buttons were found
         if (file && check && reveal && settings && timer) {
 
           const row_ta = document.createElement('div');
           row_ta.className = 'cw-buttons-row';
-	  const b0 = `<button type="button" id="fake-btn-tit-auth" class="cw-button cw-settings-button">
+          const b0 = `<button type="button" id="fake-btn-tit-auth" class="cw-button cw-settings-button">
                     TITLE AUTHOR
                    </button>`;
-	  row_ta.innerHTML = b0;
+          row_ta.innerHTML = b0;
 
           const row0 = document.createElement('div');
           row0.className = 'cw-buttons-row';
-	  const b = `<button type="button" id="fake-btn-stats" class="cw-button cw-settings-button">
+          const b = `<button type="button" id="fake-btn-stats" class="cw-button cw-settings-button">
                     STATS
                    </button>`;
-	  row0.innerHTML = b;
+          row0.innerHTML = b;
 
           const row1 = document.createElement('div');
           row1.className = 'cw-buttons-row';
-          row1.append(file, check, reveal, settings);
+          const listBtn = document.createElement('button');
+          listBtn.type = 'button';
+          listBtn.id = 'btn-clue-list-toggle';
+          listBtn.className = 'cw-button';
+          listBtn.textContent = 'List';
+          listBtn.addEventListener('click', toggleClueListView);
+          row1.append(file, check, reveal, settings, listBtn);
 
+          /*
           const row2 = document.createElement('div');
           row2.className = 'cw-buttons-row';
           row2.append(timer);
+          */
 
           // Clear and re-append
           buttons.innerHTML = '';
-          buttons.append(row_ta,row0, row1, row2);
+          //buttons.append(row_ta,row0, row1, row2);
+          buttons.append(row_ta,row0, row1 );
+
         }
       }
       const content = document.querySelector('.cw-content');
@@ -175,6 +426,7 @@ $(document).ready(function () {
       if (!canvas || !buttons || !content || !clues || !clues.querySelector(".cw-clues, .cw-clues-top, .cw-clues-bottom")) {
         return setTimeout(tryWrapLayout, 50);
       }
+
 
       // Safe to remove .cw-grid AFTER canvas is grabbed
       const grid = document.querySelector('.cw-grid');
@@ -214,6 +466,12 @@ $(document).ready(function () {
       // Append grid + clues layout into the main wrapper
       wrapper.appendChild(gridClueWrapper);
 
+      // Clue list view container (hidden by default, toggled by List button)
+      const clueListEl = document.createElement('div');
+      clueListEl.id = 'cw-clue-list-view';
+      clueListEl.className = 'cw-clue-list-view';
+      wrapper.appendChild(clueListEl);
+
       // Rebind clue clicks for mobile container
       mobileClues.querySelectorAll('.cw-clue').forEach(el => {
         el.addEventListener('click', (e) => {
@@ -234,7 +492,7 @@ $(document).ready(function () {
             // ✅ Manually trigger clue highlighting
             gCrossword.clueGroups.forEach(group => {
               // The first param (`isInactive`) is true for all groups except the active one
-              const isInactive = group !== this.clueGroups[this.activeClueGroupIndex];
+              const isInactive = group !== gCrossword.clueGroups[gCrossword.activeClueGroupIndex];
               if (typeof group.markActive === 'function') {
                 group.markActive(cell.x, cell.y, isInactive, gCrossword.fakeclues);
               }
@@ -259,12 +517,41 @@ $(document).ready(function () {
       const handle = document.createElement('div');
       handle.className = 'cw-buttons-handle';
 
-      // Add text field above drawer
-      const thisWordLetters = document.createElement('span');
-      thisWordLetters.id = 'this-word-letters-mobile';
+      const bt1 = document.createElement('div');
+      bt1.className = 'cw-buttons-row';
+      handle.appendChild(bt1);
+      const dhi = document.createElement('button');
+      dhi.id = 'drawer-handle-infos';
+      
+      //🔤🅰️
+      dhi.className = 'cw-button';
+      const tit_auth= '<span class="autocheck-emoji">🅰️</span> • ' + `${gCrossword.title} • ` + `${gCrossword.author}`+ ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>';
+      dhi.innerHTML = `<span>${tit_auth}</span>&nbsp;`;
+      if (timer) {
+          dhi.appendChild(timer); 
+      }
+      bt1.appendChild(dhi);
 
-      // Add drawer to wrapper
-      wrapper.appendChild(thisWordLetters);
+      const htmlString = `
+                  <div id="twlm-container" style=" display: flex; align-items: center; width: 100%; background: var(--clue-active-color); position: relative;">
+                    <div style="padding-left: 2px; z-index: 2;">
+                        <span id="switchListGrid" style="cursor: pointer; user-select: none; font-size: 1em; padding: 4px;">📋</span>
+                    </div>
+                    <span id="this-word-letters-mobile" style=" position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; letter-spacing: 2px; font-weight: bold; z-index: 1; text-align: center; "></span>
+                  </div>`;
+
+     // Inject it into your target element
+     wrapper.insertAdjacentHTML('beforeend', htmlString);
+
+     // Now find the element in the DOM to add the logic
+     const switcher = wrapper.querySelector('#switchListGrid');
+     switcher.onclick = (e) => {
+                const el = e.currentTarget;
+                el.textContent = clueListViewActive ? '📋':'𖣯' ;
+                //el.textContent = isGrid ? '📋' : '🔄';
+                toggleClueListView();
+                };
+
       wrapper.appendChild(handle);
       wrapper.appendChild(buttonWrapper);
 
@@ -279,56 +566,36 @@ $(document).ready(function () {
       // Rebuild keyboard
       rebuildKeyboardAndPositionDrawer();
 
-   /*
-      // === Rebus via long-press on the grid ===
-      (function enableRebusLongPressOnCell() {
-        // Your grid is the canvas with id 'cw-puzzle-grid' (fallback to .cw-canvas)
-        const grid = document.getElementById('cw-puzzle-grid') || document.querySelector('.cw-canvas');
-        if (!grid || grid.dataset.rebusLpAttached === '1') return; // guard against double binding
-        grid.dataset.rebusLpAttached = '1';
+      // Build clue list view 
+      buildClueListView();
 
-        const LP_MS = 450; // long-press threshold
-        const MAX_MOVE = 8; // cancel if finger moves too much (px)
-        let timer = null;
-        let startX = 0,
-          startY = 0;
+      // -----------------------------------------------------------------------------------------------------------------
+      // hook real functions:
+      //Saves a reference to the original renderCells method, bound to gCrossword so this stays correct when called later.          
+      const realRenderCells = gCrossword.renderCells.bind(gCrossword);
+      gCrossword.renderCells = function(...a) {
+        //Calls the original method, forwarding all arguments unchanged, and captures its return value.
+        const r = realRenderCells(...a);
+        updateClueListView();
+        //Returns the original method's result so callers see no difference in behavior.
+        return r;
+      };
 
-        function openRebusEditor() {
-          if (!gCrossword?.selected_cell || gCrossword.selected_cell.empty) return;
-          const val = prompt('Rebus entry', gCrossword.selected_cell.letter || '');
-          if (val && gCrossword?.hiddenInputChanged) {
-            gCrossword.hiddenInputChanged(val.toUpperCase());
-          }
-        }
+      const realSetActiveCell = gCrossword.setActiveCell.bind(gCrossword);
+      gCrossword.setActiveCell = function(cell) {
+        const r = realSetActiveCell(cell);
+        updateClueListView();
+        return r;
+      };
 
-        function clearTimer() {
-          if (timer) {
-            clearTimeout(timer);
-            timer = null;
-          }
-        }
+      const realUpdateCell = gCrossword.updateCell.bind(gCrossword);
+      gCrossword.updateCell = function(cell, props) {
+        const r = realUpdateCell(cell, props);
+        if ('letter' in props) updateClueListView();
+        return r;
+      };
+      // -----------------------------------------------------------------------------------------------------------------
 
-              grid.addEventListener('pointerdown', (e) => {
-                if (!gCrossword?.selected_cell || gCrossword.selected_cell.empty) return;
-                startX = e.clientX;
-                startY = e.clientY;
-                clearTimer();
-                timer = setTimeout(openRebusEditor, LP_MS);
-              });
-
-        grid.addEventListener('pointermove', (e) => {
-          if (!timer) return;
-          const dx = Math.abs(e.clientX - startX);
-          const dy = Math.abs(e.clientY - startY);
-          if (dx > MAX_MOVE || dy > MAX_MOVE) clearTimer(); // treat as scroll/drag, cancel LP
-        });
-
-        grid.addEventListener('pointerup', clearTimer);
-        grid.addEventListener('pointerleave', clearTimer);
-        grid.addEventListener('pointercancel', clearTimer);
-      })();
-
-   */
 
       // Drawer toggle logic
       drawer = buttonWrapper;
@@ -343,6 +610,7 @@ $(document).ready(function () {
       handle.addEventListener('click', () => {
         drawerOpen = !drawerOpen;
         drawer.classList.toggle('open', drawerOpen);
+        if (drawerOpen) gCrossword.updateStatsUI();
       });
 
       // Swipe gesture
@@ -355,6 +623,7 @@ $(document).ready(function () {
         const deltaY = touchStartY - e.changedTouches[0].clientY;
         if (deltaY > 30) {
           drawerOpen = true;
+          gCrossword.updateStatsUI();
         } else if (deltaY < -30) {
           drawer.classList.remove('open');
           drawerOpen = false;
@@ -366,23 +635,26 @@ $(document).ready(function () {
         gCrossword.setActiveWord(firstWord);
         gCrossword.setActiveCell(firstWord.getFirstCell());
         gCrossword.renderCells();
+        if (gCrossword.v_autocheck) { gCrossword.check_reveal('puzzle', 'check'); }
         // Match the width of the top clue bar to the grid
         setTimeout(() => {
           const gridEl = document.getElementById('cw-puzzle-grid');
           const clueBar = document.querySelector('.cw-top-text-wrapper');
           if (gridEl && clueBar) {
-	    if (! isMobile) {
+            if (! isMobile) {
                 clueBar.style.width = gridEl.getBoundingClientRect().width + 'px';
-            } else {		
+            } else {            
                 clueBar.style.width = '100%';
            }
           }
         }, 100);
       }, 50);
-    };
+    }; // end tryWrapLayout
 
     setTimeout(tryWrapLayout, 300);
-  }
+    //gCrossword.timer_button = document.querySelector('.cw-button-timer');
+    //gCrossword.timer_button.addEventListener('click', gCrossword.toggleTimer);
+  } // end isMobile
   console.log('Is mobile?', isMobile, 'Classes:', document.querySelector('.crossword')?.className);
   //-------------------------------------------------------------------------------------------------
   // JS pinch-zoom: grid only ────────────────────────────────
@@ -520,11 +792,11 @@ $(document).ready(function () {
       if (pinchOnGrid && startDist !== null) {
         const d = touchDist(e.touches[0], e.touches[1]);
         let s = startScale * (d / startDist);
-	if (s >= 1.0) {
-        	s = Math.min(s, 3);
-	} else {	
-        	s = Math.max(0.5, s);
-	}
+        if (s >= 1.0) {
+                s = Math.min(s, 3);
+        } else {        
+                s = Math.max(0.5, s);
+        }
         gCrossword.currentScale = s;
         //clampTranslation();
         applyTransform();
@@ -571,7 +843,7 @@ function createCustomKeyboard() {
   const letterRows = [
     'AZERTYUIOP'.split(''),
     'QSDFGHJKLM'.split(''),
-    ['\u{2935}\u{FE0F}', '\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // 💡 ( ✅ for this one see below)
+    ['\u{2935}\u{FE0F}', '\u{1F4A1}', 'W', 'X', 'C', 'V', 'B', 'N'] //, '\u{2705}'] // ⤵️💡W...  ✅ for this one see below)
   ];
 
   /*
@@ -605,27 +877,73 @@ function createCustomKeyboard() {
 
     // main keys for the row
     row.forEach(letter => {
-      const key = document.createElement('div');
-      key.className = 'custom-key';
-      key.textContent = letter;
-      key.addEventListener('click', () => {
-        if (gCrossword?.hidden_input) {
-          // 1. Check for special emoji keys first
-          if (letter === "\u{2935}\u{FE0F}" || letter === '⤵️' ) { //|| letter === '\u{1F503}' || letter === '🔃') {
-              gCrossword.changeActiveClues(); // toggle direction
-              gCrossword.renderCells("dir switch"); // re-render after direction switch
-	  }
-          else if (letter === '💡' || letter === '\u{1F4A1}') {
-            gCrossword.check_reveal('letter', 'reveal');
-          } else {
-            // 2. Default behavior for normal letters
-            gCrossword.hiddenInputChanged(letter);
-            if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
+      if (letter === '💡' || letter === '\u{1F4A1}') { // special long/short press : see solveLetterWord
+        solveLetterWord(rowDiv,letter);
+      } else {
+        const key = document.createElement('div');
+        key.className = 'custom-key';
+        key.textContent = letter;
+        key.addEventListener('click', () => {
+          if (gCrossword?.hidden_input) {
+            // 1. Check for special emoji keys first
+            if (letter === "\u{2935}\u{FE0F}" || letter === '⤵️' ) { //|| letter === '\u{1F503}' || letter === '🔃') {
+                gCrossword.changeActiveClues(); // toggle direction
+                //gCrossword.renderCells("dir switch"); // re-render after direction switch
+            } else { // 2. Default behavior for normal letters
+              gCrossword.hiddenInputChanged(letter);
+              if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
+            }
           }
-        }
-      });
-      rowDiv.appendChild(key);
+        });
+        rowDiv.appendChild(key);
+      }
     });
+      // ================ 💡 : solve letter / word with short / long press : COUNTING CHEAT ========================
+      function solveLetterWord(rowDiv, letter) {
+        const solveLW = document.createElement('div');
+        solveLW.className = 'custom-key solveword-key';
+        solveLW.textContent = letter; // 💡
+
+        let solvewordTimeout;
+        let solvewordFired = false;
+
+        function clearsolvewordState() {
+            clearTimeout(solvewordTimeout);
+            solvewordFired = false;
+        }
+
+        // Helper to trigger reveal and refresh UI
+        function triggerReveal(type) {
+            gCrossword.check_reveal(type, 'reveal');
+            //gCrossword.renderCells();
+            gCrossword.checkIfSolved();
+        }
+
+          solveLW.addEventListener('pointerdown', (e) => {
+            e.preventDefault(); // Prevent ghost clicks
+            solvewordFired = false;
+
+            solvewordTimeout = setTimeout(() => {
+            triggerReveal('word'); // Long press = WORD
+            solvewordFired = true;
+            }, 400);
+        });
+
+        solveLW.addEventListener('pointerup', () => {
+            if (!solvewordFired) {
+            // If the 400ms timer hasn't finished, it's a short tap
+            clearTimeout(solvewordTimeout);
+            triggerReveal('letter'); // Short tap = LETTER
+            }
+            clearsolvewordState();
+        });
+
+        solveLW.addEventListener('pointerleave', clearsolvewordState);
+        solveLW.addEventListener('pointercancel', clearsolvewordState);
+        
+        rowDiv.appendChild(solveLW); // Fixed variable name from 'solveword' to 'solveLW'
+        }
+      // ===============================================================================================
 
     if (rowIndex === 0) {
       const rightArrow = document.createElement('div');
@@ -639,20 +957,7 @@ function createCustomKeyboard() {
     }
 
     if (rowIndex === 2) {
-      // Period key (bottom row)
-      /*
-        const periodKey = document.createElement('div');
-        periodKey.className = 'custom-key period-key';
-        periodKey.textContent = '.';
-        periodKey.addEventListener('click', () => {
-          if (gCrossword?.hidden_input) {
-            gCrossword.hiddenInputChanged('.');
-          }
-        });
-        rowDiv.appendChild(periodKey);
-        */
-
-      // ================ solve word with long press ========================
+      // ================ ✅ : solve word with long press NOT COUNTING CHEAT ========================
       const solveword = document.createElement('div');
       solveword.className = 'custom-key solveword-key';
       solveword.textContent = '\u{2705}'; // ✅
@@ -671,8 +976,8 @@ function createCustomKeyboard() {
       }
 
       function performsolveword() {
-        gCrossword.check_reveal('word', 'reveal');
-        gCrossword.renderCells();
+        gCrossword.check_reveal('word', 'reveal', true); // NOT COUNTING CHEAT
+        //gCrossword.renderCells();
         gCrossword.checkIfSolved();
       }
 
@@ -718,13 +1023,17 @@ function createCustomKeyboard() {
         if (gCrossword.selected_cell && !gCrossword.selected_cell.fixed) {
           // dont move back cursor if cell content was wrong:
           if (gCrossword.selected_cell.letter != gCrossword.selected_cell.solution) { moveBack = false; }
-          gCrossword.selected_cell.letter = '';
-          gCrossword.selected_cell.checked = false;
-          gCrossword.autofill();
+          gCrossword.updateCell(gCrossword.selected_cell, {
+                letter: '',
+                checked: false
+              });
+          gCrossword.saveAndUpdateStats();
+          // update $('#this-word-letters-mobile'):
+          if (gCrossword.selected_word) gCrossword.showCurrentWordStateAsString(gCrossword.selected_word);
 
           if (gCrossword.diagramless_mode) {
             // Move to the previous editable cell based on current diagramless direction
-            const prev = gCrossword.nextDiagramlessCell(this.selected_cell, this.diagramless_dir, -1);
+            const prev = gCrossword.nextDiagramlessCell(gCrossword.selected_cell, gCrossword.diagramless_dir, -1);
             if (prev) gCrossword.setActiveCell(prev);
             // classic grid here:
           } else if (moveBack && gCrossword.selected_word) {
@@ -735,7 +1044,7 @@ function createCustomKeyboard() {
             gCrossword.setActiveCell(prev_cell);
           }
 
-          gCrossword.renderCells();
+          //gCrossword.renderCells();
           gCrossword.checkIfSolved();
         }
       }

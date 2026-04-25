@@ -87,56 +87,6 @@ function setupPWAInstallButton(btn) {
 }
 
 
-// Helper function to draw an arrow in a square
-function drawArrow(context, top_x, top_y, square_size, direction = "right") {
-  const headlen = square_size / 5; // length of the arrowhead
-  const centerX = top_x + square_size / 2;
-  const centerY = top_y + square_size / 2;
-  let fromX, fromY, toX, toY;
-
-  switch (direction) {
-    case "right":
-      fromX = top_x + square_size / 4;
-      fromY = centerY;
-      toX = top_x + (3 * square_size) / 4;
-      toY = centerY;
-      break;
-    case "left":
-      fromX = top_x + (3 * square_size) / 4;
-      fromY = centerY;
-      toX = top_x + square_size / 4;
-      toY = centerY;
-      break;
-    case "up":
-      fromX = centerX;
-      fromY = top_y + (3 * square_size) / 4;
-      toX = centerX;
-      toY = top_y + square_size / 4;
-      break;
-    case "down":
-      fromX = centerX;
-      fromY = top_y + square_size / 4;
-      toX = centerX;
-      toY = top_y + (3 * square_size) / 4;
-      break;
-  }
-
-  const dx = toX - fromX;
-  const dy = toY - fromY;
-  const angle = Math.atan2(dy, dx);
-
-  context.beginPath();
-  context.moveTo(fromX, fromY);
-  context.lineTo(toX, toY);
-  context.stroke();
-
-  context.beginPath();
-  context.moveTo(toX, toY);
-  context.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
-  context.moveTo(toX, toY);
-  context.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
-  context.stroke();
-}
 
 // Main crossword javascript for the Crossword Nexus HTML5 Solver
 (function(global, factory) {
@@ -151,7 +101,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     'use strict';
 
     var default_config = {
-      hover_enabled: false,
       color_hover: '#FFFFAA',
       color_selected: '#FF4136',
       color_word: '#FEE300',
@@ -174,7 +123,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       timer_autostart: true,
       confetti_enabled: true,
       dark_mode_enabled: false,
-      tab_key: 'tab_noskip',
+      tab_key: 'tab_skip',
       bar_linewidth: 3.2,
       gray_completed_clues: false,
       forced_theme: null,
@@ -344,7 +293,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                   </div>
                 </div>
               </div>
-	      <div id = "cw-zoom-container" >
+              <div id = "cw-zoom-container" >
                 <svg id = "cw-puzzle-grid"></svg>
               </div>
             </div>
@@ -401,9 +350,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       return deferred;
     }
 
-    // Breakpoint config for the top clue, as tuples of `[max_width, max_size]`
+    // Breakpoint config for the top clue, as tuples of `[max_width, max_font_size]`
     const maxClueSizes = [
-      [1080, 19],
+      [1080, 19], // If width ≤1080px, max font is 19px ...
       [1200, 22],
       [Infinity, 23],
     ];
@@ -415,6 +364,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       const maxSize = maxClueSizes.find(bp => bp[0] > rootWidth)?.[1] ?? 24;
       const unit = 'px';
 
+      if (nodeList[0].scrollHeight == 0) return; // do nothing in listView mode
       for (var j = 0; j < nodeList.length; j++) {
         const el = nodeList[j];
         const parent = el.parentNode;
@@ -541,21 +491,21 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           }
         }
-    	this.v_autocheck = default_config.autocheck;
-    	this.v_displayCheatMarks = default_config.displayCheatMarks;
-    	this.v_autosave = default_config.autosave;
-	this.is_saving = false;
+        this.v_autocheck = default_config.autocheck;
+        this.v_displayCheatMarks = default_config.displayCheatMarks;
+        this.v_autosave = default_config.autosave;
+        this.is_saving = false;
         //this.backendEnabled = false;
-	this.backendPromise = null;
-	this.currentScale = 1.0;
+        this.backendPromise = null;
+        this.currentScale = 1.0;
 
-	/*
+        /*
         This code dynamically generates a matching color theme based on a single base color (COLOR_WORD). It uses HSV (Hue, Saturation, Value) transformations to ensure all UI elements (hover states, highlights, buttons) look visually consistent.
         Logic: Instead of hardcoding colors like "blue" or "red," it uses Color.applyHsvTransform. This takes your base color and tweaks:
             dh (Delta Hue): Shifts the actual color (e.g., making it slightly more purple or green).
             ks (Saturation Factor): Adjusts how "vibrant" or "gray" the color is.
             kv (Value Factor): Adjusts the brightness.
-	*/
+        */
 
         /* Update config values based on `color_word` */
         const COLOR_WORD = this.config.color_word;
@@ -580,47 +530,89 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         });
 
         /* Update CSS values based on `color_word` and `color_selected`*/
-        // Buttons
-        document.documentElement.style.setProperty("--button-bg-color",
-          Color.applyHsvTransform(COLOR_WORD, {
-            dh: 0.13,
-            ks: 0.753,
-            kv: 1.004
-          }));
-        document.documentElement.style.setProperty("--button-hover-color",
-          Color.applyHsvTransform(COLOR_WORD, {
-            dh: 0.28,
-            ks: 0.502,
-            kv: 1.004
-          }));
+        this.updateCSS = (word, selected) => {
+          const root = document.documentElement;
+          const isDark = document.body.classList.contains('dark-mode');
+          
+          // If dark mode is on, darken the colors a bit (reduce Value by 15%)
+          let wordColor = word;
+          let selectedColor = selected;
+          
+          if (isDark) {
+            wordColor = Color.applyHsvTransform(word, { kv: 0.85 });
+            selectedColor = Color.applyHsvTransform(selected, { kv: 0.85 });
+          }
 
-        // Clues
-        document.documentElement.style.setProperty("--clue-active-color",
-          Color.applyHsvTransform(COLOR_WORD, {
-            dh: 0.13,
-            ks: 0.753,
-            kv: 1.004
-          }));
-        document.documentElement.style.setProperty("--top-text-wrapper-bg-color",
-          Color.applyHsvTransform(COLOR_WORD, {
-            dh: -8.62,
-            ks: 0.157,
-            kv: 1.004
-          }));
+          root.style.setProperty("--grid-selected-square-color", selectedColor);
+          root.style.setProperty("--grid-selected-word-color", wordColor);
+          root.style.setProperty("--grid-hilite-color", Color.applyHsvTransform(wordColor, { dh: -2.64, ks: 0.536, kv: 0.976 }));
 
-        // Scrollbars
-        document.documentElement.style.setProperty("--clue-scrollbar-color-thumb",
-          Color.averageColors(COLOR_SELECTED, '#333333', 0.5));
+          // For grid lines inside selected areas in dark mode
+          if (isDark) {
+            root.style.setProperty("--grid-selected-stroke-color", "rgba(0,0,0,0.2)");
+          } else {
+            root.style.setProperty("--grid-selected-stroke-color", "var(--grid-stroke-color)");
+          }
 
-        /** enable dark mode if available **/
-        if (this.config.dark_mode_enabled && DarkReader) {
-          DarkReader.enable({
-            brightness: 100,
-            contrast: 90,
-            sepia: 10
-          });
-          this.config.color_none = '#404040';
-          this.config.font_color_fill = '#ddd4c5';
+          // Helper for setting dynamic contrast text
+          const setContrastText = (varName, bgColor) => {
+            const brightness = Color.getBrightness(bgColor);
+            root.style.setProperty(varName, brightness < 128 ? "#ffffff" : "#000000");
+          };
+
+          // Buttons
+          const buttonBgColor = Color.applyHsvTransform(wordColor, { dh: 0.13, ks: 0.753, kv: 1.004 });
+          root.style.setProperty("--button-bg-color", buttonBgColor);
+          setContrastText("--button-text-color", buttonBgColor);
+
+          const buttonHoverColor = Color.applyHsvTransform(wordColor, { dh: 0.28, ks: 0.502, kv: 1.004 });
+          root.style.setProperty("--button-hover-color", buttonHoverColor);
+          setContrastText("--button-hover-text-color", buttonHoverColor);
+
+          // Note & Timer Buttons
+          const noteBgColor = isDark ? "#333333" : "#EEEEEE";
+          const noteHoverBgColor = isDark ? "#444444" : "#999999";
+          root.style.setProperty("--button-note-timer-bg-color", noteBgColor);
+          root.style.setProperty("--button-note-timer-hover-bg-color", noteHoverBgColor);
+          root.style.setProperty("--button-note-timer-border", isDark ? "#555555" : "#888888");
+          setContrastText("--button-note-timer-text-color", noteBgColor);
+          setContrastText("--button-note-timer-hover-text-color", noteHoverBgColor);
+
+          // Active Timer State
+          const runBg = "#90ee90"; // Always green
+          const pauseBg = "#ffc107"; // Always amber
+          root.style.setProperty("--timer-running-bgcolor", runBg);
+          root.style.setProperty("--timer-paused-bgcolor", pauseBg);
+          setContrastText("--timer-running-text-color", runBg);
+          setContrastText("--timer-paused-text-color", pauseBg);
+
+          // Clues
+          let clueActiveColor = Color.applyHsvTransform(wordColor, { dh: 0.13, ks: 0.753, kv: 1.004 });
+          if (isDark) {
+            clueActiveColor = Color.averageColors(clueActiveColor, '#808080', 0.75); // 75% original, 25% gray
+          }
+          root.style.setProperty("--clue-active-color", clueActiveColor);
+          setContrastText("--clue-active-text-color", clueActiveColor);
+
+          // Passive clues (same as grid highlight usually)
+          const cluePassiveColor = Color.applyHsvTransform(wordColor, { dh: -2.64, ks: 0.536, kv: 0.976 });
+          root.style.setProperty("--clue-passive-color", cluePassiveColor);
+          setContrastText("--clue-passive-text-color", cluePassiveColor);
+
+          const topTextBgColor = Color.applyHsvTransform(wordColor, { dh: -8.62, ks: 0.157, kv: 1.004 });
+          root.style.setProperty("--top-text-wrapper-bg-color", topTextBgColor);
+          setContrastText("--top-text-wrapper-text-color", topTextBgColor);
+
+          // Scrollbars
+          root.style.setProperty("--clue-scrollbar-color-thumb", Color.averageColors(selectedColor, '#333333', 0.5));
+        };
+
+        this.updateCSS(COLOR_WORD, COLOR_SELECTED);
+
+        /** enable dark mode if requested **/
+        if (this.config.dark_mode_enabled) {
+          document.body.classList.add('dark-mode');
+          this.updateCSS(COLOR_WORD, COLOR_SELECTED);
         }
 
         this.cell_size = 40;
@@ -636,10 +628,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.activeClueGroupIndex = 0;
         this.activeWord = null;
 
-        this.hovered_x = null;
-        this.hovered_y = null;
         this.selected_word = null;
-        this.hilited_word = null;
         this.selected_cell = null;
         this.settings_open = false;
         // TIMER
@@ -654,7 +643,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.windowResized = this.windowResized.bind(this);
 
         this.init();
-      }
+      } // END OF Constructor
 
       make_fake_clues(puzzle, clue_mapping = {}) {
 
@@ -714,7 +703,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         var parsePUZZLE_callback = $.proxy(this.parsePuzzle, this);
         var error_callback = $.proxy(this.error, this);
 
-	// --- MODS, BASE64 & BZIP2 LOGIC ---
+        // --- MODS, BASE64 & BZIP2 LOGIC ---
         const params = new URLSearchParams(window.location.search);
 
         if (this.root) {
@@ -782,12 +771,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           );
         }
 
+        const volt = params.get('voltitle')?.trim();
+        this.voltitle = volt ? `${escape(volt)}&nbsp;•&nbsp;` : '';
         // preload one puzzle
         const b64Data = params.get('data');
         if (b64Data) {
             try {
                 this.root.addClass('loading');
-		const binaryString = atob(decodeURIComponent(b64Data));
+                const binaryString = atob(decodeURIComponent(b64Data));
                 let bytes = new Uint8Array(binaryString.length);
                 for (let i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
@@ -795,13 +786,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
                 // Check for bzip2 header "BZh" (0x42 0x5a 0x68)
                 if (bytes[0] === 0x42 && bytes[1] === 0x5a && bytes[2] === 0x68) {
-	            try { 		
-			bytes = bz2.decompress(bytes);
+                    try {               
+                        bytes = bz2.decompress(bytes);
                     }catch (e) {
                      console.error("bzip2 library error",e);
                     }
                 }
-		Promise.resolve(bytes)
+                Promise.resolve(bytes)
                 .then(parsePUZZLE_callback)
                 .catch(error_callback);
             } catch (e) {
@@ -888,7 +879,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.root.appendTo(this.parent);
         this.canvas_holder = this.root.find('div.cw-canvas');
-	this.zoom_container = this.root.find('#cw-zoom-container');
+        this.zoom_container = this.root.find('#cw-zoom-container');
         // SVG setup (new)
         this.svgNS = 'http://www.w3.org/2000/svg';
         this.svgContainer = document.createElementNS(this.svgNS, 'svg');
@@ -902,11 +893,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         setBreakpointClasses(this.root);
         // Place this at the END of the init() method:
         const svg = document.getElementById('cw-puzzle-grid');
-	//this.initBackend();
-	this.backendPromise = this.initBackend();
-	// hack to avoid the endless renderCells() calls, which kill performance on mobile
-        this.renderCellTS = null;
-        this.renderCellCaller = null;
+        //this.initBackend();
+        this.backendPromise = this.initBackend();
       } // ========> END INIT
 
       error(message) {
@@ -929,12 +917,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             document.body.classList.add('backend-active');
             console.info("Backend features enabled.");
             const data = await response.json();
-	    this.back_saveDB = data['back_saveDB'];
-	    this.back_loadDB = data['back_loadDB'];
+            this.back_saveDB = data['back_saveDB'];
+            this.back_loadDB = data['back_loadDB'];
             this.v_autosave = true;
             $('#autosave1').prop('checked', this.v_autosave);
             $('#autosave2').prop('checked', this.v_autosave);
-	    //this.backendEnabled = true;
+            document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
+            document.querySelectorAll('.signal-emoji').forEach(el => { el.title = "Backend present"; });
+            //this.backendEnabled = true;
             return true;
           }
         } catch (e) {
@@ -966,6 +956,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
        */
       parsePuzzle(data) {
         // if it's already a JSCrossword, return it as-is
+        //console.log("INFO in parsePuzzle");
         var puzzle;
         if (data instanceof JSCrossword) {
           puzzle = data;
@@ -1042,8 +1033,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
         */
 
-	this.stat_errors = {};
-       	this.stat_cheated = {};
+        this.stat_errors = {};
+        this.stat_cheated = {};
         const jsxw2_cells = this.loadGame();
         if (jsxw2_cells) {
           console.log('Loading puzzle from localStorage');
@@ -1054,12 +1045,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           }
           var statObj = JSON.parse(localStorage.getItem(this.savegame_name + "_misc"));
-	  if (statObj && Object.keys(statObj).length > 0) {
-	      this.stat_cheated = statObj.stat_cheated;
-	      this.stat_errors = statObj.stat_errors;
-	      xw_timer_seconds = statObj.timeplayed;
+          if (statObj && Object.keys(statObj).length > 0) {
+              this.stat_cheated = statObj.stat_cheated;
+              this.stat_errors = statObj.stat_errors;
+              xw_timer_seconds = statObj.timeplayed;
 
-	  }
+          }
           puzzle.cells = jsxw2_cells;
         }
 
@@ -1077,7 +1068,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.copyright = puzzle.metadata.copyright || '';
         this.crossword_type = puzzle.metadata.crossword_type;
         this.fakeclues = puzzle.metadata.fakeclues || false;
-        this.notepad = puzzle.metadata.description || '';
+        //this.notepad = puzzle.metadata.description || ''; = notes
+        this.notepad = ''; // no button needed
+        this.puznotes = puzzle.metadata.description || ''; //= puz.notes, for info modal
         this.grid_width = puzzle.metadata.width;
         this.grid_height = puzzle.metadata.height;
         this.completion_message = puzzle.metadata.completion_message || "Puzzle solved!";
@@ -1085,9 +1078,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         if (this.title) {
           document.title = 'Nexus : ' + this.title ;
         }
+        /*
         if (this.crossword_type == 'acrostic' || this.crossword_type == 'coded') {
           this.is_autofill = true;
         }
+        */
 
         if (this.fakeclues || this.crossword_type === 'diagramless' || this.crossword_type === 'coded') {
           // top-text is meaningless for fakeclues and diagramless puzzles (and coded!)
@@ -1123,7 +1118,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             x: rawCell.x + 1,
             y: rawCell.y + 1,
             solution: rawCell.solution,
-            letter: rawCell.value || '',
+            letter: rawCell.letter || '',
             type: rawCell.type || null,
             number: rawCell.number || null,
             bar: {
@@ -1154,8 +1149,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // ✔ DO NOT reset `c.fixed` to false here!
 
           // Apply rules only if this is a fresh load
-	  // J : we dont use this stuff
-	  /*
+          // J : we dont use this stuff
+          /*
           if (!loadedFromStorage && !c.fixed) {
             // Rule 1: Fix punctuation like ‘–’, ‘,’ etc
             if (c.letter && !/[A-Za-z]/.test(c.letter)) {
@@ -1180,7 +1175,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               c.fixed = true;
             }
           }
-	  */
+          */
 
           if (this.diagramless_mode) {
             c.type = null;
@@ -1235,8 +1230,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // Initialize clue mapping and groups dynamically
           this.clueGroups = [];
 
-	  // fix incorrect number of dots at end of clue (essentially cosmetic)
-	  const fixEndDots = (str) => {
+          /* fix 3 things:
+          ! or ? followed by dots at $
+          incorrect number of dots at end of clue (essentially cosmetic)
+          incorrect hyphenation : "import- antes"
+          */
+          const fixClues = (str00) => {
+           const str = str00.replace(/(\p{L}+)-\s+(\p{L}+)/gu, '$1$2').replace(/([!?])\.+$/, '$1');
            return str.replace(/\s*\.+$/, (match) => {
              // Trim spaces to get just the dots for counting
              const dotsOnly = match.trim();
@@ -1251,23 +1251,23 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           // Defensive: if no clues array exists
           const clueSets = puzzle.clues || [];
 
-	  // clean text clues: overwrite only text parts:
-	   /* puzzle.clues obj structure example:
-	   [ {
+          // clean text clues: overwrite only text parts:
+           /* puzzle.clues obj structure example:
+           [ {
               "title": "ACROSS",
               "clue": [
                 { "word": "1", "number": "1", "text": "Personnel d'entretien.." },
-		{ "word": "71", "number": "60", "text": "Demande une certaine attention ..." },...
+                { "word": "71", "number": "60", "text": "Demande une certaine attention ..." },...
               ]
-	    {
+            {
               "title": "DOWN",..
-	   ]   
-	  */	
-	  const clueSetsCleaned = clueSets.map(group => ({
+           ]   
+          */    
+          const clueSetsCleaned = clueSets.map(group => ({
                ...group, // Copy title, etc.
                clue: group.clue.map(item => ({
                ...item, // Copy word, number, etc.
-               text: fixEndDots(item.text) // fix wrong dots at $
+               text: fixClues(item.text) // fix wrong dots at $
                }))
           }));
 
@@ -1350,14 +1350,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         //console.log(this);
 
-        // Initialize stat structures
-        this.stat_errors = {};
-        this.stat_cheated = {}; 
+        this.nonBlackCells=this.getNonBlackCells();
 
-	this.nonBlackCells=this.getNonBlackCells();
-
-        this.completeLoad();
-	this.updateStatsUI()
+        this.completeLoad(); // will try to loadDb
+        this.updateStatsUI()
+        //if (this.v_autocheck) { this.check_reveal( 'puzzle', 'check'); this.renderCells() ; }
       } // END parsePuzzle
 // -----------------------------------------------------------------------------------------------------------------------
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
@@ -1383,8 +1380,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         return null;
       }
 
+      setDiagramlessDir(dir) {
+        if (dir !== this.diagramless_dir) {
+          this.diagramless_dir = dir;
+          this.adjustChevron();
+        }
+      }
+
       toggleDiagramlessDir() {
-        this.diagramless_dir = (this.diagramless_dir === 'across') ? 'down' : 'across';
+        this.setDiagramlessDir((this.diagramless_dir === 'across') ? 'down' : 'across');
       }
 // -----------------------------------------------------------------------------------------------------------------------
       completeLoad() {
@@ -1392,7 +1396,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
     $('.cw-header').css('flex-wrap', 'wrap');
 
     $('.cw-header').html(`
-        <span class="cw-title">${escape(this.title)}</span>
+        <span class="cw-title">${this.voltitle}${escape(this.title)}</span>
         <span class="cw-header-separator">&nbsp;•&nbsp;</span>
         <span class="cw-author">${escape(this.author)}</span>
         ${
@@ -1403,7 +1407,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             : ''
         }
         <span class="cw-header-separator">&nbsp;•&nbsp;</span>
-	<span class="signal-emoji">📶</span>
+        <span class="autocheck-emoji" title="Autocheck On" >🅰️</span>
+        <span class="signal-emoji" title="No Backend" >📶</span>
+        <span class="sync-emoji" title="Autosync on">&#8597;&#65039;</span>
         <span class="cw-flex-spacer"></span>
         <span class="cw-copyright">${escape(this.copyright)}</span>
         
@@ -1451,6 +1457,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             resizeText(this.root, this.top_text);
           }
         });
+        this.renderCells();
+        this.styleClues();
 
         // === Post-render selection fallback ===
         if (this.diagramless_mode) {
@@ -1459,7 +1467,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             this.selected_cell = firstCell;
             this.selected_word = null;
             this.top_text.html('');
-            this.renderCells();
           }
         } else {
           const first_word = this.clueGroups[this.activeClueGroupIndex].getFirstWord?.();
@@ -1475,8 +1482,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.v_autocheck ? 'none' : 'block';
 
-	// update from DB
-	this.loadDb();
+        // update from DB
+        this.loadDb();
         // Start the timer if necessary
         if (this.config.timer_autostart) {
           this.toggleTimer();
@@ -1510,21 +1517,21 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         updateClueLayout();
 
         // and whenever window resizes
-	window.addEventListener("blur", () => {
+        window.addEventListener("blur", () => {
          if (this.timer_running) {
              this.toggleTimer();
          }
         });
-	window.addEventListener("focus", () => {
+        window.addEventListener("focus", () => {
               if (!this.timer_running) {
                   this.toggleTimer(); 
               }
         });
         window.addEventListener('resize', updateClueLayout);
         document.addEventListener("visibilitychange", () => {
-  	  if (document.hidden) {
-    	      // If the timer is currently running, stop it
-    	      if (this.timer_running) {
+          if (document.hidden) {
+              // If the timer is currently running, stop it
+              if (this.timer_running) {
                 this.toggleTimer();
               }
           } else {
@@ -1595,16 +1602,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           $.proxy(this.handleClickOpenMenu, this)
         );
 
-        this.clues_holder.delegate(
-          'div.cw-clues-items div.cw-clue',
-          'mouseenter',
-          $.proxy(this.mouseEnteredClue, this)
-        );
-        this.clues_holder.delegate(
-          'div.cw-clues-items div.cw-clue',
-          'mouseleave',
-          $.proxy(this.mouseLeftClue, this)
-        );
         // Click to jump to clue, but DON'T if user just selected text (avoid nuking selection)
         this.clues_holder.delegate(
           'div.cw-clues-items div.cw-clue',
@@ -1623,7 +1620,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         );
 
         // Right-click in the clue list → Ducktiles
-	/*
+        /*
         if (!IS_MOBILE) {
           this.clues_holder.delegate(
             'div.cw-clues-items div.cw-clue .cw-clue-text',
@@ -1636,11 +1633,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           );
         }
-	*/
+        */
 
-        if (this.config.hover_enabled) {
-          this.svg.on('mousemove', $.proxy(this.mouseMoved, this));
-        }
         this.svg.on('click', $.proxy(this.mouseClicked, this));
 
         // REVEAL
@@ -1682,11 +1676,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         // SAVE
         this.save_btn.on('click', $.proxy(this.saveAsIpuz, this));
-	this.save_db_btn.on('click', (e) => { this.saveDb(e); });
-	this.load_db_btn.on('click', (e) => { this.loadDb(e); });
-	this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
-	this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
-	this.autosave_btn2.on('click', (e) => { this.toggleAutoSave(e); });
+        this.save_db_btn.on('click', (e) => { this.saveDb(e); });
+        this.load_db_btn.on('click', (e) => { this.loadDb(e); });
+        this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
+        this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
+        this.autosave_btn2.on('click', (e) => { this.toggleAutoSave(e); });
 
         // LOAD
         this.load_btn.on('click', () => {
@@ -1695,7 +1689,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         });
 
         // TIMER
-        this.timer_button.on('click', $.proxy(this.toggleTimer, this));
+        //this.timer_button.on('click', $.proxy(this.toggleTimer, this));
+        this.timer_button.on('click', (e) => { this.toggleTimer(e); });
 
         // SETTINGS
         this.settings_btn.on('click', $.proxy(this.openSettings, this));
@@ -1729,8 +1724,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         this.notepad_btn.on('click', $.proxy(this.showNotepad, this));
 
         $(document).on('keydown', $.proxy(this.keyPressed, this));
-	$(document).on('keyup', (e) => { 
-	  const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // check only if a real key was pressed
+        $(document).on('keyup', (e) => { 
+          const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // check only if a real key was pressed
           if (isPrintableChar && this.v_autocheck) { this.check_reveal('letter', 'check'); }
         });  
 
@@ -1749,7 +1744,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 this.selected_cell.y === y
               ) {
                 this.toggleDiagramlessDir();
-                this.renderCells();
               }
               return; // prevent the normal puzzle branch below
             }
@@ -1780,13 +1774,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               }
 
-	      if (newActiveWord != this.activeWord) {
+              if (newActiveWord != this.activeWord) {
               //if (newActiveWord) {
-	        this.activeWord = newActiveWord;
+                this.activeWord = newActiveWord;
                 this.activeClueGroupIndex = newGroupIndex;
                 this.setActiveWord(newActiveWord);
                 this.setActiveCell(clickedCell);
-                //this.renderCells("new activew");
               } else {
                 this.setActiveCell(clickedCell);
               }
@@ -1807,13 +1800,12 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               this.selected_cell.y === y
             ) {
               this.changeActiveClues(); // toggle direction
-              this.renderCells("dir switch"); // optionally re-render after direction switch
             }
           }
         });
 
         // Right-click on the top clue bar → Ducktiles
-	/*
+        /*
         if (!IS_MOBILE) {
           this.top_text.on('contextmenu', (e) => {
             e.preventDefault();
@@ -1831,7 +1823,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           });
         }
-	*/
+        */
       }
 
       handleClickWindow(event) {
@@ -1968,19 +1960,23 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         return this.cells[x] ? this.cells[x][y] : null;
       }
 
+      // display current state of word as "W_O_R_D" in the relevant $#
+      showCurrentWordStateAsString(word) {
+          const wordString = word.cell_ranges.map(range => {
+             const cell = this.cells[range.x][range.y];
+             return (cell.letter && cell.letter !== "") ? cell.letter : "_"; 
+             }).join("");
+          //console.log(wordString); 
+          // display in header space:
+          $('#this-word-letters').text(wordString);
+          $('#this-word-letters-mobile').text(wordString);
+      }
+
       setActiveWord(word) {
         if (word) {
-	  // get current word state as string: "W_O_RD"
-	  const wordString = word.cell_ranges.map(range => {
-    	     const cell = this.cells[range.x][range.y];
-             return (cell.letter && cell.letter !== "") ? cell.letter : "_"; 
-	     }).join("");
-	  //console.log(wordString); 
-	  // display in header space:
-           $('#this-word-letters').text(wordString);
-           $('#this-word-letters-mobile').text(wordString);
+          this.showCurrentWordStateAsString(word);
+          this.setSelectedWord(word);
 
-          this.selected_word = word;
           if (this.fakeclues) {
             return;
           }
@@ -1996,7 +1992,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       setActiveCell(cell) {
         if (!cell || cell.empty) return;
 
-        this.selected_cell = cell;
+        this.setSelectedCell(cell);
 
         // Mark active/inactive state for all clue groups
         const groups = this.clueGroups || [];
@@ -2022,9 +2018,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         if (!IS_MOBILE) {
           this.hidden_input.focus();
         }
-
-        //console.log(' renderCell cancelled !!!');
-        this.renderCells("setActiveCell");
      }
 
       renderClues(clues_group, clues_container) {
@@ -2126,24 +2119,35 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
 
       // Clears canvas and re-renders all cells
-      renderCells(c="UNKNOWN") { // monitor caller
-	const MIN_DELAY = 150;
-        const now = Date.now();
-	// avoid multiple calls from setActiveCell : ex mobile: mouse clicked + click on grid
-        if (c == "setActiveCell" && this.renderCellCaller == c && (now - this.renderCellTS < MIN_DELAY)) {
-            console.log("renderCells < MIN_DELAY");
-            return;
-        }
+      renderCells() {
+        const svg = this.svgContainer;
+        svg.innerHTML = ''; // Clear SVG grid before redrawing
+        this.svgElements = {cells: {}};
 
-        this.renderCellTS = now;
-        this.renderCellCaller = c;
-        console.log('=====> caller='+c);
-        //console.time('ExecutionTimer');
+        const fillGroup = this.svgElements.fillGroup = document.createElementNS(this.svgNS, 'g');
+        const barGroup = this.svgElements.barGroup = document.createElementNS(this.svgNS, 'g');
+        svg.appendChild(fillGroup);
+        svg.appendChild(barGroup);
+
+        /**
+         * Loop through the cells and write to SVG
+         * Note: for fill and bars: we do all the fill first, then all the bars
+         * This is so later fill doesn't overwrite later bars
+         **/
+        for (let xStr in this.cells) {
+          this.svgElements.cells[xStr] = {};
+          for (let yStr in this.cells[xStr]) {
+            this.svgElements.cells[xStr][yStr] = {};
+            this.adjustCell(this.cells[xStr][yStr]);
+          }
+        }
+        this.positionGrid();
+      }
+
+      positionGrid() {
         // Responsive SVG sizing
         const canvasRect = this.canvas_holder.get(0).getBoundingClientRect();
-        //const svgTopMargin = getComputedStyle(this.zoom_container).marginTop;
-	const mtop = parseFloat(this.zoom_container.css('margin-top'));
-	//const svgTopMargin = getComputedStyle(this.svgContainer).marginTop;
+        const mtop = parseFloat(this.zoom_container.css('margin-top'));
         const maxHeight = canvasRect.height - parseInt(mtop, 10);
         const maxWidth = canvasRect.width;
 
@@ -2158,11 +2162,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         const svgHeight = this.grid_height * this.cell_size;
 
         this.svgContainer.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
-        //this.zoom_container.setAttribute('width', svgWidth);
-        //this.zoom_container.setAttribute('height', svgHeight);
         this.svgContainer.setAttribute('width', svgWidth);
         this.svgContainer.setAttribute('height', svgHeight);
-	this.zoom_container.css('width',  svgWidth  + 'px');
+        this.zoom_container.css('width',  svgWidth  + 'px');
         this.zoom_container.css('height', svgHeight + 'px');
 
         if (this.toptext && this.toptext[0]) {
@@ -2170,372 +2172,415 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         const SIZE = this.cell_size;
-        const svg = this.svgContainer;
-        svg.innerHTML = ''; // Clear SVG grid before redrawing
-
-        let linkedSet = null;
-        if (this.is_autofill && this.selected_cell) {
-          const key = this.selected_cell.number || this.selected_cell.top_right_number;
-          if (key != null) {
-            linkedSet = new Set(
-              (this.number_to_cells[key] || []).map(c => `${c.x}-${c.y}`)
-            );
-          }
-        }
-
-        const padding = 0;
-        svg.setAttribute(
+        const padding= (IS_MOBILE ? 0 : 10);
+        this.svgContainer.setAttribute(
           'viewBox',
           `-${padding} -${padding} ${this.grid_width * SIZE + padding * 2} ${this.grid_height * SIZE + padding * 2}`
         );
 
-        /**
-         * Loop through the cells and write to SVG
-         * Note: for fill and bars: we do all the fill first, then all the bars
-         * This is so later fill doesn't overwrite later bars
-         **/
-
-        const fillGroup = document.createElementNS(this.svgNS, 'g');
-        const barGroup = document.createElementNS(this.svgNS, 'g');
-        svg.appendChild(fillGroup);
-        svg.appendChild(barGroup);
-
-        for (let xStr in this.cells) {
-          const x = parseInt(xStr, 10);
-          for (let yStr in this.cells[x]) {
-            const y = parseInt(yStr, 10);
-            const cell = this.cells[x][y];
-            const shouldRender = !cell.empty || cell.clue === true || cell.type === 'block' || cell.top_right_number;
-            if (!shouldRender) continue;
-
-            const cellX = (x - 1) * SIZE;
-            const cellY = (y - 1) * SIZE;
-
-            /*
-            // We don't use this
-            const isLabelOnly = (
-              this.crossword_type === 'acrostic' &&
-              cell.fixed === true &&
-              /^[A-Z]$/.test(cell.letter) &&
-              cell.letter === cell.solution &&
-              !cell.top_right_number
-            );
-            */
-
-            const isPunctuationOnly = (
-              cell.letter &&
-              /^[^A-Za-z0-9]$/.test(cell.letter) &&
-              !cell.solution
-            );
-
-            let fillColor;
-            // Previously this was done for !isLabelOnly
-            if (true) {
-              const rect = document.createElementNS(this.svgNS, 'rect');
-              rect.setAttribute('x', cellX);
-              rect.setAttribute('y', cellY);
-              rect.setAttribute('width', SIZE);
-              rect.setAttribute('height', SIZE);
-              rect.setAttribute('stroke', '#212121');
-              rect.setAttribute('data-x', cell.x);
-              rect.setAttribute('data-y', cell.y);
-              rect.setAttribute('class', 'cw-cell');
-
-              // Set the cell color
-              if (cell.type === 'block') {
-                fillColor = cell.color || this.config.color_block;
-              } else if (this.selected_cell && cell.x === this.selected_cell.x && cell.y === this.selected_cell.y) {
-                fillColor = this.config.color_selected;
-                rect.classList.add('selected');
-              } else if (this.selected_word && this.selected_word.hasCell(cell.x, cell.y)) {
-                fillColor = cell.shade_highlight_color;
-              } else if (linkedSet && linkedSet.has(`${cell.x}-${cell.y}`)) {
-                // highlight partners
-                fillColor = cell.shade_highlight_color;
-                rect.classList.add('linked'); // optional CSS hook
-              } else if (cell.color) {
-                fillColor = cell.color;
-              } else {
-                fillColor = this.config.color_none;
-              }
-
-              rect.setAttribute('fill', fillColor);
-              fillGroup.appendChild(rect);
-
-              if (cell.image) {
-                const imageLayer = document.createElementNS(this.svgNS, 'image');
-                imageLayer.setAttribute('x', cellX);
-                imageLayer.setAttribute('y', cellY);
-                imageLayer.setAttribute('width', SIZE);
-                imageLayer.setAttribute('height', SIZE);
-                imageLayer.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-                imageLayer.setAttribute('class', 'cw-cell-image');
-                imageLayer.setAttribute('href', cell.image);
-                imageLayer.setAttributeNS('http://www.w3.org/1999/xlink', 'href', cell.image);
-                fillGroup.appendChild(imageLayer);
-              }
-            }
-
-            if (cell.shape === 'circle') {
-              const circle = document.createElementNS(this.svgNS, 'circle');
-              circle.setAttribute('cx', cellX + SIZE / 2);
-              circle.setAttribute('cy', cellY + SIZE / 2);
-
-              // Slightly bigger than cell, so edges are clipped
-              const inset = 0.3; // lower is bigger
-              const radius = SIZE / 2 + inset;
-
-              circle.setAttribute('r', radius);
-              circle.setAttribute('fill', 'none');
-              circle.setAttribute('stroke', this.config.color_block || '#212121');
-              circle.setAttribute('stroke-width', 1.1);
-              circle.setAttribute('pointer-events', 'none');
-              fillGroup.appendChild(circle);
-            }
-
-            if (cell.bar) {
-              const barWidth = this.config.bar_linewidth;
-              const barColor = '#212121';
-
-              const barStart = {
-                top: [cellX, cellY],
-                left: [cellX, cellY],
-                right: [cellX + SIZE, cellY + SIZE],
-                bottom: [cellX + SIZE, cellY + SIZE],
-              };
-
-              const barEnd = {
-                top: [cellX + SIZE, cellY],
-                left: [cellX, cellY + SIZE],
-                right: [cellX + SIZE, cellY],
-                bottom: [cellX, cellY + SIZE],
-              };
-
-              for (const side in cell.bar) {
-                if (cell.bar[side]) {
-                  const [x1, y1] = barStart[side];
-                  const [x2, y2] = barEnd[side];
-                  const barLine = document.createElementNS(this.svgNS, 'line');
-                  barLine.setAttribute('x1', x1);
-                  barLine.setAttribute('y1', y1);
-                  barLine.setAttribute('x2', x2);
-                  barLine.setAttribute('y2', y2);
-                  barLine.setAttribute('stroke', barColor);
-                  barLine.setAttribute('stroke-width', barWidth);
-                  barLine.setAttribute('stroke-linecap', 'square');
-                  barLine.setAttribute('pointer-events', 'none');
-                  barGroup.appendChild(barLine);
-                }
-              }
-            }
-
-            /* Determine the color of letters/numbers in the cell */
-            // Default fill color
-            let fontColorFill = this.config.font_color_fill;
-
-            if (cell.image) {
-              // Images should show text in black regardless of background brightness
-              fontColorFill = '#000000';
-            } else {
-              // Brightness of the background and foreground
-              const bgBrightness = Color.getBrightness(fillColor || this.config.color_none);
-              const fgBrightness = Color.getBrightness(this.config.font_color_fill);
-
-              // If we fail to meet some threshold, invert
-              if (Math.abs(bgBrightness - fgBrightness) < 125) {
-                var thisRGB = Color.hexToRgb(this.config.font_color_fill);
-                var invertedRGB = thisRGB.map(x => 255 - x);
-                fontColorFill = Color.rgbToHex(invertedRGB[0], invertedRGB[1], invertedRGB[2]);
-              }
-            }
-
-            if (cell.letter) {
-              const text = document.createElementNS(this.svgNS, 'text');
-              text.setAttribute('x', cellX + SIZE / 2);
-              text.setAttribute('y', cellY + SIZE * 0.77);
-              text.setAttribute('text-anchor', 'middle');
-
-              const letterLength = cell.letter.length;
-              const maxScale = 0.6;
-              const minScale = 0.25;
-              const scale = Math.max(minScale, maxScale - 0.07 * (letterLength - 1));
-              text.setAttribute('font-size', `${SIZE * scale}px`);
-
-              text.setAttribute('font-family', 'Arial, sans-serif');
-              //text.setAttribute('font-weight', 'bold');
-              text.textContent = cell.letter;
-              text.classList.add('cw-cell-letter');
-              text.setAttribute('fill', fontColorFill);
-              svg.appendChild(text);
-            }
-
-	    // 1. Error Indicator: Top-Right Orange Triangle
-            if (this.v_displayCheatMarks && this.v_autocheck && this.stat_errors[`${x},${y}`] ) {
-                const triangle = document.createElementNS(this.svgNS, 'polygon');
-                const p1 = `${cellX + SIZE},${cellY}`;             // Top-right corner
-                const p2 = `${cellX + SIZE},${cellY + SIZE * 0.2}`; // Down the right side
-                const p3 = `${cellX + SIZE * 0.8},${cellY}`;       // Left along the top
-                triangle.setAttribute('points', `${p1} ${p2} ${p3}`);
-		// can be RGB: '#FF4500':
-                triangle.setAttribute('fill', 'orange');
-                svg.appendChild(triangle);
-            }
-
-            // 2. Cheated Indicator: Bottom-Right Red Triangle
-            if (this.v_displayCheatMarks && this.v_autocheck && this.stat_cheated[`${x},${y}`]) {
-                const triangle = document.createElementNS(this.svgNS, 'polygon');
-                const p1 = `${cellX + SIZE},${cellY + SIZE}`;      // Bottom-right corner
-                const p2 = `${cellX + SIZE},${cellY + SIZE * 0.8}`; // Up the right side
-                const p3 = `${cellX + SIZE * 0.8},${cellY + SIZE}`; // Left along the bottom
-                triangle.setAttribute('points', `${p1} ${p2} ${p3}`);
-                triangle.setAttribute('fill', 'red');
-                svg.appendChild(triangle);
-            }
-
-            if (v_display_cn && cell.number) {
-              const number = document.createElementNS(this.svgNS, 'text');
-              number.setAttribute('x', cellX + SIZE * 0.1);
-              number.setAttribute('y', cellY + SIZE * 0.3);
-              number.setAttribute('font-size', `${SIZE / 3.75}px`);
-              number.setAttribute('font-family', 'Arial, sans-serif');
-              number.textContent = cell.number;
-              number.setAttribute('fill', fontColorFill);
-              number.classList.add('cw-cell-number');
-              svg.appendChild(number);
-            }
-
-            if (
-              cell.top_right_number &&
-              cell.top_right_number !== cell.letter
-            ) {
-              const label = document.createElementNS(this.svgNS, 'text');
-              label.setAttribute('x', cellX + SIZE * 0.9);
-              label.setAttribute('y', cellY + SIZE * 0.3);
-              label.setAttribute('text-anchor', 'end');
-              label.setAttribute('font-size', `${SIZE / 3.75}px`);
-              label.setAttribute('font-family', 'Arial, sans-serif');
-              label.setAttribute('fill', fontColorFill);
-              label.setAttribute('pointer-events', 'none');
-              label.textContent = cell.top_right_number;
-              label.classList.add('cw-top-right-label');
-              svg.appendChild(label);
-            }
-
-            if (cell.checked) {
-              const slash = document.createElementNS(this.svgNS, 'line');
-              slash.setAttribute('x1', (cell.x - 1) * SIZE + 2);
-              slash.setAttribute('y1', (cell.y - 1) * SIZE + 2);
-              slash.setAttribute('x2', (cell.x - 1) * SIZE + SIZE - 2);
-              slash.setAttribute('y2', (cell.y - 1) * SIZE + SIZE - 2);
-
-              if (this.diagramless_mode) {
-                const solutionIsBlock = (cell.solution === '#');
-                const typeIsBlock = (cell.type === 'block');
-                if (solutionIsBlock !== typeIsBlock) {
-                  slash.setAttribute('stroke', 'red');
-                  slash.setAttribute('stroke-width', 2.5);
-                } else {
-                  slash.setAttribute('stroke', '#000');
-                  slash.setAttribute('stroke-width', 2);
-                }
-              } else {
-                slash.setAttribute('stroke', '#000');
-                slash.setAttribute('stroke-width', 2);
-              }
-
-              slash.setAttribute('stroke-linecap', 'round');
-              svg.appendChild(slash);
-            }
+        for (const col of Object.values(this.cells)) {
+          for (const cell of Object.values(col)) {
+            this.adjustCellPosition(cell);
           }
         }
+        this.adjustChevron();
+        setTimeout(() => this.syncTopTextWidth(), 0);
+      }
 
-        // Tiny direction chevron for diagramless
-        if (this.diagramless_mode && this.selected_cell) {
-          const SIZE = this.cell_size;
-          const {
-            x,
-            y
-          } = this.selected_cell;
-          const cellX = (x - 1) * SIZE;
-          const cellY = (y - 1) * SIZE;
+      adjustCell(cell) {
+        if (!this.svgElements) {
+          return;
+        }
+        const elements = this.svgElements.cells[cell.x][cell.y];
+        const shouldRender = !cell.empty || cell.clue === true || cell.type === 'block' || cell.top_right_number;
 
-          const path = document.createElementNS(this.svgNS, 'path');
+        const showRect = shouldRender;
+        if (showRect && !elements.rect) {
+          const rect = elements.rect = document.createElementNS(this.svgNS, 'rect');
+          rect.setAttribute('data-x', cell.x);
+          rect.setAttribute('data-y', cell.y);
+          rect.setAttribute('class', 'cw-cell');
+          this.svgElements.fillGroup.appendChild(rect);
+        } else if (!showRect && elements.rect) {
+          elements.rect.parentNode.removeChild(elements.rect);
+          delete elements.rect;
+        }
+        this.adjustCellRect(cell);
 
-          // slightly smaller overall
-          const pad = SIZE * 0.15; // smaller padding than before
-          const cxAcross = cellX + SIZE - pad;
-          const cyAcross = cellY + pad * 1.1;
+        const showImage = shouldRender && cell.image;
+        if (showImage && !elements.image) {
+          const imageLayer = elements.image = document.createElementNS(this.svgNS, 'image');
+          imageLayer.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+          imageLayer.setAttribute('class', 'cw-cell-image');
+          imageLayer.setAttribute('href', cell.image);
+          imageLayer.setAttributeNS('http://www.w3.org/1999/xlink', 'href', cell.image);
+          this.svgElements.fillGroup.appendChild(imageLayer);
+        } else if (!showImage && elements.image) {
+          elements.image.parentNode.removeChild(elements.image);
+          delete elements.image;
+        }
 
-          const cxDown = cellX + SIZE - pad;
-          const cyDown = cellY + SIZE - pad * 1.1;
+        const showCircle = shouldRender && cell.shape === 'circle';
+        if (showCircle && !elements.circle) {
+          const circle = elements.circle = document.createElementNS(this.svgNS, 'circle');
+          circle.setAttribute('fill', 'none');
+          circle.setAttribute('stroke', 'var(--grid-stroke-color)');
+          circle.setAttribute('stroke-width', 1.1);
+          circle.setAttribute('pointer-events', 'none');
+          this.svgElements.fillGroup.appendChild(circle);
+        } else if (!showCircle && elements.circle) {
+          elements.circle.parentNode.removeChild(elements.circle);
+          delete elements.circle;
+        }
 
-          let d;
-          if (this.diagramless_dir === 'across') {
-            // ► chevron (upper-right corner)
-            d = `M ${cxAcross - pad * 0.8} ${cyAcross - pad / 2}
-        L ${cxAcross} ${cyAcross}
-        L ${cxAcross - pad * 0.8} ${cyAcross + pad / 2}`;
-          } else {
-            // ▼ chevron (lower-right corner)
-            d = `M ${cxDown - pad / 2} ${cyDown - pad * 0.8}
-        L ${cxDown} ${cyDown}
-        L ${cxDown + pad / 2} ${cyDown - pad * 0.8}`;
+        for (const [side, show] of Object.entries(cell.bar ?? {})) {
+          const showBar = shouldRender && show;
+          const key = `bar-${side}`;
+          if (showBar && !elements[key]) {
+            const barLine = elements[key] = document.createElementNS(this.svgNS, 'line');
+            barLine.setAttribute('stroke-width', this.config.bar_linewidth);
+            barLine.setAttribute('stroke-linecap', 'square');
+            barLine.setAttribute('pointer-events', 'none');
+            this.svgElements.barGroup.appendChild(barLine);
+          } else if (!showBar && elements[key]) {
+            elements[key].parentNode.removeChild(elements[key]);
+            delete elements[key];
           }
+          this.adjustCellBar(cell, side);
+        }
 
-          path.setAttribute('d', d);
+        const showLetter = shouldRender && cell.letter;
+        if (showLetter && !elements.letter) {
+          const text = elements.letter = document.createElementNS(this.svgNS, 'text');
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('font-family', 'Arial, sans-serif');
+          text.classList.add('cw-cell-letter');
+          this.svgContainer.appendChild(text);
+        } else if (!showLetter && elements.letter) {
+          elements.letter.parentNode.removeChild(elements.letter);
+          delete elements.letter;
+        }
+        this.adjustCellLetter(cell);
+
+        const showNumber = v_display_cn && shouldRender && cell.number;
+        if (showNumber && !elements.number) {
+          const number = elements.number = document.createElementNS(this.svgNS, 'text');
+          number.setAttribute('font-family', 'Arial, sans-serif');
+          number.classList.add('cw-cell-number');
+          this.svgContainer.appendChild(number);
+        } else if (!showNumber && elements.number) {
+          elements.number.parentNode.removeChild(elements.number);
+          delete elements.number;
+        }
+        this.adjustCellNumber(cell);
+	      //
+        // 1. Error Indicator: Top-Right Orange Triangle
+        //if (elements.showcheats) {
+
+        if (this.v_displayCheatMarks && this.v_autocheck && this.stat_errors[`${cell.x},${cell.y}`] ) {
+            const size = this.cell_size;
+            const cellX = (cell.x - 1) * size;
+            const cellY = (cell.y - 1) * size;
+            const triangle = document.createElementNS(this.svgNS, 'polygon');
+            const p1 = `${cellX + size},${cellY}`;             // Top-right corner
+            const p2 = `${cellX + size},${cellY + size * 0.2}`; // Down the right side
+            const p3 = `${cellX + size * 0.8},${cellY}`;       // Left along the top
+            triangle.setAttribute('points', `${p1} ${p2} ${p3}`);
+            // can be RGB: '#FF4500':
+            triangle.setAttribute('fill', 'orange');
+            this.svgContainer.appendChild(triangle);
+        }
+
+        // 2. Cheated Indicator: Bottom-Right Red Triangle
+        //if (elements.showcheats) {
+        if (this.v_displayCheatMarks && this.v_autocheck && this.stat_cheated[`${cell.x},${cell.y}`]) {
+            const size = this.cell_size;
+            const cellX = (cell.x - 1) * size;
+            const cellY = (cell.y - 1) * size;
+            const triangle = document.createElementNS(this.svgNS, 'polygon');
+            const p1 = `${cellX + size},${cellY + size}`;      // Bottom-right corner
+            const p2 = `${cellX + size},${cellY + size * 0.8}`; // Up the right side
+            const p3 = `${cellX + size * 0.8},${cellY + size}`; // Left along the bottom
+            triangle.setAttribute('points', `${p1} ${p2} ${p3}`);
+            triangle.setAttribute('fill', 'red');
+            this.svgContainer.appendChild(triangle);
+        }
+
+        const showTopRightNumber = shouldRender && cell.top_right_number && cell.top_right_number !== cell.letter;
+        if (showTopRightNumber && !elements.top_right_number) {
+            const label = elements.top_right_number = document.createElementNS(this.svgNS, 'text');
+            label.setAttribute('text-anchor', 'end');
+            label.setAttribute('font-family', 'Arial, sans-serif');
+            label.setAttribute('pointer-events', 'none');
+            label.classList.add('cw-top-right-label');
+            this.svgContainer.appendChild(label);
+        } else if (!showTopRightNumber && elements.top_right_number) {
+          elements.top_right_number.parentNode.removeChild(elements.top_right_number);
+          delete elements.top_right_number;
+        }
+        this.adjustCellTopRightNumber(cell);
+
+        const showSlash = shouldRender && cell.checked;
+        if (showSlash && !elements.slash) {
+          const slash = elements.slash = document.createElementNS(this.svgNS, 'line');
+          slash.setAttribute('stroke-linecap', 'round');
+          this.svgContainer.appendChild(slash);
+        } else if (!showSlash && elements.slash) {
+          elements.slash.parentNode.removeChild(elements.slash);
+          delete elements.slash;
+        }
+        this.adjustCellSlash(cell);
+
+        this.adjustCellPosition(cell);
+      }
+
+      adjustCellPosition(cell) {
+        if (!this.svgElements) {
+          return;
+        }
+        const elements = this.svgElements.cells[cell.x][cell.y];
+        const size = this.cell_size;
+        const cellX = (cell.x - 1) * size;
+        const cellY = (cell.y - 1) * size;
+        const barCoords = {
+          top: [[cellX, cellY], [cellX + size, cellY]],
+          left: [[cellX, cellY], [cellX, cellY + size]],
+          right: [[cellX + size, cellY + size], [cellX + size, cellY]],
+          bottom: [[cellX + size, cellY + size], [cellX, cellY + size]],
+        };
+
+        if (elements.rect) {
+          elements.rect.setAttribute("x", cellX);
+          elements.rect.setAttribute("y", cellY);
+          elements.rect.setAttribute("width", size);
+          elements.rect.setAttribute("height", size);
+        }
+        if (elements.circle) {
+          elements.circle.setAttribute('cx', cellX + size / 2);
+          elements.circle.setAttribute('cy', cellY + size / 2);
+          // Slightly bigger than cell, so edges are clipped
+          const inset = 0.3; // lower is bigger
+          const radius = size / 2 + inset;
+          elements.circle.setAttribute('r', radius);
+        }
+        if (elements.image) {
+          elements.image.setAttribute('x', cellX);
+          elements.image.setAttribute('y', cellY);
+          elements.image.setAttribute('width', size);
+          elements.image.setAttribute('height', size);
+        }
+        for (const side of Object.keys(cell.bar ?? {})) {
+          const key = `bar-${side}`;
+          if (elements[key]) {
+            const [[x1, y1], [x2, y2]] = barCoords[side];
+            elements[key].setAttribute('x1', x1);
+            elements[key].setAttribute('y1', y1);
+            elements[key].setAttribute('x2', x2);
+            elements[key].setAttribute('y2', y2);
+          }
+        }
+        if (elements.letter) {
+          const letterLength = cell.letter.length;
+          const maxScale = 0.6;
+          const minScale = 0.25;
+          const scale = Math.max(minScale, maxScale - 0.07 * (letterLength - 1));
+          elements.letter.setAttribute('x', cellX + size / 2);
+          elements.letter.setAttribute('y', cellY + size * 0.77);
+          elements.letter.setAttribute('font-size', `${this.cell_size * scale}px`);
+        }
+	     
+
+        if (v_display_cn && elements.number) {
+          elements.number.setAttribute('x', cellX + size * 0.1);
+          elements.number.setAttribute('y', cellY + size * 0.3);
+          elements.number.setAttribute('font-size', `${size / 3.75}px`);
+        }
+        if (elements.top_right_number) {
+          elements.top_right_number.setAttribute('x', cellX + size * 0.9);
+          elements.top_right_number.setAttribute('y', cellY + size * 0.3);
+          elements.top_right_number.setAttribute('font-size', `${size / 3.75}px`);
+        }
+        if (elements.slash) {
+          elements.slash.setAttribute('x1', cellX + 2);
+          elements.slash.setAttribute('y1', cellY + 2);
+          elements.slash.setAttribute('x2', cellX + size - 2);
+          elements.slash.setAttribute('y2', cellY + size - 2);
+        }
+      }
+
+      adjustCellRect(cell) {
+        const rect = this.svgElements.cells[cell.x][cell.y].rect;
+        if (!rect) {
+          return;
+        }
+        
+        // Use block color for stroke if it's a block, otherwise normal stroke color
+        let rectStroke = (cell.type === 'block') ? 'var(--grid-block-color)' : 'var(--grid-stroke-color)';
+        
+        // If it's selected or in the selected word, use the specialized stroke color
+        if (cell.type !== 'block' && ((this.selected_cell && cell.x === this.selected_cell.x && cell.y === this.selected_cell.y) || (this.selected_word && this.selected_word.hasCell(cell.x, cell.y)))) {
+          rectStroke = 'var(--grid-selected-stroke-color)';
+        }
+
+        const isSelected = !!(this.selected_cell && cell.x === this.selected_cell.x && cell.y === this.selected_cell.y);
+        const isLinked = !!(this.selected_cell && this.number_to_cells[this.selected_cell.number || this.selected_cell.top_right_number]?.includes(cell));
+        rect.classList.toggle('selected', isSelected);
+        rect.classList.toggle('linked', isLinked); // optional CSS hook
+        rect.setAttribute('fill', this.cellFillColor(cell));
+        rect.setAttribute('stroke', rectStroke);
+      }
+
+      adjustCellBar(cell, side) {
+        const barLine = this.svgElements.cells[cell.x][cell.y][`bar-${side}`];
+        if (!barLine) {
+          return;
+        }
+
+        let barColor = 'var(--grid-stroke-color)';
+
+        if (cell.type !== 'block' && ((this.selected_cell && cell.x === this.selected_cell.x && cell.y === this.selected_cell.y) || (this.selected_word && this.selected_word.hasCell(cell.x, cell.y)))) {
+          barColor = 'var(--grid-selected-stroke-color)';
+        }
+        barLine.setAttribute('stroke', barColor);
+      }
+
+      adjustCellLetter(cell) {
+        const letter = this.svgElements.cells[cell.x][cell.y].letter;
+        if (!letter) {
+          return;
+        }
+        letter.textContent = cell.letter;
+        letter.setAttribute('fill', this.cellFontColor(cell));
+      }
+
+      adjustCellNumber(cell) {
+        const number = this.svgElements.cells[cell.x][cell.y].number;
+        if (!number) {
+          return;
+        }
+
+        number.textContent = cell.number;
+        number.setAttribute('fill', this.cellFontColor(cell));
+      }
+
+      adjustCellTopRightNumber(cell) {
+        const label = this.svgElements.cells[cell.x][cell.y].top_right_number;
+        if (!label) {
+          return;
+        }
+        
+        label.setAttribute('fill', this.cellFontColor(cell));
+        label.textContent = cell.top_right_number;
+      }
+
+      adjustCellSlash(cell) {
+        const slash = this.svgElements.cells[cell.x][cell.y].slash;
+        if (!slash) {
+          return;
+        }
+
+        if (this.diagramless_mode) {
+          const solutionIsBlock = (cell.solution === '#');
+          const typeIsBlock = (cell.type === 'block');
+          if (solutionIsBlock !== typeIsBlock) {
+            slash.setAttribute('stroke', 'red');
+            slash.setAttribute('stroke-width', 2.5);
+          } else {
+            slash.setAttribute('stroke', 'var(--grid-none-text-color)');
+            slash.setAttribute('stroke-width', 2);
+          }
+        } else {
+          slash.setAttribute('stroke', 'var(--grid-none-text-color)');
+          slash.setAttribute('stroke-width', 2);
+        }
+      }
+
+      adjustChevron() {
+        if (!this.svgElements) {
+          return;
+        }
+        // Tiny direction chevron for diagramless
+        const showChevron = this.diagramless_mode && this.selected_cell;
+        if (showChevron && !this.svgElements.chevron) {
+          const path = this.svgElements.chevron = document.createElementNS(this.svgNS, 'path');
           path.setAttribute('fill', 'none');
-          path.setAttribute('stroke', this.config.font_color_clue || '#000');
+          path.setAttribute('stroke', 'var(--grid-none-text-color)');
           path.setAttribute('stroke-width', 1.3);
           path.setAttribute('pointer-events', 'none');
           this.svgContainer.appendChild(path);
+        } else if (!showChevron && this.svgElements.chevron) {
+          this.svgElements.chevron.parentNode.removeChild(this.svgElements.chevron);
+          delete this.svgElements.chevron;
         }
+        if (this.svgElements.chevron) {
+          // slightly smaller overall
+          const size = this.cell_size;
+          const cellX = (this.selected_cell.x - 1) * size;
+          const cellY = (this.selected_cell.y - 1) * size;
+          const pad = this.cell_size * 0.15; // smaller padding than before
+          const cxAcross = cellX + size - pad;
+          const cyAcross = cellY + pad * 1.1;
 
+          const cxDown = cellX + size - pad;
+          const cyDown = cellY + size - pad * 1.1;
 
-        if (!this.diagramless_mode && this.selected_word) {
-          this.drawSelectedWordBorder(svg, this.selected_word);
+          const d = (
+            this.diagramless_dir === 'across'
+            ? `M ${cxAcross - pad * 0.8} ${cyAcross - pad / 2}
+              L ${cxAcross} ${cyAcross}
+              L ${cxAcross - pad * 0.8} ${cyAcross + pad / 2}`
+              // ► chevron (upper-right corner)
+            : `M ${cxDown - pad / 2} ${cyDown - pad * 0.8}
+              L ${cxDown} ${cyDown}
+              L ${cxDown + pad / 2} ${cyDown - pad * 0.8}`
+              // ▼ chevron (lower-right corner)
+          );
+          this.svgElements.chevron.setAttribute('d', d);
         }
-        setTimeout(() => this.syncTopTextWidth(), 0);
+      }
 
-        for (const wordId in this.words) {
-          this.updateClueAppearance(this.words[wordId]);
+      cellFillColor(cell) {
+        if (cell.type === 'block') {
+          return cell.color || 'var(--grid-block-color)';
+        } else if (this.selected_cell && cell.x === this.selected_cell.x && cell.y === this.selected_cell.y) {
+          return 'var(--grid-selected-square-color)';
+        } else if (this.selected_word && this.selected_word.hasCell(cell.x, cell.y)) {
+          return cell.shade_highlight_color || 'var(--grid-selected-word-color)';
+        } else if (this.selected_cell && this.number_to_cells[this.selected_cell.number || this.selected_cell.top_right_number]?.includes(cell)) {
+          // highlight partners
+          return cell.shade_highlight_color || 'var(--grid-selected-word-color)';
+        } else if (cell.color) {
+          return cell.color;
+        } else {
+          return 'var(--grid-none-color)';
         }
-	this.updateStatsUI();
-	//console.timeEnd('ExecutionTimer');
-      } // end renderCells
+      }
 
-      drawSelectedWordBorder(svg, word) {
-        // this doesn't play well with irregularly shaped words
-        return;
-        /*
-        if (!word || !word.cells.length) return;
+      cellFontColor(cell) {
+        const fillColor = this.cellFillColor(cell);
+        if (cell.image) {
+          // Images should show text in black regardless of background brightness
+          return '#000000';
+        } else if (typeof fillColor === 'string' && fillColor.startsWith('var(--grid-selected-square-color)')) {
+          return 'var(--grid-selected-square-text-color)';
+        } else if (typeof fillColor === 'string' && fillColor.startsWith('var(--grid-selected-word-color)')) {
+          return 'var(--grid-selected-word-text-color)';
+        } else if (typeof fillColor === 'string' && (fillColor.startsWith('var(--grid-none-color)') || fillColor.startsWith('var(--grid-block-color)'))) {
+          return fillColor.includes('block') ? 'white' : 'var(--grid-none-text-color)';
+        } else {
+          // Brightness of the background and foreground
+          const bgBrightness = Color.getBrightness(fillColor || this.config.color_none);
+          const fgBrightness = Color.getBrightness(this.config.font_color_fill);
 
-        const SIZE = this.cell_size;
-
-        let minX = Infinity,
-          minY = Infinity,
-          maxX = -1,
-          maxY = -1;
-
-        for (const coord of word.cells) {
-          const [x, y] = coord.split('-').map(Number);
-          minX = Math.min(minX, x);
-          minY = Math.min(minY, y);
-          maxX = Math.max(maxX, x);
-          maxY = Math.max(maxY, y);
+          // If we fail to meet some threshold, invert
+          if (Math.abs(bgBrightness - fgBrightness) < 125) {
+            var thisRGB = Color.hexToRgb(this.config.font_color_fill);
+            var invertedRGB = thisRGB.map(x => 255 - x);
+            return Color.rgbToHex(invertedRGB[0], invertedRGB[1], invertedRGB[2]);
+          } else {
+            return this.config.font_color_fill;
+          }
         }
-
-        const rect = document.createElementNS(this.svgNS, 'rect');
-        rect.setAttribute('x', (minX - 1) * SIZE);
-        rect.setAttribute('y', (minY - 1) * SIZE);
-        rect.setAttribute('width', (maxX - minX + 1) * SIZE);
-        rect.setAttribute('height', (maxY - minY + 1) * SIZE);
-        rect.setAttribute('fill', 'none');
-        rect.setAttribute('stroke', this.config.color_selected);
-        rect.setAttribute('stroke-width', 1.5);
-        rect.setAttribute('pointer-events', 'none');
-        rect.setAttribute('class', 'selected-word-border');
-        svg.appendChild(rect);
-        */
       }
 
       renumberGrid() {
@@ -2553,7 +2598,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         for (let y = 1; y <= height; y++) {
           for (let x = 1; x <= width; x++) {
             const cell = this.getCell(x, y);
-            cell.number = numbering[y - 1][x - 1] > 0 ? numbering[y - 1][x - 1] : null;
+            this.updateCell(cell, { number: numbering[y - 1][x - 1] > 0 ? numbering[y - 1][x - 1] : null });
           }
         }
 
@@ -2561,31 +2606,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
       } /* END renumbergrid() */
 
-      mouseMoved(e) {
-        if (this.config.hover_enabled) {
-          var offset = this.svg.offset(),
-            mouse_x = e.pageX - offset.left,
-            mouse_y = e.pageY - offset.top,
-            index_x = Math.ceil(mouse_x / this.cell_size),
-            index_y = Math.ceil(mouse_y / this.cell_size);
-
-          if (index_x !== this.hovered_x || index_y !== this.hovered_y) {
-            this.hovered_x = index_x;
-            this.hovered_y = index_y;
-            this.renderCells("mouseMoved");
-          }
-        }
-      }
-
       /**
        * Handle mouse clicks on the crossword grid.
        * Works with any number of clue groups (not just Across/Down).
        */
       mouseClicked(e) {
         const offset = this.svg.offset();
-	const scale = this.currentScale; // zoom scale variable
-	const mouse_x = (e.pageX - offset.left) / scale;
-	const mouse_y = (e.pageY - offset.top) / scale;
+        const scale = this.currentScale; // zoom scale variable
+        const mouse_x = (e.pageX - offset.left) / scale;
+        const mouse_y = (e.pageY - offset.top) / scale;
         //const mouse_x = e.pageX - offset.left;
         //const mouse_y = e.pageY - offset.top;
         const index_x = Math.ceil(mouse_x / this.cell_size);
@@ -2606,16 +2635,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             clickedCell.type !== 'block'
           ) {
             this.toggleDiagramlessDir(); // <-- Step 2 helper
-            this.renderCells("mouseClicked");
             if (!isMobile) this.hidden_input.focus();
             return;
           }
 
           // Otherwise, select the clicked cell without tying to any word
-          this.selected_cell = clickedCell;
-          this.selected_word = null;
+          this.setSelectedCell(clickedCell);
+          this.setSelectedWord(null);
           this.top_text.html('');
-          this.renderCells("mouseClicked2");
           if (!isMobile) this.hidden_input.focus();
           return; // prevent falling through to normal-puzzle logic
         }
@@ -2652,11 +2679,16 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         // If still nothing found, just stay on current group
         if (matchingWord) {
           this.setActiveWord(matchingWord);
+        } else {
+          // If no matching word found and current group is fake, clear top text
+          const currentGroup = this.clueGroups[this.activeClueGroupIndex];
+          if (this.fakeclues || (currentGroup && currentGroup.isFake)) {
+            this.top_text.html('');
+          }
         }
 
         // Update cell selection and redraw
         this.setActiveCell(clickedCell);
-        //this.renderCells();
 
         if (!IS_MOBILE) {
           this.hidden_input.focus();
@@ -2666,7 +2698,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       /*keyPressedThenCheck(e) {
         this.keyPressed(e);
         }
-	*/
+        */
       keyPressed(e) {
         if (this.settings_open) {
           return;
@@ -2688,7 +2720,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             this.moveToFirstCell(false);
             break;
           case 37: // left
-            if (this.diagramless_mode) this.diagramless_dir = 'across'; // set BEFORE moving
+            if (this.diagramless_mode) this.setDiagramlessDir('across'); // set BEFORE moving
             if (e.shiftKey) {
               this.skipToWord(SKIP_LEFT);
             } else {
@@ -2696,7 +2728,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           case 38: // up
-            if (this.diagramless_mode) this.diagramless_dir = 'down'; // vertical mode (set BEFORE)
+            if (this.diagramless_mode) this.setDiagramlessDir('down'); // vertical mode (set BEFORE)
             if (e.shiftKey) {
               this.skipToWord(SKIP_UP);
             } else {
@@ -2704,7 +2736,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           case 39: // right
-            if (this.diagramless_mode) this.diagramless_dir = 'across'; // set BEFORE moving
+            if (this.diagramless_mode) this.setDiagramlessDir('across'); // set BEFORE moving
             if (e.shiftKey) {
               this.skipToWord(SKIP_RIGHT);
             } else {
@@ -2712,12 +2744,11 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           case 40: // down
-            if (this.diagramless_mode) this.diagramless_dir = 'down'; // vertical mode (set BEFORE)
+            if (this.diagramless_mode) this.setDiagramlessDir('down'); // vertical mode (set BEFORE)
             if (e.shiftKey) {
               this.skipToWord(SKIP_DOWN);
             } else {
               this.moveSelectionBy(0, 1);
-              //this.renderCells("down");
             }
             break;
 
@@ -2727,7 +2758,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               // Toggle direction in diagramless on Space
               if (this.selected_cell) {
                 this.toggleDiagramlessDir();
-                this.renderCells("space");
               }
               break; // prevent falling into normal space behavior
             }
@@ -2748,9 +2778,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               } else {
                 // --- normal space behavior: clear and move to next cell
-                this.selected_cell.letter = '';
-                this.selected_cell.checked = false;
-                this.autofill();
+                this.updateCell(this.selected_cell, { letter: '', checked: false });
+                this.saveAndUpdateStats();
                 const next_cell = this.selected_word.getNextCell(
                   this.selected_cell.x,
                   this.selected_cell.y
@@ -2759,7 +2788,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               }
             }
 
-            this.renderCells("space2");
             this.checkIfSolved(); // update solved status
             break;
 
@@ -2776,31 +2804,32 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           case 45:            // insert -- reveal letter
-	    if (e.shiftKey) { // SHIFT insert -- reveal word
-            	this.check_reveal( 'word', 'reveal');
-	    } else {
-            	this.check_reveal( 'letter', 'reveal');
-	    }
-            if (false &&(this.selected_cell && (this.selected_word || this.diagramless_mode))) {
-              var rebus_entry = prompt('Rebus entry', '');
-              this.hiddenInputChanged(rebus_entry);
+            if (e.shiftKey) { // SHIFT insert -- reveal word, BUT do not count as cheat : typing accelerator
+                this.check_reveal( 'word', 'reveal', true); // 3rd parameter will be treated NOT as event but as boolean skipCheat = true
+            } else if (e.ctrlKey) { // CTRL insert : real cheating.
+                this.check_reveal( 'word', 'reveal');
+            } else {
+                this.check_reveal( 'letter', 'reveal');
             }
             break;
           case 46: // delete
             if (this.selected_cell && !this.selected_cell.fixed) {
-              this.selected_cell.letter = '';
-              this.selected_cell.checked = false;
-              this.autofill();
+              this.updateCell(this.selected_cell, {
+                letter: '',
+                checked: false
+              });
+              this.saveAndUpdateStats();
             }
-            this.renderCells("delete");
             // Update this.isSolved
             this.checkIfSolved();
             break;
           case 8: // backspace
             if (this.selected_cell && !this.selected_cell.fixed) {
-              this.selected_cell.letter = '';
-              this.selected_cell.checked = false;
-              this.autofill();
+              this.updateCell(this.selected_cell, {
+                letter: '',
+                checked: false
+              });
+              this.saveAndUpdateStats();
 
               if (this.diagramless_mode) {
                 // Move to the previous editable cell based on current diagramless direction
@@ -2814,7 +2843,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 this.setActiveCell(prev_cell);
               }
 
-              this.renderCells("back");
               this.checkIfSolved();
             }
             break;
@@ -2828,26 +2856,41 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           case 190: // "." key pressed
+            if (this.selected_cell && (e.ctrlKey || e.metaKey)) {
+              // ctrl + "." toggles circle
+              const cell = this.selected_cell;
+              this.updateCell(cell, {
+                shape: cell.shape === 'circle' ? null : 'circle'
+              });
+              if (!IS_MOBILE) {
+                this.hidden_input.focus();
+              }
+              prevent = true;
+              break;
+            }
+
             if (this.diagramless_mode && this.selected_cell) {
               const cell = this.selected_cell;
 
               // Toggle block / white
               if (cell.type === 'block') {
                 // It is currently a block: make it white again
-                cell.type = null;
-                cell.empty = false;
+                this.updateCell(cell, {
+                  type: null,
+                  empty: false,
+                  letter: ''
+                });
               } else {
                 // It is currently white: make it a block
-                cell.type = 'block';
-                cell.empty = true;
+                this.updateCell(cell, {
+                  type: 'block',
+                  empty: true,
+                  letter: ''
+                });
               }
-
-              // Always clear any letter inside
-              cell.letter = '';
 
               // Renumber immediately
               this.renumberGrid();
-              this.renderCells(); // redraw right away
 
               if (!IS_MOBILE) {
                 this.hidden_input.focus();
@@ -2856,16 +2899,15 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             prevent = true;
             break;
           default: {
-	    const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // no junk needed, we only allow a-z keys in cells.
-
-            if (this.selected_cell && isPrintableChar && !this.selected_cell.fixed) {
-              // Uppercase only letters, leave numbers/punctuation unchanged
-              const ch = /[a-z]/i.test(e.key) ? e.key.toUpperCase() : e.key;
-              this.selected_cell.letter = ch;
-              this.selected_cell.checked = false;
-              this.autofill();
+             const isLetter = e.key.length === 1 && /^[a-z]$/i.test(e.key);
+             if (this.selected_cell && isLetter && !this.selected_cell.fixed) {
+               const ch = e.key.toUpperCase();
+              this.updateCell(this.selected_cell, {
+                letter: ch,
+                checked: false
+              });
+              this.saveAndUpdateStats();
               this.checkIfSolved();
-              this.renderCells("letter entered");
               if (!IS_MOBILE) {
                 this.hidden_input.focus();
               }
@@ -2893,7 +2935,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 }
               }
 
-	      // dont change cell if wrong:
+              // dont change cell if wrong:
               if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) next_cell=null;
               if (next_cell) {
                 this.setActiveCell(next_cell);
@@ -2901,13 +2943,13 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
             break;
           }
-	} //SWITCH
+        } //SWITCH
         if (prevent) {
           e.preventDefault();
           e.stopPropagation();
         }
 
-	// redisplay word in the upper box:
+        // redisplay word in the upper box:
         if (this.selected_cell && this.selected_word) {
           var i,
             word,
@@ -2915,23 +2957,28 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             y = this.selected_cell.y;
             word = this.clueGroups[this.activeClueGroupIndex].getMatchingWord(x, y);
             if (word) { this.setActiveWord(word); }
-	}
+        }
   } //FUNCTION keyPressed
 
-      autofill() {
-        this.saveGame(); // keep saving
+      saveAndUpdateStats() {
+        this.saveGame(); // save locally and to backend if present
+        this.updateStatsUI();
 
+        /* unused code for us
         if (this.is_autofill && this.selected_cell) {
           const key = this.selected_cell.number || this.selected_cell.top_right_number;
           const same_number_cells = this.number_to_cells[key] || [];
 
           for (const cell of same_number_cells) {
             if (cell !== this.selected_cell) {
-              cell.letter = this.selected_cell.letter;
-              cell.checked = this.selected_cell.checked;
+              this.updateCell(cell, {
+                letter: this.selected_cell.letter,
+                checked: this.selected_cell.checked
+              });
             }
           }
         }
+       */
       }
 
       // Detects user inputs to hidden input element
@@ -2940,26 +2987,27 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         if (this.selected_cell) {
           if (rebus_string && rebus_string.trim()) { //mobile case rebus_string= letter entered
             this.selected_cell.letter = rebus_string.toUpperCase(); // ✅ Use rebus string if available
-            if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) {
-	        next_cell=null;
-                this.renderCells();
-                this.hidden_input.val('');
-		return;
-		}
+            if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) { // wrong entry
+              this.updateCell(this.selected_cell, { letter: this.selected_cell.letter,  checked: true });
+              next_cell=null;
+              return;
+              }
           } else {
             const mychar = this.hidden_input.val().slice(0, 1).toUpperCase();
             if (mychar) {
-              this.selected_cell.letter = mychar;
+              this.updateCell(this.selected_cell, { letter: mychar });
             }
           }
-          this.selected_cell.checked = false;
+          this.updateCell(this.selected_cell, {
+            checked: false
+          });
 
           // If this is a coded or acrostic
           // find all cells with this number
           // and fill them with the same letter
-          this.autofill();
+          this.saveAndUpdateStats();
 
-	  // this call can be avoided:
+          // this call can be avoided:
           //this.renderCells("userInput1"); // Re-render SVG grid immediately after user input
 
           // find empty cell, then next cell
@@ -2982,7 +3030,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
 
           this.setActiveCell(next_cell);
-	  // this call can be avoided (setActiveCell has called renderCells)
+          // this call can be avoided (setActiveCell has called renderCells)
           //this.renderCells("userInput2"); // Re-render SVG grid immediately after user input
           this.checkIfSolved()
         }
@@ -3037,7 +3085,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             }
           });
         }
-	if (this.v_autosave) { this.saveDb();}
+        if (this.v_autosave) { this.saveDb();}
 
         /* const winSound = new Audio('./sounds/hny.mp3');
            winSound.play();*/
@@ -3075,7 +3123,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 word_cell = word.getFirstEmptyCell() || word.getFirstCell();
                 this.setActiveWord(word);
                 this.setActiveCell(word_cell);
-                this.renderCells("skip DIR");
 
                 return true;
               }
@@ -3166,7 +3213,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           const cell = next_word.getFirstEmptyCell() || next_word.getFirstCell();
           this.setActiveWord(next_word);
           this.setActiveCell(cell);
-          this.renderCells("move to nextw");
         }
       }
 
@@ -3183,7 +3229,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             this.selected_word.getFirstCell();
           if (cell) {
             this.setActiveCell(cell);
-            this.renderCells("move to 1st cell");
           }
         }
       }
@@ -3202,7 +3247,6 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           const new_cell = this.getCell(x, y);
           if (new_cell) { // skip normal crossword movement logic
             this.selected_cell = new_cell;
-            this.renderCells();
           }
           return;
         }
@@ -3293,20 +3337,19 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         this.setActiveCell(new_cell);
-        this.renderCells("move selby");
       } // END moveSelectionBy()
 
 
       windowResized() {
-	if (IS_MOBILE) { return;}
+        if (IS_MOBILE) { return;}
         setBreakpointClasses(this.root);
         resizeText(this.root, this.top_text);
-        this.renderCells("resized");
+        this.positionGrid();
         this.syncTopTextWidth();
       }
 
       syncTopTextWidth() {
-	if (IS_MOBILE) { return;}
+        if (IS_MOBILE) { return;}
         const svgEl = this.svgContainer;
         const wrapper = this.toptext?.get(0);
 
@@ -3357,31 +3400,33 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         check();
       }
 
-      mouseEnteredClue(e) {
-        var target = $(e.currentTarget);
-        this.hilited_word = this.words[target.data('word')];
-        //this.renderCells("mouseEnteredClue");
-      }
-
-      mouseLeftClue() {
-        this.hilited_word = null;
-        //this.renderCells("mouseLeftClue");
-      }
-
       // callback for clicking a clue in the sidebar
       clueClicked(e) {
-        if (this.fakeclues || this.diagramless_mode) return;
-
         const target = $(e.currentTarget);
-        const word = this.words[target.data('word')];
-        if (!word) return;
-
-        const cell = word.getFirstEmptyCell() || word.getFirstCell();
-        if (!cell) return;
+        const clue = target.data('clue');
+        const wordId = target.data('word');
+        const word = this.words[wordId];
 
         // Find which clue group this clue belongs to
         const clickedGroupId = target.data('clues');
         const groupIndex = this.clueGroups.findIndex(g => g.id === clickedGroupId);
+        const group = this.clueGroups[groupIndex];
+
+        if (this.fakeclues || (group && group.isFake)) {
+          // Toggle "completed" state on the clue itself
+          clue.fakeClueCompleted = !Boolean(clue.fakeClueCompleted);
+
+          // Update this specific clue element immediately
+          this.updateClueAppearance(clue, target);
+          return;
+        }
+
+        if (!word) return;
+
+        if (this.diagramless_mode) return;
+
+        const cell = word.getFirstEmptyCell() || word.getFirstCell();
+        if (!cell) return;
 
         // Switch directly to that group if needed
         if (groupIndex !== -1 && groupIndex !== this.activeClueGroupIndex) {
@@ -3390,16 +3435,17 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
 
         this.setActiveWord(word);
         this.setActiveCell(cell);
-        this.renderCells("clue click");
       }
 
       showInfo() {
         this.createModalBox(
           'Info',
           `
-            <p><b>${escape(this.title)}</b></p>
-            <p>${escape(this.author)}</p>
-            <p><i>${escape(this.copyright)}</i></p>
+            <p><b>Title: ${this.title}</b></p>
+            ${this.voltitle ? `<p><b>Volume: </b>${this.voltitle}</p>` : ''}
+            <p><b>Author:</b> ${escape(this.author)}</p>
+            <p><b>Notes:</b> ${escape(this.puznotes)}</p>
+            <p><b>Dimensions:</b> ${this.grid_width}x${this.grid_height}</b></p>
           `
         );
       }
@@ -3527,7 +3573,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             <div class="settings-option">
               <label class="settings-label">
                 <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
-                  Autocheck
+                  Autocheck (🅰️)
                 </input>
               </label>
             </div>
@@ -3546,9 +3592,9 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
               </label>
             </div>
             <div class="settings-option">
-              <label class="settings-label">
+              <label class="settings-label" backend-required>
                 <input id="autosave2" checked="" type="checkbox" name="autosave2" class="z-settings-changer">
-                  Autosave Crossword
+                  Autosave Crossword (&#8597;&#65039;)
                 </input>
               </label>
             </div>
@@ -3571,6 +3617,8 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         $('#autosave2').prop('checked', this.v_autosave);
         $('#display-cn').prop('checked', v_display_cn);
         $('#display-cheats').prop('checked', this.v_displayCheatMarks);
+        document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
+        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.v_autocheck ? '' : 'none'; });
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
         for (var cc of classChangers) {
@@ -3588,45 +3636,31 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           .get(0)
           .addEventListener('click', (event) => {
             if (event.target.name == 'autocheck2' ) {
-		this.toggleAutoCheck();
-	    }
+                this.toggleAutoCheck();
+            }
             if (event.target.name == 'autosave2' ) {
-		this.toggleAutoSave();
-	    }
+                this.toggleAutoSave();
+            }
             if (event.target.name == 'display-cn' ) {
-		this.toggleClueNumbers();
-	    }
+                this.toggleClueNumbers();
+            }
             if (event.target.name == 'display-cheats' ) {
-		this.toggleDisplayCheats();
-	    }
+                this.toggleDisplayCheats();
+            }
             if (event.target.className === 'settings-changer') {
               if (event.target.type === 'checkbox') {
                 this.config[event.target.name] = event.target.checked;
 
-                // need to add a special bit for dark mode
-                if (event.target.name == 'dark_mode_enabled' && DarkReader) {
-                  if (event.target.checked) {
-                    DarkReader.enable({
-                      brightness: 100,
-                      contrast: 90,
-                      sepia: 10
-                    });
-                    this.config.color_none = '#252624';
-                    this.config.font_color_fill = '#ddd4c5';
-                    this.renderCells("dark reader");
-                  } else {
-                    DarkReader.disable();
-                    this.config.color_none = default_config.color_none;
-                    this.config.font_color_fill = default_config.font_color_fill;
-                    this.renderCells("dark_mode_disable");
-                  }
+                // Toggle dark mode via CSS class
+                if (event.target.name == 'dark_mode_enabled') {
+                  document.body.classList.toggle('dark-mode', event.target.checked);
+                  this.updateCSS(this.config.color_word, this.config.color_selected);
+                  this.renderCells();
                 }
 
                 // If the toggled setting is gray_completed_clues, re-render clues immediately
                 if (event.target.name === 'gray_completed_clues') {
-                  for (const wordId in this.words) {
-                    this.updateClueAppearance(this.words[wordId]);
-                  }
+                  this.styleClues();
                   this.syncTopTextWidth();
                 }
 
@@ -3657,7 +3691,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           } else {
             delete c.fixed; // Ensure normal cells are not accidentally flagged
           }
-	  */
+          */
         });
       }
 
@@ -3683,33 +3717,34 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         } else {
             $('.cw-cell-number').hide();
         }
-        this.renderCells("toggle clue nums"); 
+        this.renderCells();  // FIX ?
       }
       toggleDisplayCheats(e) {
-      	this.v_displayCheatMarks = !this.v_displayCheatMarks;
-        this.renderCells("toggle cheats marks"); 
+        this.v_displayCheatMarks = !this.v_displayCheatMarks;
+        this.renderCells();  //FIX ?
       }
 
       toggleAutoCheck(e) {
-      	this.v_autocheck = !this.v_autocheck;
+        this.v_autocheck = !this.v_autocheck;
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.v_autocheck ? 'none' : 'block';
         $('#autocheck1').prop('checked', this.v_autocheck);
         if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.v_autocheck ? '' : 'none'; });
       }
 
       toggleAutoSave(e) {
-      	this.v_autosave = !this.v_autosave;
+        this.v_autosave = !this.v_autosave;
         $('#autosave1').prop('checked', this.v_autosave);
         $('#autosave2').prop('checked', this.v_autosave);
+        document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
       }
 
 
       /* load last state from DB */
       async loadDb(e) {
         const isAvailable = await this.backendPromise; // will wait until decision about backend is made
-	if (!isAvailable) return;
-        //if (! this.backendEnabled) return; (not working)
+        if (!isAvailable) return;
         this.fillJsXw();
         try {
             const response = await fetch(this.back_loadDB, {
@@ -3720,28 +3755,32 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 body: JSON.stringify(this.jsxw)
             });
 
-	    if (!response.ok) {
+            if (!response.ok) {
                 alert(`service not available: ${response.status}`);
                 return; 
             }
             const data = await response.json();
             console.log("json returned by nexus_update:", data);
-	    if (data.status != 0) { alert(data.message); }
-	    else {
-	    	const state = data.state
-		this.updateCellsFromState(this.cells, state);
+            if (data.status != 0) {
+                if (data.status == 2) this.toggleAutoSave(); // NO puz found with this ID
+                alert(data.message);
+                }
+            else {
+                const state = data.state
+                this.updateCellsFromState(this.cells, state);
 
                 this.stat_errors = {};
                 this.stat_cheated = {};
 
-		// ?.length (Optional Chaining): This safely checks if the list exists and has items in one short expression. If error_list is undefined, it simply skips the block.
-		// Reconstruct stats from simple arrays [ "x1,y1", "x2,y2" ] => stat_errors ={ "x1,y1": true, ...}
+                // ?.length (Optional Chaining): This safely checks if the list exists and has items in one short expression. If error_list is undefined, it simply skips the block.
+                // Reconstruct stats from simple arrays [ "x1,y1", "x2,y2" ] => stat_errors ={ "x1,y1": true, ...}
                 this.stat_errors = data.error_list?.length ? Object.fromEntries(data.error_list.map(c => [c, true])) : {};
                 this.stat_cheated = data.cheated_list?.length ? Object.fromEntries(data.cheated_list.map(c => [c, true])) : {};
-		xw_timer_seconds = data.timeplayed ?? 0;
+                xw_timer_seconds = data.timeplayed ?? 0;
 
-          	this.renderCells("load DB"); 
-	    }
+                this.renderCells(); 
+                this.updateStatsUI();
+            }
     
         } catch (error) {
             console.error('Error loading stats:', error);
@@ -3768,19 +3807,22 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
   }
 
     /* Save the game state to DB */
-    async saveDb(e) {
+    async saveDb(e, mustFill=true) {
+        if (typeof e === 'boolean') {
+            mustFill = e;
+            e = null;
+        }
         const isAvailable = await this.backendPromise;
-	if (! this.v_autosave || !isAvailable) return;
-        //if (! this.backendEnabled) return; ==> async bug
+        if (! this.v_autosave || !isAvailable) return;
         if (this.is_saving) return; // Exit if a save is already running
         this.is_saving = true;
     
-        this.fillJsXw();
+        if (mustFill) this.fillJsXw();
         const payload = {
             ...this.jsxw,
             error_list: Object.keys(this.stat_errors),
             cheated_list: Object.keys(this.stat_cheated),
-	    timeplayed: xw_timer_seconds
+            timeplayed: xw_timer_seconds
         };
     
         try {
@@ -3798,13 +3840,16 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
                 body: compressedBody
             });
     
-	    if (!response.ok) {
+            if (!response.ok) {
                 alert(`Backend seems not available: ${response.status}\nAutosave disabled`);
-		this.toggleAutoSave();
+                this.toggleAutoSave();
                 return; 
             }
             const data = await response.json();
-            if (data.status != 0) { alert(data.message); }
+            if (data.status != 0) {
+                if (data.status == 2) this.toggleAutoSave(); // NO puz found with this ID
+                alert(data.message);
+                }
     
         } catch (error) {
             console.error('Error saveDB:', error);
@@ -3826,14 +3871,14 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             value: n[1]
           }
         })));
-	localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
+        localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
             stat_cheated: this.stat_cheated,
             stat_errors: this.stat_errors,
-	    timeplayed: xw_timer_seconds
+            timeplayed: xw_timer_seconds
         }));
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
-	if (this.v_autosave) { this.saveDb();}
+        if (this.v_autosave) { this.saveDb(false);} // no fillJsXw required its just been done
       }
 
       /* Show "load game" menu" */
@@ -3900,39 +3945,57 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
      }
 
      updateStatsUI() {
-         const total = this.nonBlackCells;
-         const cheated = this.total_cheated();
-         const errors = this.total_errors();
+        // 1. DOM Guard: Find elements first
+        const el1 = document.getElementById('misc-stats');
+        const el2 = document.getElementById('fake-btn-stats');
 
-         // Count cells that have a letter entered
-	 const filled = Object.values(this.cells).flatMap(col => Object.values(col)).filter(c => c.solution !== null && c.letter && c.letter === c.solution ).length;
+        // on mobile: update only when drawer is opened
+        if (IS_MOBILE && !document.querySelector('.cw-buttons-drawer')?.classList.contains('open')) {
+            return;
+        }
 
-         // Calculate percentages
-	 /*
-         const cheatedPct = ((cheated / total) * 100).toFixed(1);
-         const errorsPct = ((errors / total) * 100).toFixed(1);
-         const completedPct = ((filled / total) * 100).toFixed(1);
-	 */
-	 const cheatedPct = Math.round((cheated / total) * 100);
-         const errorsPct = Math.round((errors / total) * 100);
-         const completedPct = Math.round((filled / total) * 100);
-     
-	  const stats= `Cheated: ${cheated} (${cheatedPct}%) • ` +
-            `Errors: ${errors} (${errorsPct}%) • ` +
-            `Completed: ${completedPct}%`;
-	  $('#misc-stats').text(stats);
-	  $('#fake-btn-stats').text(stats);
-	  const tit_auth= `${this.title} • ` + `${this.author}`+ ' • <span class="signal-emoji">📶</span>';
-	  //$('#fake-btn-tit-auth').text(tit_auth);
-	  $('#fake-btn-tit-auth').html(tit_auth);
-             
-     }
+        // 3. Exit if nowhere to print the data
+        if (!el1 && !el2) return;
+
+        // 4. Data Crunching only if elements exist
+        const total = this.nonBlackCells;
+        const cheated = this.total_cheated();
+        const errors = this.total_errors();
+
+        // Count cells that have a correct letter entered 
+        let filled = 0;
+        for (const col in this.cells) {
+            for (const row in this.cells[col]) {
+                const c = this.cells[col][row];
+                if (c.solution !== null && c.letter === c.solution) filled++;
+            }
+        }
+
+        // 5. Formatting
+        const cheatedPct = Math.round((cheated / total) * 100);
+        const errorsPct = Math.round((errors / total) * 100);
+        const completedPct = Math.floor((filled / total) * 100);
+
+        const stats = `Cheated: ${cheated} (${cheatedPct}%) • Errors: ${errors} (${errorsPct}%) • Completed: ${completedPct}%`;
+        const tit_auth = `${this.voltitle}${this.title} • ${this.author}`;
+        
+        // 6. UI Update
+        if (el1) el1.innerHTML = stats;
+        if (el2) el2.textContent = stats;
+        const el3 = document.getElementById('fake-btn-tit-auth');
+        if (el3) el3.innerHTML = tit_auth;
+        }
+
 //-----------------------------------------------CHECK REVEAL ------------------------------------------------//     
 
-      check_reveal(to_solve, reveal_or_check, e) {
+      check_reveal(to_solve, reveal_or_check, e, skipCheat = false) {
+        if (typeof e === 'boolean') {
+            skipCheat = e;
+            e = null;
+        }
         var my_cells = [],
             cell;
-	var saveNeeded = false;    
+        var saveNeeded = false;    
 
         switch (to_solve) {
           case 'letter':
@@ -3960,6 +4023,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
 
         // Expand autofill cells (if needed)
+        /*
         if (this.is_autofill) {
           const extra_cells = [];
           for (let c of my_cells) {
@@ -3976,6 +4040,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           }
           my_cells = my_cells.concat(extra_cells);
         }
+        */
 
         for (let c of my_cells) {
           if (reveal_or_check !== 'clear' && !c.solution) {
@@ -3985,39 +4050,53 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           if (reveal_or_check === 'clear') {
             if (c.fixed) continue; // will never happen
             // CLEAR
-            c.letter = '';
-            c.checked = false;
-            c.revealed = false;
+            this.updateCell(c, {
+              letter: '',
+              checked: false,
+              revealed: false
+            });
             if (this.diagramless_mode) {
-              c.type = null; // clear black squares too
-              c.empty = false;
+              this.updateCell(c, {
+                type: null, // clear black squares too
+                empty: false
+              });
             }
           } else if (reveal_or_check === 'reveal') {
             if (this.diagramless_mode) {
               if (c.solution === '#') {
-                c.type = 'block';
-                c.empty = true;
-                c.letter = '';
+                this.updateCell(c, {
+                  type: 'block',
+                  empty: true,
+                  letter: ''
+                });
               } else {
-                c.type = null;
-                c.empty = false;
-                c.letter = c.solution;
+                this.updateCell(c, {
+                  type: null,
+                  empty: false,
+                  letter: c.solution
+                });
               }
-              c.checked = false;
-              c.revealed = false;
+              this.updateCell(c, {
+                checked: false,
+                revealed: false
+              });
             } else { // revealed std puzzle
               // ✅ SAFEGUARD for normal puzzles: don't show "#" as a letter
               if (c.solution === '#') {
-                c.letter = '';
-                c.revealed = false;
-                c.checked = false;
+                this.updateCell(c, {
+                  letter: '',
+                  revealed: false,
+                  checked: false
+                });
               } else {
-		if (c.letter != c.solution) { this.setCheated(c.x,c.y); }
-                c.letter = c.solution;
-                c.revealed = true;
-                c.checked = false;
-		saveNeeded = true;
-		// advance :
+                if ( (c.letter != c.solution) && !skipCheat ) { this.setCheated(c.x,c.y); }
+                this.updateCell(c, {
+                  letter: c.solution,
+                  revealed: true,
+                  checked: false
+                });
+                saveNeeded = true;
+                // advance :
                 const next_cell = this.selected_word.getNextCell(c.x, c.y);
                 this.setActiveCell(next_cell);
               }
@@ -4026,27 +4105,38 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
             if (this.diagramless_mode) {
               if (c.type === 'block') {
                 // If the user placed a black square
-                c.checked = (c.solution !== '#'); // Mark wrong if not supposed to be a black square
+                this.updateCell(c, {
+                  checked: c.solution != '#' // Mark wrong if not supposed to be a black square
+                });
               } else if (c.letter) {
                 // User typed something — check the letter
-                c.checked = !isCorrect(c.letter, c.solution);
+                this.updateCell(c, {
+                  checked: !isCorrect(c.letter, c.solution)
+                });
               } else {
                 // Empty white square — leave unchecked
-                c.checked = false;
+                this.updateCell(c, {
+                  checked: false
+                });
               }
             } else {
               // Regular crossword
               if (c.letter) {
-                c.checked = !isCorrect(c.letter, c.solution);
-		if (c.checked) { this.setError(c.x,c.y) } // c.checked is : NOT correct entry
-		saveNeeded = true; 
+		        const ckd = !isCorrect(c.letter, c.solution);
+                this.updateCell(c, {
+                  checked: ckd
+                });
+                if (ckd) { this.setError(c.x,c.y) } // c.checked is : NOT correct entry
+                saveNeeded = true; 
               } else {
-                c.checked = false;
+                this.updateCell(c, {
+                  checked: false
+                });
               }
             }
           }
         }
-	if (saveNeeded) { this.saveGame(); }
+        if (saveNeeded) { this.saveAndUpdateStats(); }
 
         // After mass-reveal or clear, renumber
         if (reveal_or_check === 'reveal' && this.diagramless_mode) {
@@ -4056,17 +4146,17 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           this.renumberGrid();
         }
 
-        this.renderCells();
+        this.showCurrentWordStateAsString(this.selected_word);
 
         if (reveal_or_check === 'reveal') {
           this.checkIfSolved(false);
         }
 
         if (reveal_or_check === 'clear') {
-	  this.stat_errors = {};
-       	  this.stat_cheated = {};
-	  xw_timer_seconds = 0 ; 
-          this.saveGame();
+          this.stat_errors = {};
+          this.stat_cheated = {};
+          xw_timer_seconds = 0 ; 
+          this.saveAndUpdateStats();
         }
 
         if (!IS_MOBILE) {
@@ -4117,26 +4207,25 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       }
 
 
-      toggleTimer() {
+      toggleTimer(e) {
         var display_seconds, display_minutes;
         var timer_btn = this.timer_button;
+        if (e) e.stopPropagation();
 
         function add() {
-          xw_timer_seconds = xw_timer_seconds + 1;
-          display_seconds = xw_timer_seconds % 60;
-          display_minutes = (xw_timer_seconds - display_seconds) / 60;
+            xw_timer_seconds++;
 
-          var display =
-            (display_minutes ?
-              display_minutes > 9 ?
-              display_minutes :
-              '0' + display_minutes :
-              '00') +
-            ':' +
-            (display_seconds > 9 ? display_seconds : '0' + display_seconds);
+            const h = Math.floor(xw_timer_seconds / 3600);
+            const m = Math.floor((xw_timer_seconds % 3600) / 60);
+            const s = xw_timer_seconds % 60;
 
-          timer_btn.html(display);
-          timer();
+            // Converts number to string and pads with '0' if length is less than 2
+            const mm = String(m).padStart(2, '0');
+            const ss = String(s).padStart(2, '0');
+            
+            var display = h > 0 ? `${h}:${mm}:${ss}`: `${mm}:${ss}`; 
+            timer_btn.html(display);
+            timer();
         }
 
         function timer() {
@@ -4164,30 +4253,88 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
         }
       }
 
-      updateClueAppearance(word) {
-        const clueEl = this.clues_holder.find(`.cw-clue.word-${word.id} .cw-clue-text`);
+      styleClues() {
+       // Update all clues in the sidebar
+        this.clues_holder.find('.cw-clue').each((i, el) => {
+          const $el = $(el);
+          const clue = $el.data('clue');
+          this.updateClueAppearance(clue, $el);
+        });
+      }
 
-        if (this.fakeclues) return;
+      updateClueAppearance(clue, $el) {
+        if (!clue) return;
 
-        if (!this.config.gray_completed_clues) {
-          // Reset clue styling if the setting is turned off
-          clueEl.css({
+        // Use provided $el or look it up in the DOM using unique identifying info
+        const clueEl = $el || $(document).find(`.cw-clue.word-${clue.word}[data-number="${clue.number}"]`);
+
+        // We specifically target the clue-text span to avoid graying out the clue number
+        const textEl = clueEl.hasClass('cw-clue-text') ? clueEl : clueEl.find('.cw-clue-text');
+
+        const groupId = clueEl.data('clues');
+        const group = this.clueGroups.find(g => g.id === groupId);
+
+        if (!this.config.gray_completed_clues && (!group || !group.isFake) && !this.fakeclues) {
+          // Reset clue styling if the setting is turned off and this is not a fake clue context
+          textEl.css({
             "text-decoration": "",
             "color": ""
           });
           return;
         }
 
-        if (word.isFilled()) {
-          clueEl.css({
-            "text-decoration": "",
-            "color": "#aaa"
-          });
-        } else {
-          clueEl.css({
-            "text-decoration": "",
-            "color": ""
-          });
+        // Determine if it should be gray based on fakeclues context or word fill state
+        let shouldGray = false;
+        if (this.fakeclues || (group && group.isFake)) {
+          shouldGray = Boolean(clue.fakeClueCompleted);
+        } else if (clue.word && this.words[clue.word]) {
+          shouldGray = this.words[clue.word].isFilled();
+        }
+
+        textEl.css({
+          "text-decoration": "",
+          "color": shouldGray ? "#aaa" : ""
+        });
+      }
+
+      updateCell(cell, properties) {
+        Object.assign(cell, properties);
+        this.adjustCell(cell);
+        this.styleClues();
+      }
+
+      setSelectedCell(new_cell) {
+        const prev_cell = this.selected_cell;
+        if (prev_cell === new_cell) {
+          return;
+        }
+        this.selected_cell = new_cell;
+        for (const cell of [prev_cell, new_cell]) {
+          if (!cell) {
+            continue;
+          }
+          const number = cell.number || cell.top_right_number;
+          const linked_cells = this.number_to_cells[number] ?? [cell];
+          for (const linked_cell of linked_cells) {
+            this.adjustCell(linked_cell);
+          }
+        }
+        this.adjustChevron();
+      }
+
+      setSelectedWord(new_word) {
+        const prev_word = this.selected_word;
+        if (prev_word === new_word) {
+          return;
+        }
+        this.selected_word = new_word;
+        for (const word of [prev_word, new_word]) {
+          if (!word) {
+            continue;
+          }
+          for (const coord of word.cells) {
+            this.adjustCell(word.getCellByCoordinates(coord));
+          }
         }
       }
     }
@@ -4424,7 +4571,16 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
       // get first empty cell in word
       // if x and y given - get first empty cell after cell with coordinates x,y
       // if there's no empty cell after those coordinates - search from begin
-      getFirstEmptyCell(x, y) {
+      /*
+      check_reveal(to_solve, reveal_or_check, e, skipCheat = false) {
+        if (typeof e === 'boolean') {
+            skipCheat = e;
+            e = null;
+        }
+      */
+      getFirstEmptyCell(x, y, checkedIsEmpty = false) { // if checkedIsEmpty = true : consider checked cell as empty
+        if (typeof x === 'boolean') { checkedIsEmpty = x ; x = null ; } // when only 1 param : its checkedIsEmpty
+              //
         // Return null if there are no cells in the word
         if (!this.cells || this.cells.length === 0) return null;
 
@@ -4450,7 +4606,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           const cell = this.getCellByCoordinates(coordinates);
 
           // Return the first cell without a letter
-          if (cell && !cell.letter) {
+          if (cell && (!cell.letter || (checkedIsEmpty && cell.checked)) ) {
             return cell;
           }
         }
@@ -4519,7 +4675,7 @@ function drawArrow(context, top_x, top_y, square_size, direction = "right") {
           (coordinates = this.cells[i]); i++) {
           cell = this.getCellByCoordinates(coordinates);
           if (cell) {
-            cell.letter = cell.solution;
+            this.crossword.updateCell(cell, { letter: cell.solution });
           }
         }
       }
