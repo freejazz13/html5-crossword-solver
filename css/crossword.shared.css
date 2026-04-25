@@ -168,6 +168,17 @@ div.crossword {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.cw-translation-display {
+  margin-top: 4px;
+  padding: 6px 8px;
+  background-color: #f9f9f9;
+  border-left: 3px solid #ed2939; /* French Red highlight */
+  font-style: italic;
+  font-size: 0.9em;
+  color: #444;
+  border-radius: 2px;
+  word-wrap: break-word;
+}
 .cw-cluenote-button {
   position: absolute;
   bottom: 4px;
@@ -176,8 +187,8 @@ div.crossword {
   height: 16px;
   padding: 4px 4px;
   border-radius: 4px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 2"><rect width="1" height="2" fill="%23002395"/><rect width="1" height="2" x="1" fill="%23fff"/><rect width="1" height="2" x="2" fill="%23ed2939"/></svg>');
   /*background-color: none; CSS ERROR */
-  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAXAAAAFwBhyfMcAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAACXSURBVDiNzdI9CsJQEEXhzyI7CP5sxYXYuA4t3JO9XbS21ARBXILgAoRYJA9CiOElNh6YZuDcO8UwjBkyPLEZ6EpwQdmYbayc1gFrvBsBrxh5iiv2HSFZrBwaQ8iq3i+GyO2QpE+eo+iQy3qfjmkucRt79p/LCfIvcqF6316WY5sDu19kOLTkPObswAQP3HHCEWfVr0fxAbSiWClHz+v4AAAAAElFTkSuQmCC');
   background-position: center;
   background-repeat: no-repeat;
 }

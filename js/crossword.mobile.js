@@ -146,7 +146,7 @@ $(document).ready(function () {
 
   if (isMobile && crosswordRoot) {
     // ── Clue List View helpers ──────────────────────────────────────
-    let clueListViewActive = false;
+    gCrossword.isListView = false;
 
     function buildClueListView() {
       const container = document.getElementById('cw-clue-list-view');
@@ -265,7 +265,7 @@ $(document).ready(function () {
 
           
     function updateClueListView() {
-        if (!clueListViewActive) return;
+        if (!gCrossword.isListView) return;
         const listView = document.getElementById('cw-clue-list-view');
         if (!listView) return;
     
@@ -339,13 +339,14 @@ $(document).ready(function () {
     }
 
     function toggleClueListView() {
-      clueListViewActive = !clueListViewActive;
+      gCrossword.isListView = !gCrossword.isListView;
       const gridWrapper = document.querySelector('.cw-grid-clue-wrapper');
       const listView = document.getElementById('cw-clue-list-view');
       const btn = document.getElementById('btn-clue-list-toggle');
       if (!gridWrapper || !listView) return;
 
-      if (clueListViewActive) {
+      if (gCrossword.isListView) {
+        gCrossword.currentScale = 1 ; tx = 0; ty = 0; applyTransform();
         gridWrapper.style.display = 'none';
         listView.classList.add('active');
         if (btn) btn.textContent = 'Grid';
@@ -525,7 +526,20 @@ $(document).ready(function () {
       
       //🔤🅰️
       dhi.className = 'cw-button';
-      const tit_auth= '<span class="autocheck-emoji">🅰️</span> • ' + `${gCrossword.title} • ` + `${gCrossword.author}`+ ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>';
+      const MAX_WIDTH = 40; // may be adjusted
+      let displayInfo = `${gCrossword.title} • ${gCrossword.author}`;
+      if (displayInfo.length > MAX_WIDTH) {
+          // If combined is too long, drop author and just use Title
+          displayInfo = gCrossword.title;
+
+          // If the Title alone is still too long, truncate it
+          if (displayInfo.length > MAX_WIDTH) {
+              // Substring to 39 to leave room for the 1-character ellipsis
+              displayInfo = displayInfo.substring(0, MAX_WIDTH).trim() + '…';
+          }
+      }
+      const tit_auth = '<span class="autocheck-emoji">🅰️</span> • ' + `${displayInfo}` + ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">↕️</span>';
+      //const tit_auth= '<span class="autocheck-emoji">🅰️</span> • ' + `${gCrossword.title} • ` + `${gCrossword.author}`+ ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>';
       dhi.innerHTML = `<span>${tit_auth}</span>&nbsp;`;
       if (timer) {
           dhi.appendChild(timer); 
@@ -547,7 +561,7 @@ $(document).ready(function () {
      const switcher = wrapper.querySelector('#switchListGrid');
      switcher.onclick = (e) => {
                 const el = e.currentTarget;
-                el.textContent = clueListViewActive ? '📋':'𖣯' ;
+                el.textContent = gCrossword.isListView ? '📋':'𖣯' ;
                 //el.textContent = isGrid ? '📋' : '🔄';
                 toggleClueListView();
                 };
@@ -867,10 +881,15 @@ function createCustomKeyboard() {
     if (rowIndex === 0) {
       const leftArrow = document.createElement('div');
       leftArrow.className = 'custom-key wide-key cw-key-left';
-      leftArrow.textContent = '<';
+      leftArrow.textContent = '◀';
       leftArrow.addEventListener('click', () => {
         const skipFilled = gCrossword.config?.tab_key === 'tab_skip';
-        gCrossword.moveToNextWord(true, skipFilled); // ← previous word
+        if (gCrossword.isListView) { // list view just move to prev cell
+            const prev_cell = gCrossword.selected_word.getPreviousCell(gCrossword.selected_cell.x, gCrossword.selected_cell.y);
+            if (prev_cell) gCrossword.setActiveCell(prev_cell);
+        } else {
+            gCrossword.moveToNextWord(true, skipFilled); // ← previous word
+        }
       });
       rowDiv.appendChild(leftArrow);
     }
@@ -948,10 +967,16 @@ function createCustomKeyboard() {
     if (rowIndex === 0) {
       const rightArrow = document.createElement('div');
       rightArrow.className = 'custom-key wide-key cw-key-right';
-      rightArrow.textContent = '>';
+      //rightArrow.textContent = '>';
+      rightArrow.textContent = '▶'
       rightArrow.addEventListener('click', () => {
         const skipFilled = gCrossword.config?.tab_key === 'tab_skip';
-        gCrossword.moveToNextWord(false, skipFilled); // → next word
+        if (gCrossword.isListView) { // list view just move to next cell
+            const next_cell = gCrossword.selected_word.getNextCell(gCrossword.selected_cell.x, gCrossword.selected_cell.y);
+            if (next_cell) gCrossword.setActiveCell(next_cell);
+        } else {
+            gCrossword.moveToNextWord(false, skipFilled); // → next word
+        }
       });
       rowDiv.appendChild(rightArrow);
     }

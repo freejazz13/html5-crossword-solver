@@ -498,6 +498,7 @@ function setupPWAInstallButton(btn) {
         //this.backendEnabled = false;
         this.backendPromise = null;
         this.currentScale = 1.0;
+        this.translatedClues = null;
 
         /*
         This code dynamically generates a matching color theme based on a single base color (COLOR_WORD). It uses HSV (Hue, Saturation, Value) transformations to ensure all UI elements (hover states, highlights, buttons) look visually consistent.
@@ -771,8 +772,18 @@ function setupPWAInstallButton(btn) {
           );
         }
 
+        // used for localStorage:
+        this.volname = params.get('voltitle')?.trim() ?? "";
+        // used for text display:      
         const volt = params.get('voltitle')?.trim();
         this.voltitle = volt ? `${escape(volt)}&nbsp;•&nbsp;` : '';
+        const fname = params.get('fname')?.trim();
+        this.filename = fname ? fname : '';
+        // used for translation
+        const md5grid = params.get('md5grid')?.trim();
+        this.md5grid = md5grid ? md5grid : null;
+        const puzlang = params.get('lang')?.trim();
+        this.puzlang = puzlang ? puzlang : 'fr';
         // preload one puzzle
         const b64Data = params.get('data');
         if (b64Data) {
@@ -1682,6 +1693,27 @@ function setupPWAInstallButton(btn) {
         this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
         this.autosave_btn2.on('click', (e) => { this.toggleAutoSave(e); });
 
+        // for eng Xword on mobile , display translation when clue is clicked:
+        if (IS_MOBILE && this.puzlang !== 'fr') {
+            this.top_text.on('click', async (event) => {
+                // Find the span containing our data attributes
+                const $span = $(event.currentTarget).find('.cw-clue-text-up');
+                const clueNum = $span.data('number');
+                const direction = $span.data('direction');
+
+                if (clueNum && direction) {
+                    // Fetch the translation
+                    const translation = await this.getTranslation(clueNum, direction);
+                    if (translation) {
+                        // Update the text to the French version. use .text() to safely swap the content
+                        $span.text(translation);
+                        // visual feedback that it's translated (e.g., change color)
+                        $span.css('color', '#002395');
+                    }
+                }
+            });
+        }
+
         // LOAD
         this.load_btn.on('click', () => {
           this.init();   // re-initialize
@@ -1981,12 +2013,29 @@ function setupPWAInstallButton(btn) {
             return;
           }
           this.top_text.html(`
-            <span class="cw-clue-text-up">
+            <span class="cw-clue-text-up" data-number="${escape(word.clue.number)}" data-direction="${escape(this.getClueDirection(word))}">
               ${escape(word.clue.text)}
             </span>
           `);
           resizeText(this.root, this.top_text);
         }
+      }
+
+      // for word, get its direction . if x stays constant => Down, else Across
+      getClueDirection(word) {
+        // Ensure we have at least two cells to compare
+        if (!word.cell_ranges || word.cell_ranges.length < 2) {
+            return "Across"; // Default fallback
+        }
+
+        const firstCell = word.cell_ranges[0];
+        const secondCell = word.cell_ranges[1];
+
+        // If x is constant (the same) for the first two cells, it is a vertical word
+        if (firstCell.x === secondCell.x) {
+            return "Down";
+        }
+        return "Across";
       }
 
       setActiveCell(cell) {
@@ -2039,14 +2088,15 @@ function setupPWAInstallButton(btn) {
         for (const clue of clues_group.clues) {
           const clue_el = $(`
             <div style="position: relative">
-              <span class="cw-clue-number">${escape(clue.number)}</span>
-              <span class="cw-clue-text">
+             <span class="cw-clue-number">${escape(clue.number)}</span>
+            <span class="cw-clue-text">
                 ${escape(clue.text)}
-                <div class="cw-edit-container" style="display: none;">
-                  <input class="cw-input note-style" type="text">
+                <!-- Changed from input to a display box -->
+                <div class="cw-translation-display translation-style" style="display: none;">
+                <!-- Translation text will be injected here -->
                 </div>
                 <span class="cw-cluenote-button" style="display: none;"></span>
-              </span>
+            </span>
             </div>
           `);
 
@@ -2058,11 +2108,13 @@ function setupPWAInstallButton(btn) {
           }).addClass(`cw-clue word-${clue.word}`);
 
           // restore any saved note
+          /*
           const clueNote = notes.get(clue.word);
           if (clueNote !== undefined) {
             clue_el.find('.cw-input').val(clueNote);
             clue_el.find('.cw-edit-container').show();
           }
+          */
 
           $items.append(clue_el);
         }
@@ -2075,24 +2127,55 @@ function setupPWAInstallButton(btn) {
         const save = () => this.saveGame();
 
         $items
-          .on('mouseenter', '.cw-clue', function() {
-            const $el = $(this);
-            if ($el.find('.cw-input').val().trim().length === 0) {
-              $el.find('.cw-cluenote-button').show();
+          .on('click', '.cw-clue', function() {
+                const $el = $(this);
+                $el.find('.cw-translation-display').hide();
+          })
+          // Use (event) => instead of function() unless "this" is lost
+          .on('mouseenter', '.cw-clue', (event) => {
+               //here this' refers to app object
+               if (this.puzlang !== 'fr') {
+                   const $el = $(event.currentTarget); // Use event.currentTarget for the element
+                   $el.find('.cw-cluenote-button').show();
+               }
+           })
+          .on('mouseleave', '.cw-clue', (event) => {
+               if (this.puzlang !== 'fr') {
+                   const $el = $(event.currentTarget); // Use event.currentTarget for the element
+                    $el.find('.cw-cluenote-button').hide();
+                }
+          })
+          .on('click', '.cw-cluenote-button', async (event) => {
+            const $button = $(event.currentTarget);
+            const $container = $button.closest('.cw-clue-text');
+            const $displayBox = $container.find('.cw-translation-display');
+            //const $button = $(this);
+
+            // 1. Get the clue number
+            const $clueRow = $button.closest('.cw-clue');
+            const clueNum = $clueRow.find('.cw-clue-number').text().trim();
+
+            // 2. Get the direction (Across or Down)
+            // Traverse up to the main clues wrapper, then find the sibling title
+            const direction = $clueRow.closest('.cw-clues')
+                              .find('.cw-clues-title')
+                              .text()
+                              .trim(); // Returns "Across" or "Down"
+
+            // 3. Use them in your updated function
+            const translation = await this.getTranslation(clueNum, direction);
+            //const displayBox = clueElement.querySelector('.cw-translation-display');
+            
+            if (translation) {
+                $displayBox.text(translation).show();
+                $button.hide();
             }
+
+            // 4. Update the UI
+            //const $container = $clueRow.find('.cw-edit-container');
+            //$container.show().find('input').val(translation);
           })
-          .on('mouseleave', '.cw-clue', function(event) {
-            const $el = $(this);
-            const relatedTarget = event.relatedTarget;
-            const isInsideNote = $(relatedTarget).closest('.cw-edit-container').length > 0;
-            if (!isInsideNote) $el.find('.cw-cluenote-button').hide();
-          })
-          .on('click', '.cw-cluenote-button', function(event) {
-            event.stopPropagation();
-            const $clue = $(this).closest('.cw-clue');
-            $clue.find('.cw-edit-container').show().find('.cw-input').focus();
-            $(this).hide();
-          })
+          /*
           .on('blur', '.cw-input', function() {
             const $input = $(this);
             const $clue = $input.closest('.cw-clue');
@@ -2115,6 +2198,7 @@ function setupPWAInstallButton(btn) {
           .on('keydown', '.cw-input', function(event) {
             if (event.key === 'Enter') $(this).blur();
           });
+          */
       }
 
 
@@ -3085,7 +3169,7 @@ function setupPWAInstallButton(btn) {
             }
           });
         }
-        if (this.v_autosave) { this.saveDb();}
+        this.saveGame()
 
         /* const winSound = new Audio('./sounds/hny.mp3');
            winSound.play();*/
@@ -3740,7 +3824,47 @@ function setupPWAInstallButton(btn) {
         document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
       }
 
+      
+      /**
+       * Gets translation for a specific clue number from cache or backend
+       * @param {string|number} n - The clue number (e.g., 51)
+       * @param {string} direction - Across or Down
+       * @returns {Promise<string>} - The translated text or empty string
+       */
+      async getTranslation(n, direction) {
+        const isAvailable = await this.backendPromise;
+        if (!isAvailable || !this.md5grid) return '';
+    
+        if (this.puzlang && this.puzlang !== 'en') {
+            return '';
+        }
 
+        try {
+            if (!this.translatedClues) {
+                console.log("Fetching translation dictionary from backend...");
+                const response = await fetch("/cgi-lmpuz/translate.py", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ md5grid: this.md5grid }) // Added 'this.'
+                });
+
+                if (!response.ok) throw new Error("Network response was not ok");
+    
+                const data = await response.json();
+                // Assign to property without 'const' and strip the hash wrapper
+                this.translatedClues = data[this.md5grid] || Object.values(data)[0];
+            }
+
+            const clueNum = n.toString();
+            // This will now find 'Across' or 'Down' correctly
+            return this.translatedClues[direction]?.[clueNum] || '';
+    
+        } catch (error) {
+            console.error("Translation error:", error);
+            return '';
+        }
+      }
+      
       /* load last state from DB */
       async loadDb(e) {
         const isAvailable = await this.backendPromise; // will wait until decision about backend is made
@@ -3761,7 +3885,10 @@ function setupPWAInstallButton(btn) {
             }
             const data = await response.json();
             console.log("json returned by nexus_update:", data);
-            if (data.status != 0) { alert(data.message); }
+            if (data.status != 0) {
+                if (data.status == 2) this.toggleAutoSave(); // NO puz found with this ID
+                alert(data.message);
+                }
             else {
                 const state = data.state
                 this.updateCellsFromState(this.cells, state);
@@ -3843,7 +3970,10 @@ function setupPWAInstallButton(btn) {
                 return; 
             }
             const data = await response.json();
-            if (data.status != 0) { alert(data.message); }
+            if (data.status != 0) {
+                if (data.status == 2) this.toggleAutoSave(); // NO puz found with this ID
+                alert(data.message);
+                }
     
         } catch (error) {
             console.error('Error saveDB:', error);
@@ -3868,7 +3998,10 @@ function setupPWAInstallButton(btn) {
         localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
             stat_cheated: this.stat_cheated,
             stat_errors: this.stat_errors,
-            timeplayed: xw_timer_seconds
+            timeplayed: xw_timer_seconds,
+            filename: this.filename,
+            voltitle: this.volname,
+            status: this.isSolved ? 2 : 1
         }));
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
@@ -3971,13 +4104,23 @@ function setupPWAInstallButton(btn) {
         const completedPct = Math.floor((filled / total) * 100);
 
         const stats = `Cheated: ${cheated} (${cheatedPct}%) • Errors: ${errors} (${errorsPct}%) • Completed: ${completedPct}%`;
-        const tit_auth = `${this.voltitle}${this.title} • ${this.author}`;
+        const MAX_WIDTH = 80; // may be adjusted
+        let displayInfo = `${this.voltitle}${this.title} • ${this.author}`;
+        if (displayInfo.length > MAX_WIDTH) {
+            // If combined is too long, drop author
+            displayInfo = `${this.voltitle}${this.title}`;
+
+            // If still too long, truncate it
+            if (displayInfo.length > MAX_WIDTH) {
+                displayInfo = displayInfo.substring(0, MAX_WIDTH).trim() + '…';
+            }
+        }
         
         // 6. UI Update
         if (el1) el1.innerHTML = stats;
         if (el2) el2.textContent = stats;
         const el3 = document.getElementById('fake-btn-tit-auth');
-        if (el3) el3.innerHTML = tit_auth;
+        if (el3) el3.innerHTML = displayInfo;
         }
 
 //-----------------------------------------------CHECK REVEAL ------------------------------------------------//     

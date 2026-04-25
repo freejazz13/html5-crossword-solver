@@ -391,7 +391,7 @@ html.mobile-mode {
   font-weight: bold;
 }
 .crossword.mobile .cw-buttons-drawer.open {
-  transform: translateY(-150%);
+  transform: translateY(-160%);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
 }
 
