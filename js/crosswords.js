@@ -773,6 +773,8 @@ function setupPWAInstallButton(btn) {
 
         const volt = params.get('voltitle')?.trim();
         this.voltitle = volt ? `${escape(volt)}&nbsp;•&nbsp;` : '';
+        const fname = params.get('fname')?.trim();
+        this.filename = fname ? fname : '';
         // preload one puzzle
         const b64Data = params.get('data');
         if (b64Data) {
@@ -3085,7 +3087,7 @@ function setupPWAInstallButton(btn) {
             }
           });
         }
-        if (this.v_autosave) { this.saveDb();}
+        this.saveGame()
 
         /* const winSound = new Audio('./sounds/hny.mp3');
            winSound.play();*/
@@ -3874,7 +3876,9 @@ function setupPWAInstallButton(btn) {
         localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
             stat_cheated: this.stat_cheated,
             stat_errors: this.stat_errors,
-            timeplayed: xw_timer_seconds
+            timeplayed: xw_timer_seconds,
+            filename: this.filename,
+            status: this.isSolved ? 2 : 1
         }));
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/

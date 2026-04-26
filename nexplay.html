@@ -4,259 +4,317 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexPlay</title>
-    <link rel="icon" type="image/x-svg" href="/play/nexplay.svg">
-    <link rel="stylesheet" href="browse.css">
+    <link rel="icon" type="image/x-svg" href="nexplay.svg">
+    <link rel="stylesheet" href="nexplay.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Select your crossword:</h1>
+            <div class="breadcrumb" id="breadcrumb">
+                <span class="breadcrumb-item active" id="breadcrumb-volumes">Collections</span>
+                <span class="breadcrumb-sep" id="breadcrumb-sep" style="display:none">›</span>
+                <span class="breadcrumb-item" id="breadcrumb-current" style="display:none"></span>
+            </div>
+            <h1 id="page-title">Choose a volume:</h1>
             <div class="stats">
-                <span id="stats-files">Files: 0</span>
+                <span id="stats-files"></span>
+                <button id="btn-refresh" style="display:none" onclick="refreshVolume()" title="Update puzzles status">↺ Refresh</button>
             </div>
         </header>
 
-        <div id="loading">Loading archive...</div>
+        <div id="loading">Loading ...</div>
         <div id="file-grid"></div>
     </div>
 
     <script>
 
-//===============================================================================================
-async function decryptAndLoad(url, password) {
-    const encryptedData = await (await fetch(url)).arrayBuffer();
+    // ── State ────────────────────────────────────────────────────────────────
 
-    // 1. Setup PBKDF2 to derive the key (simplified)
-    const passwordKey = await crypto.subtle.importKey(
-        "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]
-    );
+    let currentVol = null; // { vol, url } — set when a volume is open
 
-    // 2. Derive the actual AES key
-    // Note: In production, 'salt' and 'iv' should be sliced from the beginning of the file
-    const aesKey = await crypto.subtle.deriveKey(
-        { name: "PBKDF2", salt: crypto.getRandomValues(new Uint8Array(16)), iterations: 100000, hash: "SHA-256" },
-        passwordKey,
-        { name: "AES-CBC", length: 256 },
-        false, ["decrypt"]
-    );
+    // ── Volume picker ────────────────────────────────────────────────────────
 
-    // 3. Decrypt
-    const decryptedZip = await crypto.subtle.decrypt(
-        { name: "AES-CBC", iv: crypto.getRandomValues(new Uint8Array(16)) },
-        aesKey,
-        encryptedData
-    );
+    async function loadVolumes() {
+        try {
+            const resp = await fetch('/volumes');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const volumes = await resp.json();
 
-    // 4. Load into JSZip
-    const zip = await JSZip.loadAsync(decryptedZip);
-    return processZip(zip);
-}
-async function loadArchive(url, sortOrder = 'asc') {
-    try {
-        const resp = await fetch(url);
-        const blob = await resp.blob();
-        const zip = await JSZip.loadAsync(blob);
+            const fileGrid = document.getElementById('file-grid');
+            const loading  = document.getElementById('loading');
 
-        const fileGrid = document.getElementById('file-grid');
+            loading.style.display = 'none';
+            fileGrid.innerHTML = '';
+
+            if (!volumes.length) {
+                fileGrid.innerHTML = '<div class="no-files">No collections found.</div>';
+                return;
+            }
+
+            document.getElementById('stats-files').textContent =
+                `Collections: ${volumes.length}`;
+
+            for (const vol of volumes) {
+                fileGrid.appendChild(createVolumeSticker(vol));
+            }
+
+        } catch (err) {
+            document.getElementById('loading').textContent = 'Error loading collections: ' + err.message;
+            console.error(err);
+        }
+    }
+
+    function createVolumeSticker(vol) {
+        const sticker = document.createElement('div');
+        sticker.className = 'file-sticker volume-sticker';
+
+        sticker.innerHTML = `
+            <div class="file-title">${escapeHtml(vol.volname)}</div>
+            <div class="file-details">
+                <div class="file-size">${vol.nbfiles} puzzle${vol.nbfiles !== 1 ? 's' : ''}</div>
+                <div class="file-name">${escapeHtml(vol.zipname)}</div>
+            </div>
+        `;
+
+        sticker.addEventListener('click', () => openVolume(vol));
+        return sticker;
+    }
+
+    function openVolume(vol) {
+        const url = `crosswords/${vol.zipname}`;
+        currentVol = { vol, url };
+
+        // Update breadcrumb & title
+        document.getElementById('breadcrumb-sep').style.display = '';
+        const bc = document.getElementById('breadcrumb-current');
+        bc.textContent = vol.volname;
+        bc.style.display = '';
+
+        document.getElementById('breadcrumb-volumes').classList.remove('active');
+        bc.classList.add('active');
+
+        document.getElementById('page-title').textContent = vol.volname;
+        document.getElementById('stats-files').textContent = '';
+
+        // Make the volumes link clickable to go back
+        document.getElementById('breadcrumb-volumes').style.cursor = 'pointer';
+        document.getElementById('breadcrumb-volumes').onclick = goBackToVolumes;
+
+        // Show refresh button
+        document.getElementById('btn-refresh').style.display = '';
+
+        loadArchive(url, vol.volname);
+    }
+
+    function goBackToVolumes() {
+        currentVol = null;
+
+        // Hide refresh button
+        document.getElementById('btn-refresh').style.display = 'none';
+        // Reset breadcrumb
+        document.getElementById('breadcrumb-sep').style.display = 'none';
+        const bc = document.getElementById('breadcrumb-current');
+        bc.style.display = 'none';
+        bc.classList.remove('active');
+
+        const bcVols = document.getElementById('breadcrumb-volumes');
+        bcVols.classList.add('active');
+        bcVols.style.cursor = '';
+        bcVols.onclick = null;
+
+        document.getElementById('page-title').textContent = 'Choose a collection:';
+        document.getElementById('stats-files').textContent = '';
+
         const loading = document.getElementById('loading');
+        loading.textContent = 'Loading collections...';
+        loading.style.display = 'none'; // will be shown if needed
+
+        statusMap = getStatusByFilename(); // load existing status from localStorage
+        loadVolumes();
+    }
+
+    // ── Archive / puzzle loader ──────────────────────────────────────────────
+
+    async function loadArchive(url, volname, sortOrder = 'asc') {
+        const fileGrid = document.getElementById('file-grid');
+        const loading  = document.getElementById('loading');
+
         fileGrid.innerHTML = '';
+        loading.textContent = 'Loading archive...';
+        loading.style.display = '';
 
-        let filesData = await processZip(zip);
+        try {
+            const resp = await fetch(url);
+            const blob = await resp.blob();
+            const zip  = await JSZip.loadAsync(blob);
 
-        // Sort by filename only (stripping folder paths)
-        filesData.sort((a, b) => {
-            const fileA = (a.path || '').split('/').pop().toLowerCase();
-            const fileB = (b.path || '').split('/').pop().toLowerCase();
+            let puzzles = await processZip(zip);
 
-            return sortOrder === 'asc'
-                ? fileA.localeCompare(fileB)
-                : fileB.localeCompare(fileA);
+            puzzles.sort((a, b) => {
+                const fileA = (a.path || '').split('/').pop().toLowerCase();
+                const fileB = (b.path || '').split('/').pop().toLowerCase();
+                return sortOrder === 'asc'
+                    ? fileA.localeCompare(fileB)
+                    : fileB.localeCompare(fileA);
+            });
+
+            loading.style.display = 'none';
+
+            if (puzzles.length === 0) {
+                fileGrid.innerHTML = '<div class="no-files">No .puz files found in archive</div>';
+                return;
+            }
+
+            document.getElementById('stats-files').textContent = `Files: ${puzzles.length}`;
+
+            for (const puzfile of puzzles) {
+                fileGrid.appendChild(createPuzSticker(puzfile, volname));
+            }
+
+        } catch (error) {
+            loading.textContent = 'Error: ' + error.message;
+            console.error('Archive loading error:', error);
+        }
+    }
+
+// Example Output: { "puzzle1.puz": 2, "puzzle2.puz": 1 }
+    function getStatusByFilename() {
+      const results = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.endsWith("_misc")) {
+          try {
+            const miscData = JSON.parse(localStorage.getItem(key));
+            if (miscData && miscData.filename) {
+              results[miscData.filename] = miscData.status;
+            }
+          } catch (e) {
+            // Skip malformed entries
+          }
+        }
+      }
+      return results;
+    }
+
+    async function processZip(zip) {
+        const fileEntries = Object.keys(zip.files)
+            .filter(path => !zip.files[path].dir && path.toLowerCase().endsWith('.puz'))
+            .map(path => ({ path, file: zip.files[path] }));
+
+        return await Promise.all(fileEntries.map(async (entry) => {
+            try {
+                const buffer  = await entry.file.async("uint8array");
+                const puzData = parsePuzBuffer(buffer);
+                return { path: entry.path, data: buffer, ...puzData };
+            } catch (err) {
+                console.error(`Error parsing ${entry.path}:`, err);
+                return null;
+            }
+        })).then(results => results.filter(r => r !== null));
+    }
+
+    function parsePuzBuffer(data) {
+        const decoder  = new TextDecoder('iso-8859-15');
+        const width    = data[0x2c];
+        const height   = data[0x2d];
+        const nbclues  = data[0x2e] | (data[0x2f] << 8);
+
+        const solStart  = 0x34;
+        const gridSize  = width * height;
+        const solEnd    = solStart + gridSize;
+        const layoutEnd = solEnd + gridSize;
+
+        const sol    = decoder.decode(data.slice(solStart, solEnd));
+        const layout = decoder.decode(data.slice(solEnd, layoutEnd));
+
+        let pos = layoutEnd;
+        const readNullTerminated = () => {
+            let end = pos;
+            while (end < data.length && data[end] !== 0) end++;
+            const str = decoder.decode(data.slice(pos, end));
+            pos = end + 1;
+            return str;
+        };
+
+        return {
+            width, height, nbclues,
+            title:  readNullTerminated(),
+            author: readNullTerminated(),
+            sol, layout
+        };
+    }
+
+    function createPuzSticker(puz,volname) {
+        const filename = puz.path.split('/').pop();
+        const sticker = document.createElement('div');
+        sticker.className = 'file-sticker';
+
+        let stat;        
+        let stat_str;
+        if (statusMap.hasOwnProperty(filename)) {
+            stat = statusMap[filename];
+            //console.log(`Status for ${f}:`, status);
+        } else {
+            stat = 0; // unplayed
+            stat_str = "Unplayed";
+        }
+        if (stat === 1) {
+            sticker.classList.add('status-1');
+            stat_str = "In Progress...";
+        } else if (stat === 2) {
+            sticker.classList.add('status-2');
+            stat_str = "COMPLETED";
+        }   
+
+
+        sticker.innerHTML = `
+            <div class="file-title">${escapeHtml(puz.title || 'Untitled')}</div>
+            <div class="file-details">
+                <div class="file-author">${escapeHtml(puz.author || 'Unknown')}</div>
+                <div class="file-type">${puz.width}x${puz.height}</div>
+                <div class="file-name">${escapeHtml(filename)}</div>
+                <div class="file-status">${stat_str}</div>
+            </div>
+        `;
+
+        sticker.addEventListener('click', async () => {
+            const blob   = new Blob([puz.data], { type: 'application/x-crossword' });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result.split(',')[1];
+                const puzdata = encodeURIComponent(base64String);
+                const puzfile = encodeURIComponent(filename);
+                window.open(`/?data=${puzdata}&fname=${filename}&voltitle=${volname}`, '_blank');
+            };
+            reader.readAsDataURL(blob);
         });
 
-        loading.style.display = 'none';
-
-        if (filesData.length === 0) {
-            fileGrid.innerHTML = '<div class="no-files">No .puz files found in archive</div>';
-            return;
-        }
-
-        document.getElementById('stats-files').textContent = `Files: ${filesData.length}`;
-
-        for (const data of filesData) {
-            const sticker = await createFileSticker(data);
-            fileGrid.appendChild(sticker);
-        }
-
-    } catch (error) {
-        document.getElementById('loading').textContent = 'Error: ' + error.message;
-        console.error('Archive loading error:', error);
+        return sticker;
     }
-}
-async function loadArchive000(url) {
-    try {
-        const resp = await fetch(url);
-        const blob = await resp.blob();
-        const zip = await JSZip.loadAsync(blob);
 
-        const fileGrid = document.getElementById('file-grid');
-        const loading = document.getElementById('loading');
+    // ── Utility ──────────────────────────────────────────────────────────────
 
-        // Extract and parse file data
-        const filesData = await processZip(zip);
-
-        loading.style.display = 'none';
-
-        if (filesData.length === 0) {
-            fileGrid.innerHTML = '<div class="no-files">No files found in archive</div>';
-            return;
-        }
-
-        // Update stats
-        document.getElementById('stats-files').textContent = `Files: ${filesData.length}`;
-
-        // Create stickers using the parsed data
-        for (const data of filesData) {
-            // Pass the parsed object to your UI generator
-            const sticker = await createFileSticker(data);
-            fileGrid.appendChild(sticker);
-        }
-
-    } catch (error) {
-        document.getElementById('loading').textContent = 'Error loading archive: ' + error.message;
-        console.error('Archive loading error:', error);
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
-}
 
-async function processZip(zip) {
-    const fileEntries = Object.keys(zip.files)
-        .filter(path => !zip.files[path].dir && path.toLowerCase().endsWith('.puz'))
-        .map(path => ({ path, file: zip.files[path] }));
+    function refreshVolume() {
+        if (!currentVol) return;
+        statusMap = getStatusByFilename(); // load existing status from localStorage
+        loadArchive(currentVol.url, currentVol.vol.volname);
+    }
 
-    return await Promise.all(fileEntries.map(async (entry) => {
-        try {
-            // 1. Get the actual bytes
-            const buffer = await entry.file.async("uint8array");
+    // ── Boot ─────────────────────────────────────────────────────────────────
 
-            // 2. Parse metadata from bytes
-            const puzData = parsePuzBuffer(buffer);
+    let statusMap = getStatusByFilename(); // load existing status from localStorage
+    loadVolumes();
 
-            // 3. Return everything, including the raw data (buffer)
-            return {
-                path: entry.path,
-                data: buffer, // This is the actual file data
-                ...puzData
-            };
-        } catch (err) {
-            console.error(`Error parsing ${entry.path}:`, err);
-            return null;
-        }
-    })).then(results => results.filter(r => r !== null));
-}
-
-async function processZip000(zip) {
-    const fileEntries = Object.keys(zip.files)
-    .filter(path => !zip.files[path].dir && path.toLowerCase().endsWith('.puz'))
-    .map(path => ({ path, file: zip.files[path] }));
-
-    const results = await Promise.all(fileEntries.map(async (entry) => {
-        try {
-            const buffer = await entry.file.async("uint8array");
-            const puzData = parsePuzBuffer(buffer);
-            return { file: entry.file, path: entry.path, ...puzData };
-        } catch (err) {
-            console.error(`Error parsing ${entry.path}:`, err);
-            return null;
-        }
-    }));
-
-    return results.filter(r => r !== null);
-}
-
-function parsePuzBuffer(data) {
-    const decoder = new TextDecoder('iso-8859-15');
-    const width = data[0x2c];
-    const height = data[0x2d];
-    const nbclues = data[0x2e] | (data[0x2f] << 8);
-
-    const solStart = 0x34;
-    const gridSize = width * height;
-    const solEnd = solStart + gridSize;
-    const layoutEnd = solEnd + gridSize;
-
-    const sol = decoder.decode(data.slice(solStart, solEnd));
-    const layout = decoder.decode(data.slice(solEnd, layoutEnd));
-
-    let pos = layoutEnd;
-    const readNullTerminated = () => {
-        let end = pos;
-        while (end < data.length && data[end] !== 0) end++;
-        const str = decoder.decode(data.slice(pos, end));
-        pos = end + 1;
-        return str;
-    };
-
-    return {
-        width,
-        height,
-        nbclues,
-        title: readNullTerminated(),
-        author: readNullTerminated(),
-        sol,
-        layout
-    };
-}
-function createFileSticker(puz) {
-    const filename = puz.path.split('/').pop();
-
-    const sticker = document.createElement('div');
-    sticker.className = 'file-sticker';
-
-    sticker.innerHTML = `
-        <div class="file-title">${puz.title || 'Untitled'}</div>
-        <div class="file-details">
-            <div class="file-author">${puz.author || 'Unknown'}</div>
-            <div class="file-type">${puz.width}x${puz.height}</div>
-            <div class="file-name">${filename}</div>
-        </div>
-    `;
-
-    sticker.addEventListener('click', async () => {
-    // 1. Create a Blob from the Uint8Array
-    const blob = new Blob([puz.data], { type: 'application/x-crossword' });
-
-    // 2. Convert Blob to Base64 via FileReader
-    const reader = new FileReader();
-    reader.onloadend = () => {
-        const base64String = reader.result
-            .split(',')[1]; // Remove the "data:application/x-crossword;base64," prefix
-
-        // 3. URL encode and open
-        const puzdata = encodeURIComponent(base64String);
-        window.open(`/play?data=${puzdata}`, '_blank');
-    };
-    reader.readAsDataURL(blob);
-  });
-    /*
-    sticker.addEventListener('click', () => {
-        // You already have the data in puz.sol, puz.layout, etc.
-        console.log("Puzzle Data:", puz);
-
-    sticker.addEventListener('click', () => {
-    // Create a Blob from the Uint8Array stored in puz.data
-    console.log("Puzzle Data:", puz);
-    const blob = new Blob([puz.data], { type: 'application/x-crossword' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-   });
-    */
-     return sticker;
-
-   }
-//===============================================================================================
-  loadArchive('crosswords/nyt1995.zip');
-  //loadArchive('crosswords/915916e0.zip');
-</script>
+    </script>
 </body>
 </html>
