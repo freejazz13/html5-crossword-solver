@@ -24,7 +24,6 @@
                 <button id="btn-resort" style="display:none;margin-left:12px" onclick="refreshVolume(sortOrder='title')" title="(instead of filenames)">Sort by Title</button>
             </div>
         </header>
-
         <div id="loading">Loading ...</div>
         <div id="file-grid"></div>
     </div>
@@ -34,25 +33,66 @@
     // ── State ────────────────────────────────────────────────────────────────
 
     let currentVol = null; // { vol, url } — set when a volume is open
-
     const CACHE_NAME = 'nexplay-zips-v1';
+    const META_KEY = 'nexplay-vol-info'; // localStorage key for volume metadata
+
+    // ── Volume metadata helpers ──────────────────────────────────────────────
+
+    function saveVolMeta(zipname, volmeta) {
+        const all = JSON.parse(localStorage.getItem(META_KEY) || '{}');
+        all[zipname] = volmeta;
+        localStorage.setItem(META_KEY, JSON.stringify(all));
+    }
+
+    function loadVolMeta() {
+        return JSON.parse(localStorage.getItem(META_KEY) || '{}');
+    }
+
+    // Read source.meta title + count .puz files from an already-loaded JSZip
+    async function extractZipMeta(zip, zipname) {
+        const nbfiles = Object.keys(zip.files)
+            .filter(p => !zip.files[p].dir && p.toLowerCase().endsWith('.puz'))
+            .length;
+
+        let volname = zipname.replace(/\.zip$/i, ''); // fallback
+        const metaEntry = zip.file('source.meta') || zip.file(/source\.meta$/i)[0];
+        if (metaEntry) {
+            try {
+                const text = await metaEntry.async('string');
+                const match = text.match(/^title\s*=\s*(.+)$/mi);
+                volname = match ? match[1].trim() : (text.split('\n')[0].trim() || volname);
+            } catch(e) { /* keep fallback */ }
+        }
+
+        return { zipname, volname, nbfiles };
+    }
 
     // ── Cache priming ────────────────────────────────────────────────────────
 
-    // Fetch one zip into the Cache API if not already stored.
-    // Updates the sticker badge as each zip finishes.
     async function cacheZip(url, sticker) {
+        const zipname = url.split('/').pop();
         try {
-            const cache  = await caches.open(CACHE_NAME);
-            const cached = await cache.match(url);
-            if (cached) {
-                setStickerBadge(sticker, '✓ cached', '#27ae60');
-                return;
+            const cache = await caches.open(CACHE_NAME);
+            let cached  = await cache.match(url);
+
+            if (!cached) {
+                setStickerBadge(sticker, 'loading…', '#888');
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                await cache.put(url, resp.clone());
+                cached = await cache.match(url);
             }
-            setStickerBadge(sticker, '⬇ loading…', '#888');
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            await cache.put(url, resp);
+
+            // Extract metadata from zip if not yet stored
+            const allMeta = loadVolMeta();
+            if (!allMeta[zipname]) {
+                const blob = await cached.blob();
+                const zip  = await JSZip.loadAsync(blob);
+                const volmeta = await extractZipMeta(zip, zipname);
+                saveVolMeta(zipname, volmeta);
+                updateVolumeSticker(sticker, volmeta);
+            }
+
             setStickerBadge(sticker, '✓ cached', '#27ae60');
         } catch (err) {
             setStickerBadge(sticker, '✗ error', '#e74c3c');
@@ -72,61 +112,55 @@
         badge.style.color = color;
     }
 
-    // Prime cache for all volumes in the background, one at a time to avoid
-    // hammering the server, sticker refs passed so badges update live.
-    async function primeCache(volumes, stickers) {
-        for (let i = 0; i < volumes.length; i++) {
-            const url = `crosswords/${volumes[i].zipname}`;
-            await cacheZip(url, stickers[i]);
+    async function primeCache(zipnames, stickers) {
+        for (let i = 0; i < zipnames.length; i++) {
+            await cacheZip(`crosswords/${zipnames[i]}`, stickers[i]);
         }
     }
 
     // ── Volume picker ────────────────────────────────────────────────────────
 
     async function loadVolumes() {
-        try {
-            let resp;
-            try {
-                const cache  = await caches.open(CACHE_NAME);
-                const cached = await cache.match('/volumes');
-                if (cached) {
-                    resp = cached;
-                } else {
-                    resp = await fetch('/volumes');
-                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                    await cache.put('/volumes', resp.clone());
-                }
-            } catch {
-                resp = await fetch('/volumes');
-            }
-            const volumes = await resp.json();
+        const fileGrid = document.getElementById('file-grid');
+        const loading  = document.getElementById('loading');
+        loading.textContent = 'Loading collections…';
+        loading.style.display = '';
+        fileGrid.innerHTML = '';
 
-            const fileGrid = document.getElementById('file-grid');
-            const loading  = document.getElementById('loading');
+        try {
+            // Fetch simple zip list from volumes.json
+            const resp = await fetch('volumes.json');
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const zipnames = await resp.json();
 
             loading.style.display = 'none';
-            fileGrid.innerHTML = '';
 
-            if (!volumes.length) {
-                fileGrid.innerHTML = '<div class="no-files">No collections found.</div>';
+            if (!zipnames.length) {
+                fileGrid.innerHTML = '<div class="no-files">No zip files found in /crosswords.</div>';
                 return;
             }
 
-            document.getElementById('stats-files').textContent =
-                `Collections: ${volumes.length}`;
+            document.getElementById('stats-files').textContent = `${zipnames.length} collections`;
 
+            // Build stickers — use localStorage metadata if available, skeleton otherwise
+            const allMeta = loadVolMeta();
             const stickers = [];
-            for (const vol of volumes) {
-                const s = createVolumeSticker(vol);
+            for (const zipname of zipnames) {
+                const volmeta = allMeta[zipname] || { zipname, volname: zipname.replace(/\.zip$/i, ''), nbfiles: '?' };
+                const s = createVolumeSticker(volmeta);
+                // Show cached badge immediately if already in Cache API
+                caches.open(CACHE_NAME)
+                    .then(c => c.match(`crosswords/${zipname}`))
+                    .then(hit => { if (hit) setStickerBadge(s, '✓ cached', '#27ae60'); });
                 fileGrid.appendChild(s);
                 stickers.push(s);
             }
 
-            // Kick off background caching — doesn't block the UI
-            primeCache(volumes, stickers);
+            // Background: cache zips + fill in missing metadata
+            primeCache(zipnames, stickers);
 
         } catch (err) {
-            document.getElementById('loading').textContent = 'Error loading collections: ' + err.message;
+            loading.textContent = 'Error: ' + err.message;
             console.error(err);
         }
     }
@@ -134,11 +168,12 @@
     function createVolumeSticker(vol) {
         const sticker = document.createElement('div');
         sticker.className = 'file-sticker volume-sticker';
+        sticker.dataset.zipname = vol.zipname;
 
         sticker.innerHTML = `
             <div class="file-title">${escapeHtml(vol.volname)}</div>
             <div class="file-details">
-                <div class="file-size">${vol.nbfiles} puzzle${vol.nbfiles !== 1 ? 's' : ''}</div>
+                <div class="file-size">${vol.nbfiles === '?' ? '…' : vol.nbfiles + ' crosswords'}</div>
                 <div class="file-name">${escapeHtml(vol.zipname)}</div>
             </div>
         `;
@@ -147,11 +182,20 @@
         return sticker;
     }
 
+    // Update sticker text in-place after voldata is freshly extracted
+    function updateVolumeSticker(sticker, vol) {
+        const title = sticker.querySelector('.file-title');
+        const size  = sticker.querySelector('.file-size');
+        if (title) title.textContent = vol.volname;
+        if (size)  size.textContent  = `${vol.nbfiles} crosswords`;
+        // Rebind click with fresh vol (remove old listener by replacing onclick)
+        sticker.onclick = () => openVolume(vol);
+    }
+
     function openVolume(vol) {
         const url = `crosswords/${vol.zipname}`;
         currentVol = { vol, url };
 
-        // Update breadcrumb & title
         document.getElementById('breadcrumb-sep').style.display = '';
         const bc = document.getElementById('breadcrumb-current');
         bc.textContent = vol.volname;
@@ -163,11 +207,9 @@
         document.getElementById('page-title').textContent = vol.volname;
         document.getElementById('stats-files').textContent = '';
 
-        // Make the volumes link clickable to go back
         document.getElementById('breadcrumb-volumes').style.cursor = 'pointer';
         document.getElementById('breadcrumb-volumes').onclick = goBackToVolumes;
 
-        // Show refresh button
         document.getElementById('btn-refresh').style.display = '';
         document.getElementById('btn-resort').style.display = '';
 
@@ -245,7 +287,7 @@
                 return;
             }
 
-            document.getElementById('stats-files').textContent = `Files: ${puzzles.length}`;
+            document.getElementById('stats-files').textContent = `Crosswords: ${puzzles.length}`;
 
             for (const puzfile of puzzles) {
                 fileGrid.appendChild(createPuzSticker(puzfile, volname));
