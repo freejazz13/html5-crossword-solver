@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexPlay</title>
-    <link rel="icon" type="image/x-svg" href="nexplay.svg">
+    <link rel="icon" type="image/x-svg" href="images/nexplay.svg">
     <link rel="stylesheet" href="nexplay.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -20,7 +20,8 @@
             <h1 id="page-title">Choose a volume:</h1>
             <div class="stats">
                 <span id="stats-files"></span>
-                <button id="btn-refresh" style="display:none" onclick="refreshVolume()" title="Update puzzles status">↺ Refresh</button>
+                <button id="btn-refresh" style="display:none;margin-left:12px" onclick="refreshVolume()" title="Update puzzles status">↺ Refresh</button>
+                <button id="btn-resort" style="display:none;margin-left:12px" onclick="refreshVolume(sortOrder='title')" title="(instead of filenames)">Sort by Title</button>
             </div>
         </header>
 
@@ -34,12 +35,70 @@
 
     let currentVol = null; // { vol, url } — set when a volume is open
 
+    const CACHE_NAME = 'nexplay-zips-v1';
+
+    // ── Cache priming ────────────────────────────────────────────────────────
+
+    // Fetch one zip into the Cache API if not already stored.
+    // Updates the sticker badge as each zip finishes.
+    async function cacheZip(url, sticker) {
+        try {
+            const cache  = await caches.open(CACHE_NAME);
+            const cached = await cache.match(url);
+            if (cached) {
+                setStickerBadge(sticker, '✓ cached', '#27ae60');
+                return;
+            }
+            setStickerBadge(sticker, '⬇ loading…', '#888');
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            await cache.put(url, resp);
+            setStickerBadge(sticker, '✓ cached', '#27ae60');
+        } catch (err) {
+            setStickerBadge(sticker, '✗ error', '#e74c3c');
+            console.warn('Cache failed for', url, err);
+        }
+    }
+
+    function setStickerBadge(sticker, text, color) {
+        if (!sticker) return;
+        let badge = sticker.querySelector('.cache-badge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'cache-badge';
+            sticker.appendChild(badge);
+        }
+        badge.textContent = text;
+        badge.style.color = color;
+    }
+
+    // Prime cache for all volumes in the background, one at a time to avoid
+    // hammering the server, sticker refs passed so badges update live.
+    async function primeCache(volumes, stickers) {
+        for (let i = 0; i < volumes.length; i++) {
+            const url = `crosswords/${volumes[i].zipname}`;
+            await cacheZip(url, stickers[i]);
+        }
+    }
+
     // ── Volume picker ────────────────────────────────────────────────────────
 
     async function loadVolumes() {
         try {
-            const resp = await fetch('/volumes');
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            let resp;
+            try {
+                const cache  = await caches.open(CACHE_NAME);
+                const cached = await cache.match('/volumes');
+                if (cached) {
+                    resp = cached;
+                } else {
+                    resp = await fetch('/volumes');
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    await cache.put('/volumes', resp.clone());
+                }
+            } catch {
+                resp = await fetch('/volumes');
+            }
             const volumes = await resp.json();
 
             const fileGrid = document.getElementById('file-grid');
@@ -56,9 +115,15 @@
             document.getElementById('stats-files').textContent =
                 `Collections: ${volumes.length}`;
 
+            const stickers = [];
             for (const vol of volumes) {
-                fileGrid.appendChild(createVolumeSticker(vol));
+                const s = createVolumeSticker(vol);
+                fileGrid.appendChild(s);
+                stickers.push(s);
             }
+
+            // Kick off background caching — doesn't block the UI
+            primeCache(volumes, stickers);
 
         } catch (err) {
             document.getElementById('loading').textContent = 'Error loading collections: ' + err.message;
@@ -104,8 +169,9 @@
 
         // Show refresh button
         document.getElementById('btn-refresh').style.display = '';
+        document.getElementById('btn-resort').style.display = '';
 
-        loadArchive(url, vol.volname);
+        loadVolume(url, vol.volname);
     }
 
     function goBackToVolumes() {
@@ -113,6 +179,7 @@
 
         // Hide refresh button
         document.getElementById('btn-refresh').style.display = 'none';
+        document.getElementById('btn-resort').style.display = 'none';
         // Reset breadcrumb
         document.getElementById('breadcrumb-sep').style.display = 'none';
         const bc = document.getElementById('breadcrumb-current');
@@ -137,7 +204,7 @@
 
     // ── Archive / puzzle loader ──────────────────────────────────────────────
 
-    async function loadArchive(url, volname, sortOrder = 'asc') {
+    async function loadVolume(url, volname, sortOrder = 'asc') {
         const fileGrid = document.getElementById('file-grid');
         const loading  = document.getElementById('loading');
 
@@ -146,18 +213,29 @@
         loading.style.display = '';
 
         try {
-            const resp = await fetch(url);
+            // Serve from Cache API if available, otherwise network
+            let resp;
+            try {
+                const cache  = await caches.open(CACHE_NAME);
+                const cached = await cache.match(url);
+                resp = cached || await fetch(url);
+            } catch {
+                resp = await fetch(url);
+            }
             const blob = await resp.blob();
             const zip  = await JSZip.loadAsync(blob);
 
             let puzzles = await processZip(zip);
 
             puzzles.sort((a, b) => {
-                const fileA = (a.path || '').split('/').pop().toLowerCase();
-                const fileB = (b.path || '').split('/').pop().toLowerCase();
-                return sortOrder === 'asc'
-                    ? fileA.localeCompare(fileB)
-                    : fileB.localeCompare(fileA);
+              if (sortOrder === 'title') {
+                const tA = (a.title || '').toLowerCase();
+                const tB = (b.title || '').toLowerCase();
+                return tA.localeCompare(tB);
+              }
+              const fileA = (a.path || '').split('/').pop().toLowerCase();
+              const fileB = (b.path || '').split('/').pop().toLowerCase();
+              return sortOrder === 'asc' ? fileA.localeCompare(fileB) : fileB.localeCompare(fileA);
             });
 
             loading.style.display = 'none';
@@ -182,13 +260,14 @@
 // Example Output: { "puzzle1.puz": 2, "puzzle2.puz": 1 }
     function getStatusByFilename() {
       const results = {};
+      //const voltitle = currentVol.vol.volname;
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key.endsWith("_misc")) {
           try {
             const miscData = JSON.parse(localStorage.getItem(key));
             if (miscData && miscData.filename) {
-              results[miscData.filename] = miscData.status;
+                results[miscData.filename] = { "status": miscData.status, "voltitle": miscData.voltitle };
             }
           } catch (e) {
             // Skip malformed entries
@@ -246,28 +325,33 @@
         };
     }
 
-    function createPuzSticker(puz,volname) {
-        const filename = puz.path.split('/').pop();
-        const sticker = document.createElement('div');
-        sticker.className = 'file-sticker';
 
-        let stat;        
-        let stat_str;
-        if (statusMap.hasOwnProperty(filename)) {
-            stat = statusMap[filename];
-            //console.log(`Status for ${f}:`, status);
-        } else {
-            stat = 0; // unplayed
-            stat_str = "Unplayed";
+function createPuzSticker(puz, volname) {
+    const filename = puz.path.split('/').pop();
+    const sticker = document.createElement('div');
+    sticker.className = 'file-sticker';
+
+    const currentVolTitle = currentVol.vol.volname;
+    let stat = 0; // Default to unplayed
+    let stat_str = "Unplayed";
+
+    // 1. Check if the file exists in statusMap
+    if (statusMap.hasOwnProperty(filename)) {
+        const vt = statusMap[filename]["voltitle"];
+        const recordedStat = statusMap[filename]["status"];
+
+        // 2. Only apply the status if the volume title matches
+        if (vt === currentVolTitle) {
+            stat = recordedStat;
+            if (stat === 1) {
+                sticker.classList.add('status-1');
+                stat_str = "In Progress...";
+            } else if (stat === 2) {
+                sticker.classList.add('status-2');
+                stat_str = "COMPLETED";
+            }
         }
-        if (stat === 1) {
-            sticker.classList.add('status-1');
-            stat_str = "In Progress...";
-        } else if (stat === 2) {
-            sticker.classList.add('status-2');
-            stat_str = "COMPLETED";
-        }   
-
+    }
 
         sticker.innerHTML = `
             <div class="file-title">${escapeHtml(puz.title || 'Untitled')}</div>
@@ -304,10 +388,10 @@
             .replace(/"/g, '&quot;');
     }
 
-    function refreshVolume() {
+    function refreshVolume(sortOrder='asc') {
         if (!currentVol) return;
         statusMap = getStatusByFilename(); // load existing status from localStorage
-        loadArchive(currentVol.url, currentVol.vol.volname);
+        loadVolume(currentVol.url, currentVol.vol.volname,sortOrder=sortOrder);
     }
 
     // ── Boot ─────────────────────────────────────────────────────────────────

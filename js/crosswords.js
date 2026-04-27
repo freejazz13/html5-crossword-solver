@@ -771,6 +771,9 @@ function setupPWAInstallButton(btn) {
           );
         }
 
+        // used for localStorage:
+        this.volname = params.get('voltitle')?.trim() ?? "";
+        // used for text display:      
         const volt = params.get('voltitle')?.trim();
         this.voltitle = volt ? `${escape(volt)}&nbsp;•&nbsp;` : '';
         const fname = params.get('fname')?.trim();
@@ -3878,6 +3881,7 @@ function setupPWAInstallButton(btn) {
             stat_errors: this.stat_errors,
             timeplayed: xw_timer_seconds,
             filename: this.filename,
+            voltitle: this.volname,
             status: this.isSolved ? 2 : 1
         }));
 
