@@ -319,7 +319,7 @@ $(document).ready(function () {
                 slash.setAttribute('y2', y + h - 2);
                 slash.setAttribute('stroke-linecap', 'round');
                 slash.setAttribute('stroke', 'var(--grid-none-text-color)');
-                slash.setAttribute('stroke-width', 2);
+                slash.setAttribute('stroke-width', 1);
                 
                 // Add identifiers so we can find/remove it later
                 slash.dataset.wordId = wordId;
