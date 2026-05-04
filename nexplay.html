@@ -12,6 +12,11 @@
 <body>
     <div class="container">
         <header>
+	    <div class="header-actions">
+                <button class="action-btn" onclick="showHelp()" title="Aide en francais">Help</button>
+                <button class="action-btn" onclick="exportData()" title="Save current games progress">Export</button>
+                <button class="action-btn" onclick="importData()" title="Import from a backup">Import</button>
+            </div>
             <div class="breadcrumb" id="breadcrumb">
                 <span class="breadcrumb-item active" id="breadcrumb-volumes">Collections</span>
                 <span class="breadcrumb-sep" id="breadcrumb-sep" style="display:none">›</span>
@@ -36,6 +41,87 @@
     const CACHE_NAME = 'nexplay-zips-v1';
     const META_KEY = 'nexplay-vol-info'; // localStorage key for volume metadata
 
+    // ── BACKUPS / RESTORE ────────────────────────────────────────────────────────────────
+    async function exportData() {
+    const zip = new JSZip();
+    const cleanData = {};
+
+    // 1. Collect and parse Local Storage
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const val = localStorage.getItem(key);
+        try {
+            cleanData[key] = JSON.parse(val);
+        } catch (e) {
+            cleanData[key] = val;
+        }
+    }
+
+    // 2. Add the data to the ZIP as a pretty-printed JSON file
+    zip.file("backup.json", JSON.stringify(cleanData, null, 2));
+
+    // 3. Generate Timestamp (YYYY-MM-DD-hhmm)
+    const now = new Date();
+    const datePart = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const timePart = now.getHours().toString().padStart(2, '0') +
+                     now.getMinutes().toString().padStart(2, '0'); // hhmm
+    const filename = `crosswords-${datePart}-${timePart}.zip`;
+
+    // 4. Generate the ZIP blob and download
+    const content = await zip.generateAsync({ 
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: {
+            level: 9 // Maximum compression
+        }
+    });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = filename;
+    link.click();
+    }
+
+    async function importData() {
+    // 1. Create a hidden file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            // 2. Load the ZIP
+            const zip = await JSZip.loadAsync(file);
+            
+            // 3. Extract backup.json
+            const backupFile = zip.file("backup.json");
+            if (!backupFile) {
+                alert("Error: ZIP does not contain 'backup.json'");
+                return;
+            }
+
+            const jsonString = await backupFile.async("string");
+            const data = JSON.parse(jsonString);
+
+            // 4. Restore and Re-pack keys
+            Object.keys(data).forEach(k => {
+                const val = data[k];
+                const finalizedValue = typeof val === 'object' ? JSON.stringify(val) : val;
+                localStorage.setItem(k, finalizedValue);
+            });
+
+            alert('Import Successful! Reloading page...');
+            location.reload();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to process ZIP file. Is it a valid backup?");
+        }
+      };
+
+    input.click();
+    }
     // ── Volume metadata helpers ──────────────────────────────────────────────
 
     function saveVolMeta(zipname, volmeta) {
@@ -412,7 +498,7 @@ function createPuzSticker(puz, volname) {
                 const base64String = reader.result.split(',')[1];
                 const puzdata = encodeURIComponent(base64String);
                 const puzfile = encodeURIComponent(filename);
-                window.open(`/?data=${puzdata}&fname=${filename}&voltitle=${volname}`, '_blank');
+                window.open(`./?data=${puzdata}&fname=${filename}&voltitle=${volname}`, '_blank');
             };
             reader.readAsDataURL(blob);
         });

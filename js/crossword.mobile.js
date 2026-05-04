@@ -319,7 +319,7 @@ $(document).ready(function () {
                 slash.setAttribute('y2', y + h - 2);
                 slash.setAttribute('stroke-linecap', 'round');
                 slash.setAttribute('stroke', 'var(--grid-none-text-color)');
-                slash.setAttribute('stroke-width', 2);
+                slash.setAttribute('stroke-width', 1);
                 
                 // Add identifiers so we can find/remove it later
                 slash.dataset.wordId = wordId;
@@ -346,6 +346,7 @@ $(document).ready(function () {
       if (!gridWrapper || !listView) return;
 
       if (gCrossword.isListView) {
+        gCrossword.currentScale = 1 ; tx = 0; ty = 0; applyTransform();
         gridWrapper.style.display = 'none';
         listView.classList.add('active');
         if (btn) btn.textContent = 'Grid';
@@ -525,7 +526,20 @@ $(document).ready(function () {
       
       //🔤🅰️
       dhi.className = 'cw-button';
-      const tit_auth= '<span class="autocheck-emoji">🅰️</span> • ' + `${gCrossword.title} • ` + `${gCrossword.author}`+ ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>';
+      const MAX_WIDTH = 40; // may be adjusted
+      let displayInfo = `${gCrossword.title} • ${gCrossword.author}`;
+      if (displayInfo.length > MAX_WIDTH) {
+          // If combined is too long, drop author and just use Title
+          displayInfo = gCrossword.title;
+
+          // If the Title alone is still too long, truncate it
+          if (displayInfo.length > MAX_WIDTH) {
+              // Substring to 39 to leave room for the 1-character ellipsis
+              displayInfo = displayInfo.substring(0, MAX_WIDTH).trim() + '…';
+          }
+      }
+      const tit_auth = '<span class="autocheck-emoji">🅰️</span> • ' + `${displayInfo}` + ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">↕️</span>';
+      //const tit_auth= '<span class="autocheck-emoji">🅰️</span> • ' + `${gCrossword.title} • ` + `${gCrossword.author}`+ ' • <span class="signal-emoji">📶</span> <span class="sync-emoji">&#8597;&#65039;</span>';
       dhi.innerHTML = `<span>${tit_auth}</span>&nbsp;`;
       if (timer) {
           dhi.appendChild(timer); 

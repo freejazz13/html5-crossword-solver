@@ -1,0 +1,42 @@
+name: Minify JS and Deploy
+on:
+  push:
+    branches: [ nexplay ] # Replace with your branch name
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Terser
+        run: npm install terser -g
+
+      - name: Minify JS
+        run: |
+          for file in js/*.js; do
+            terser "$file" -o "$file" --compress --mangle
+          done
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Uploads the entire root directory including the new .min.js
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

@@ -63,7 +63,7 @@ With cell_size == 0, crossword will never be bigger than parent.
 
 ## Example:
 
-### Single puzzle with settings disabled and some custom colors:
+### Single puzzle  with settings disabled and some custom colors:
 
 ```javascript
 var params = {
