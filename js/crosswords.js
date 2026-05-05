@@ -922,7 +922,7 @@ function setupPWAInstallButton(btn) {
  */
       async initBackend() {
         try {
-          const response = await fetch('/cgi-lmpuz/conf_back.cgi');
+          const response = await fetch('/cgi-lmpuz/conf_back.cgi', { referrerPolicy: 'no-referrer'});
           if (response.ok) {
             // Backend confirmed: reveal elements
             document.body.classList.add('backend-active');
