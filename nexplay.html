@@ -6,8 +6,10 @@
     <title>NexPlay</title>
     <link rel="icon" type="image/x-svg" href="images/nexplay.svg">
     <link rel="stylesheet" href="nexplay.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> -->
+    <script src="./lib/jquery.js"></script>
+    <script src="./lib/jszip.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -498,7 +500,7 @@ function createPuzSticker(puz, volname) {
                 const base64String = reader.result.split(',')[1];
                 const puzdata = encodeURIComponent(base64String);
                 const puzfile = encodeURIComponent(filename);
-                window.open(`./?data=${puzdata}&fname=${filename}&voltitle=${volname}`, '_blank');
+                window.open(`./index.html?data=${puzdata}&fname=${filename}&voltitle=${volname}`, '_blank');
             };
             reader.readAsDataURL(blob);
         });
@@ -528,5 +530,16 @@ function createPuzSticker(puz, volname) {
     loadVolumes();
 
     </script>
+    <!-- Put this in both index.html AND nexplay.html -->
+   <script>
+     if ('serviceWorker' in navigator) {
+       // Adding the leading slash ensures it registers at the root scope
+       navigator.serviceWorker.register('/sw.js').then(reg => {
+         console.log('SW registered at scope:', reg.scope);
+         }).catch(err => {
+           console.error('SW registration failed:', err);
+         });
+     }
+   </script>
 </body>
 </html>
