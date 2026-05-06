@@ -6,6 +6,7 @@ const ASSETS = [
     "/",
     "/index.html",
     "/nexplay.html",
+    "/nexplay.css",
     "/css/crosswordnexus.css",
     "/css/crossword.shared.css",
     "/css/crossword.mobile.css",
