@@ -21,7 +21,8 @@ const ASSETS = [
     "/images/xw-solve-icon-192.png",
     "/images/xw-solve-icon-512.png",
     "/images/nexplay.svg",
-    "/images/nexus2.png"
+    "/images/nexus2.png",
+    "/volumes.json"
 ];
 
 self.addEventListener("install", (event) => {

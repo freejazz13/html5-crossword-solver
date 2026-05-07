@@ -499,7 +499,7 @@ function createPuzSticker(puz, volname) {
                 const base64String = reader.result.split(',')[1];
                 const puzdata = encodeURIComponent(base64String);
                 const puzfile = encodeURIComponent(filename);
-                window.open(`./?data=${puzdata}&fname=${filename}&voltitle=${volname}`, '_blank');
+                window.open(`./index.html?data=${puzdata}&fname=${filename}&voltitle=${volname}`, '_blank');
             };
             reader.readAsDataURL(blob);
         });
