@@ -1,59 +1,68 @@
 // CRITICAL: You MUST change this string (e.g., v3, v4) every time you deploy a new update!
-const CACHE_NAME = "xw-solver-v2";
+const CACHE_NAME = "xw-solver-v6";
 
-// Absolute paths ensure index.html and nexplay.html see the same files
 const ASSETS = [
-    "/",
-    "/index.html",
-    "/nexplay.html",
-    "/nexplay.css",
-    "/css/crosswordnexus.css",
-    "/css/crossword.shared.css",
-    "/css/crossword.mobile.css",
-    "/js/crosswords.js",
-    "/js/crossword.shared.js",
-    "/js/crossword.mobile.js",
-    "/lib/jquery.js",
-    "/lib/jscrossword_combined.js",
-    "/lib/jszip.min.js",
-    "/lib/lscache.min.js",
-    "/manifest.json",
-    "/images/xw-solve-icon-192.png",
-    "/images/xw-solve-icon-512.png",
-    "/images/nexplay.svg",
-    "/images/nexus2.png",
-    "/volumes.json"
+  "/",
+  "/nexplay",
+  "/nexplay.css",
+  "/css/crosswordnexus.css",
+  "/css/crossword.shared.css",
+  "/css/crossword.mobile.css",
+  "/js/crosswords.js",
+  "/js/crossword.shared.js",
+  "/js/crossword.mobile.js",
+  "/lib/jquery.js",
+  "/lib/jscrossword_combined.js",
+  "/lib/jszip.min.js",
+  "/lib/lscache.min.js",
+  "/manifest.json",
+  "/images/xw-solve-icon-192.png",
+  "/images/xw-solve-icon-512.png",
+  "/images/nexplay.svg",
+  "/images/nexus2.png",
+  "/volumes.json"
 ];
 
 self.addEventListener("install", (event) => {
-    self.skipWaiting();
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            // Use return to ensure the promise resolves correctly
-            return cache.addAll(ASSETS);
-        })
-    );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    for (const url of ASSETS) {
+      const response = await fetch(url);
+      if (response.ok && !response.redirected) {
+        await cache.put(url, response.clone());
+      }
+    }
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", (event) => {
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cache => {
-                    if (cache !== CACHE_NAME) {
-                        return caches.delete(cache);
-                    }
-                })
-            );
-        }).then(() => clients.claim())
-    );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => key !== CACHE_NAME ? caches.delete(key) : Promise.resolve()));
+    await clients.claim();
+  })());
 });
 
 self.addEventListener("fetch", (event) => {
-    event.respondWith(
-        caches.match(event.request).then(cached => {
-            // Return cached, or fetch from network
-            return cached || fetch(event.request);
-        })
-    );
+  const req = event.request;
+
+  if (req.mode === "navigate") {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(req);
+        if (response.ok && !response.redirected) return response;
+      } catch {}
+      const cached = await caches.match("/");
+      return cached || caches.match("/nexplay");
+    })());
+    return;
+  }
+
+  event.respondWith((async () => {
+    const cached = await caches.match(req, { ignoreSearch: true });
+    if (cached) return cached;
+    const response = await fetch(req);
+    return response;
+  })());
 });
