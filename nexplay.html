@@ -334,58 +334,56 @@
 
     // ── Archive / puzzle loader ──────────────────────────────────────────────
 
-    async function loadVolume(url, volname, sortOrder = 'asc') {
-        const fileGrid = document.getElementById('file-grid');
-        const loading  = document.getElementById('loading');
+    // --- Replace your existing loadVolume function with this ---
+async function loadVolume(url, volname, sortOrder = 'asc') {
+    const fileGrid = document.getElementById('file-grid');
+    const loading  = document.getElementById('loading');
 
-        fileGrid.innerHTML = '';
-        loading.textContent = 'Loading archive...';
-        loading.style.display = '';
+    fileGrid.innerHTML = '';
+    loading.textContent = 'Loading archive...';
+    loading.style.display = '';
 
-        try {
-            // Serve from Cache API if available, otherwise network
-            let resp;
-            try {
-                const cache  = await caches.open(CACHE_NAME);
-                const cached = await cache.match(url);
-                resp = cached || await fetch(url);
-            } catch {
-                resp = await fetch(url);
-            }
-            const blob = await resp.blob();
-            const zip  = await JSZip.loadAsync(blob);
+    try {
+        // Simple fetch: sw.js will intercept this and check BOTH caches
+        const resp = await fetch(url);
 
-            let puzzles = await processZip(zip);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status} - Not in cache/network`);
 
-            puzzles.sort((a, b) => {
-              if (sortOrder === 'title') {
+        const blob = await resp.blob();
+        const zip  = await JSZip.loadAsync(blob);
+
+        let puzzles = await processZip(zip);
+
+        puzzles.sort((a, b) => {
+            if (sortOrder === 'title') {
                 const tA = (a.title || '').toLowerCase();
                 const tB = (b.title || '').toLowerCase();
                 return tA.localeCompare(tB);
-              }
-              const fileA = (a.path || '').split('/').pop().toLowerCase();
-              const fileB = (b.path || '').split('/').pop().toLowerCase();
-              return sortOrder === 'asc' ? fileA.localeCompare(fileB) : fileB.localeCompare(fileA);
-            });
-
-            loading.style.display = 'none';
-
-            if (puzzles.length === 0) {
-                fileGrid.innerHTML = '<div class="no-files">No .puz files found in archive</div>';
-                return;
             }
+            const fileA = (a.path || '').split('/').pop().toLowerCase();
+            const fileB = (b.path || '').split('/').pop().toLowerCase();
+            return sortOrder === 'asc' ? fileA.localeCompare(fileB) : fileB.localeCompare(fileA);
+        });
 
-            document.getElementById('stats-files').textContent = `Crosswords: ${puzzles.length}`;
+        loading.style.display = 'none';
 
-            for (const puzfile of puzzles) {
-                fileGrid.appendChild(createPuzSticker(puzfile, volname));
-            }
-
-        } catch (error) {
-            loading.textContent = 'Error: ' + error.message;
-            console.error('Archive loading error:', error);
+        if (puzzles.length === 0) {
+            fileGrid.innerHTML = '<div class="no-files">No .puz files found in archive</div>';
+            return;
         }
+
+        document.getElementById('stats-files').textContent = `Crosswords: ${puzzles.length}`;
+
+        for (const puzfile of puzzles) {
+            fileGrid.appendChild(createPuzSticker(puzfile, volname));
+        }
+
+    } catch (error) {
+        // If airplane mode and not cached, this catch block handles it cleanly
+        loading.textContent = 'Error: ' + error.message;
+        console.error('Archive loading error:', error);
     }
+}
 
 // Example Output: { "puzzle1.puz": 2, "puzzle2.puz": 1 }
     function getStatusByFilename() {
@@ -532,14 +530,28 @@ function createPuzSticker(puz, volname) {
     </script>
     <!-- Put this in both index.html AND nexplay.html -->
    <script>
-     if ('serviceWorker' in navigator) {
-       // Adding the leading slash ensures it registers at the root scope
-       navigator.serviceWorker.register('/sw.js').then(reg => {
-         console.log('SW registered at scope:', reg.scope);
-         }).catch(err => {
-           console.error('SW registration failed:', err);
-         });
-     }
+if ('serviceWorker' in navigator) {
+    // Register with absolute path
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('SW active at:', reg.scope);
+
+        // Handle updates
+        reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New content available, refresh to apply
+                    window.location.reload();
+                }
+            };
+        };
+    });
+
+    // Essential for Private Windows: Sync tabs when the SW takes control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+    });
+}
    </script>
 </body>
 </html>

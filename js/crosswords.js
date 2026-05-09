@@ -1059,6 +1059,7 @@ function setupPWAInstallButton(btn) {
           if (statObj && Object.keys(statObj).length > 0) {
               this.stat_cheated = statObj.stat_cheated;
               this.stat_errors = statObj.stat_errors;
+              this.autocheck = statObj.autocheck ?? true;		  
               xw_timer_seconds = statObj.timeplayed;
 
           }
@@ -4001,6 +4002,7 @@ function setupPWAInstallButton(btn) {
             timeplayed: xw_timer_seconds,
             filename: this.filename,
             voltitle: this.volname,
+            autocheck: this.v_autocheck, 
             status: this.isSolved ? 2 : 1
         }));
 

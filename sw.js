@@ -28,9 +28,11 @@ self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     for (const url of ASSETS) {
-      const response = await fetch(url);
-      if (response.ok && !response.redirected) {
-        await cache.put(url, response.clone());
+      try {
+        const response = await fetch(url);
+        if (response.ok) await cache.put(url, response);
+      } catch (e) {
+        console.warn(`Failed to pre-cache: ${url}`);
       }
     }
     await self.skipWaiting();
@@ -63,7 +65,12 @@ self.addEventListener("fetch", (event) => {
   event.respondWith((async () => {
     const cached = await caches.match(req, { ignoreSearch: true });
     if (cached) return cached;
-    const response = await fetch(req);
-    return response;
+
+    try {
+      return await fetch(req);
+    } catch (e) {
+      // Return a graceful error instead of an uncaught rejection
+      return new Response("Offline and not cached", { status: 503 });
+    }
   })());
 });
