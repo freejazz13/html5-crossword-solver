@@ -33,6 +33,7 @@
         </header>
         <div id="loading">Loading ...</div>
         <div id="file-grid"></div>
+	<div id="toast">Backup Created!</div>
     </div>
 
     <script>
@@ -81,6 +82,23 @@
     link.href = URL.createObjectURL(content);
     link.download = filename;
     link.click();
+    const toast = document.getElementById("toast");
+    
+    // Set the text to the actual filename created
+    toast.textContent = `Export: ${filename}`;
+    
+    // Show it
+    toast.className = "show";
+    
+    // Reset after animation
+    setTimeout(() => { 
+        toast.className = ""; 
+    }, 2500);
+
+    // Clear mobile focus/sticky hover
+    if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+        }	    
     }
 
     async function importData() {

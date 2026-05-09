@@ -296,3 +296,37 @@ header > :not(.header-actions) {
         font-size: 12px;
     }
 }
+
+#toast {
+    visibility: hidden;
+    min-width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 8px;
+    padding: 12px;
+    position: fixed;
+    z-index: 1000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-family: sans-serif;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%; /* Prevents toast from hitting screen edges */
+}
+
+#toast.show {
+    visibility: visible;
+    animation: fadeInOut 2.5s;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; bottom: 20px; }
+    15% { opacity: 1; bottom: 30px; }
+    85% { opacity: 1; bottom: 30px; }
+    100% { opacity: 0; bottom: 20px; }
+}
