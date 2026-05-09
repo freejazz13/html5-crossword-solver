@@ -264,13 +264,22 @@ header > :not(.header-actions) {
     backdrop-filter: blur(6px);
     transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
 }
+/* Only apply hover effects if the device supports a proper hover pointer */
+@media (hover: hover) {
+    .action-btn:hover {
+        background: #f2994a;
+        color: #fff;
+        border-color: #f2994a;
+        box-shadow: 0 3px 10px rgba(242,153,74,0.3);
+        transform: translateY(-1px);
+    }
+}
 
-.action-btn:hover {
+/* Optional: Add a distinct :active state for mobile so they get feedback */
+.action-btn:active {
     background: #f2994a;
     color: #fff;
-    border-color: #f2994a;
-    box-shadow: 0 3px 10px rgba(242,153,74,0.3);
-    transform: translateY(-1px);
+    transform: translateY(0);
 }
 
 .action-btn:active {

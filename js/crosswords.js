@@ -4106,7 +4106,7 @@ function setupPWAInstallButton(btn) {
         const completedPct = Math.floor((filled / total) * 100);
 
         const stats = `Cheated: ${cheated} (${cheatedPct}%) • Errors: ${errors} (${errorsPct}%) • Completed: ${completedPct}%`;
-        const MAX_WIDTH = 80; // may be adjusted
+        const MAX_WIDTH = 70; // may be adjusted
         let displayInfo = `${this.voltitle}${this.title} • ${this.author}`;
         if (displayInfo.length > MAX_WIDTH) {
             // If combined is too long, drop author
