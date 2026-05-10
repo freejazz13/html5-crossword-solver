@@ -330,3 +330,20 @@ header > :not(.header-actions) {
     85% { opacity: 1; bottom: 30px; }
     100% { opacity: 0; bottom: 20px; }
 }
+
+.cloud-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 8px;
+    font-weight: 400;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.cloud-label input {
+    cursor: pointer;
+    accent-color: #f2994a; /* Matches your button hover color */
+}

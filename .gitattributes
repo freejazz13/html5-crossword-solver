@@ -6,4 +6,5 @@
 *.svg binary
 *.ico binary
 *.zip binary
+*.wasm binary
 

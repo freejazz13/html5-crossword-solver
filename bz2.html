@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>bzip2 file test</title>
+</head>
+
+<body>
+
+<h2>Bzip2 File Compressor</h2>
+
+<input type="file" id="file" />
+<button id="compress">Compress & Download</button>
+
+<hr />
+
+<button id="decompress">Decompress Last File</button>
+
+<script type="module">
+import { compressFile, decompressFile } from "./app.js";
+
+let lastCompressed = null;
+
+document.getElementById("compress").onclick = async () => {
+  const file = document.getElementById("file").files[0];
+  if (!file) return alert("Pick a file first");
+  const buffer = await file.arrayBuffer();
+  lastCompressed = await compressFile(new Uint8Array(buffer));
+
+  const blob = new Blob([lastCompressed]);
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name + ".bz2";
+  a.click();
+
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById("decompress").onclick = async () => {
+  if (!lastCompressed) return alert("No compressed data yet");
+
+  const output = await decompressFile(lastCompressed);
+  const blob = new Blob([output]);
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "decompressed.bin";
+  a.click();
+
+  URL.revokeObjectURL(url);
+};
+</script>
+
+</body>
+</html>

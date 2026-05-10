@@ -49,6 +49,9 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
+  if (req.method !== "GET" || url.origin !== location.origin) {
+    return; // Let the browser handle these normally via network
+  }
 
   if (req.mode === "navigate") {
     event.respondWith((async () => {
