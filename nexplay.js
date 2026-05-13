@@ -4,7 +4,7 @@ import { compressFile, decompressFile } from "./bz2api.js";
 
 let currentVol = null; // { vol, url } — set when a volume is open
 const CACHE_NAME = 'nexplay-zips-v1';
-const META_KEY = 'nexplay-vol-info'; // localStorage key for volume metadata
+const META_KEY = 'nexplay-vol-info'; // localforage key for volume metadata
 
 
 // ── BACKUPS / RESTORE ────────────────────────────────────────────────────────────────
@@ -13,15 +13,10 @@ async function exportData() {
     const storageData = {};
     const isCloud = document.getElementById('cloud-check').checked;
 
-    // 1. Collect Local Storage
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const val = localStorage.getItem(key);
-        try {
-            storageData[key] = JSON.parse(val);
-        } catch (e) {
-            storageData[key] = val;
-        }
+    // 1. Collect all data from localforage
+    const keys = await localforage.keys();
+    for (const key of keys) {
+        storageData[key] = await localforage.getItem(key);
     }
     const jsonBytes = new TextEncoder().encode(JSON.stringify(storageData, null, 2));
     const compressed = await compressFile(new Uint8Array(jsonBytes));
@@ -156,12 +151,10 @@ async function importData() {
                 return;
             }
 
-            // 2. Restore and re-pack keys
-            Object.keys(data).forEach(k => {
-                const val = data[k];
-                const finalizedValue = typeof val === 'object' ? JSON.stringify(val) : val;
-                localStorage.setItem(k, finalizedValue);
-            });
+            // 2. Restore keys into localforage
+            for (const k of Object.keys(data)) {
+                await localforage.setItem(k, data[k]);
+            }
 
             alert('Import Successful! Reloading page...');
             location.reload();
@@ -177,14 +170,14 @@ document.getElementById("import-btn").addEventListener("click", importData);
 
 // ── Volume metadata helpers ──────────────────────────────────────────────
 
-function saveVolMeta(zipname, volmeta) {
-    const all = JSON.parse(localStorage.getItem(META_KEY) || '{}');
+async function saveVolMeta(zipname, volmeta) {
+    const all = (await localforage.getItem(META_KEY)) || {};
     all[zipname] = volmeta;
-    localStorage.setItem(META_KEY, JSON.stringify(all));
+    await localforage.setItem(META_KEY, all);
 }
 
-function loadVolMeta() {
-    return JSON.parse(localStorage.getItem(META_KEY) || '{}');
+async function loadVolMeta() {
+    return (await localforage.getItem(META_KEY)) || {};
 }
 
 // Read source.meta title + count .puz files from an already-loaded JSZip
@@ -223,12 +216,12 @@ async function cacheZip(url, sticker) {
         }
 
         // Extract metadata from zip if not yet stored
-        const allMeta = loadVolMeta();
+        const allMeta = await loadVolMeta();
         if (!allMeta[zipname]) {
             const blob = await cached.blob();
             const zip = await JSZip.loadAsync(blob);
             const volmeta = await extractZipMeta(zip, zipname);
-            saveVolMeta(zipname, volmeta);
+            await saveVolMeta(zipname, volmeta);
             updateVolumeSticker(sticker, volmeta);
         }
 
@@ -270,7 +263,9 @@ async function loadVolumes() {
         // Fetch simple zip list from volumes.json
         const resp = await fetch('volumes.json');
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const zipnames = await resp.json();
+        const data = await resp.json();
+        // (first key is comment) 
+        const zipnames = data.volumes;
 
         loading.style.display = 'none';
 
@@ -281,8 +276,8 @@ async function loadVolumes() {
 
         document.getElementById('stats-files').textContent = `${zipnames.length} collections`;
 
-        // Build stickers — use localStorage metadata if available, skeleton otherwise
-        const allMeta = loadVolMeta();
+        // Build stickers — use localforage metadata if available, skeleton otherwise
+        const allMeta = await loadVolMeta();
         const stickers = [];
         for (const zipname of zipnames) {
             const volmeta = allMeta[zipname] || { zipname, volname: zipname.replace(/\.zip$/i, ''), nbfiles: '?' };
@@ -355,7 +350,7 @@ function openVolume(vol) {
     loadVolume(url, vol.volname);
 }
 
-function goBackToVolumes() {
+async function goBackToVolumes() {
     currentVol = null;
 
     // Hide refresh button
@@ -379,13 +374,12 @@ function goBackToVolumes() {
     loading.textContent = 'Loading collections...';
     loading.style.display = 'none'; // will be shown if needed
 
-    statusMap = getStatusByFilename(); // load existing status from localStorage
+    statusMap = await getStatusByFilename(); // load existing status from localStorage
     loadVolumes();
 }
 
 // ── Archive / puzzle loader ──────────────────────────────────────────────
 
-// --- Replace your existing loadVolume function with this ---
 async function loadVolume(url, volname, sortOrder = 'asc') {
     const fileGrid = document.getElementById('file-grid');
     const loading = document.getElementById('loading');
@@ -437,14 +431,13 @@ async function loadVolume(url, volname, sortOrder = 'asc') {
 }
 
 // Example Output: { "puzzle1.puz": 2, "puzzle2.puz": 1 }
-function getStatusByFilename() {
+async function getStatusByFilename() {
     const results = {};
-    //const voltitle = currentVol.vol.volname;
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
+    const keys = await localforage.keys();
+    for (const key of keys) {
         if (key.endsWith("_misc")) {
             try {
-                const miscData = JSON.parse(localStorage.getItem(key));
+                const miscData = await localforage.getItem(key);
                 if (miscData && miscData.filename) {
                     results[miscData.filename] = { "status": miscData.status, "voltitle": miscData.voltitle };
                 }
@@ -568,15 +561,34 @@ function escapeHtml(str) {
 }
 
 let sortOrder = 'date';
-function refreshVolume(sortOrder = 'asc') {
+async function refreshVolume(sortOrder = 'asc') {
     if (!currentVol) return;
-    statusMap = getStatusByFilename(); // load existing status from localStorage
+    statusMap = await getStatusByFilename();
     loadVolume(currentVol.url, currentVol.vol.volname, sortOrder = sortOrder);
 }
-document.getElementById("btn-refresh").addEventListener("click", refreshVolume);
-document.getElementById("btn-resort").addEventListener("click", () => { sortOrder = 'title'; refreshVolume(sortOrder); });
+
+document.getElementById("btn-refresh").addEventListener("click", () => { sortOrder = 'asc'; refreshVolume(sortOrder); });
+//document.getElementById("btn-resort").addEventListener("click", () => { sortOrder = 'title'; refreshVolume(sortOrder); });
+const btn = document.getElementById('btn-resort');
+btn.addEventListener('click', () => {
+    if (btn.dataset.sortKey === 'filename') { // actual val
+        btn.dataset.sortKey = 'title';
+        btn.textContent = 'Sort by Filename';
+        btn.title = 'instead of title';
+        sortOrder = 'title';
+    } else {
+        btn.dataset.sortKey = 'filename';
+        btn.textContent = 'Sort by Title';
+        btn.title = 'instead of filename';
+        sortOrder = 'asc';
+    }
+    refreshVolume(sortOrder);    
+});
 
 // ── Boot ─────────────────────────────────────────────────────────────────
+let statusMap = {};
 
-let statusMap = getStatusByFilename(); // load existing status from localStorage
-loadVolumes();
+(async () => {
+    statusMap = await getStatusByFilename();
+    loadVolumes();
+})();
