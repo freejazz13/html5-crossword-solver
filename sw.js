@@ -49,6 +49,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
+  const url = new URL(req.url); // Extract the URL object from the request
+
+  // checks whether a requested file is hosted on own server or on a third-party server (like a CDN).
+  // location.origin: The domain where  Service Worker is actually running (website's home address).
+  // url.origin: The scheme, domain, and port of the file being requested.
   if (req.method !== "GET" || url.origin !== location.origin) {
     return; // Let the browser handle these normally via network
   }

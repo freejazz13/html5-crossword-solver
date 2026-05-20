@@ -3822,7 +3822,7 @@ function setupPWAInstallButton(btn) {
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.v_autocheck ? 'none' : 'block';
         $('#autocheck1').prop('checked', this.v_autocheck);
-        if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+        if (!this.root.hasClass('loading') && this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
         document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.v_autocheck ? '' : 'none'; });
       }
 
