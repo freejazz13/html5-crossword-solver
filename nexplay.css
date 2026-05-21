@@ -169,6 +169,11 @@ h1 {
     text-align: center;
 }
 
+#readerdiv {
+    display: none;
+    width: 100%;
+}
+    
 .file-name {
     font-family: monospace;
     font-size: 10px;

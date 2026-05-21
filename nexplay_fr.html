@@ -23,11 +23,11 @@
     <div class="container">
         <header>
             <div class="header-actions">
-                <label class="cloud-label"> <input type="checkbox" id="cloud-check">Cloud Export</label>
-                <label class="cloud-label"> <input type="checkbox" id="qrcode-check">Import from QRcode</label>
-                <button class="action-btn" onclick="showHelp()" title="Help">Help</button>
-                <button class="action-btn" id="export-btn" title="Save current games progress">Export</button>
-                <button class="action-btn" id="import-btn" title="Import from a backup">Import</button>
+                <label class="cloud-label"> <input type="checkbox" id="cloud-check">Exporter vers Cloud</label>
+                <label class="cloud-label"> <input type="checkbox" id="qrcode-check">Importer d'un QRcode</label>
+                <button class="action-btn" onclick="showHelp()" title="Aide">Aide</button>
+                <button class="action-btn" id="export-btn" title="Sauvegarde de l'état de vos m-c.">Exporter</button>
+                <button class="action-btn" id="import-btn" title="Restaurer l'état depuis un fichier ou d'un QRcode">Importer</button>
             </div>
             <div id="qr-container"
                 style="display:none; position:fixed; right:20px; top:100px; width:200px; background:white; padding:15px; border:2px solid #333; border-radius:8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index:100; text-align:center;">
@@ -38,40 +38,32 @@
                     style="margin-top:10px; width:100%; cursor:pointer; font-size:12px;">Close</button>
             </div>
             <div class="breadcrumb" id="breadcrumb">
-                <span class="breadcrumb-item active" id="breadcrumb-volumes">Collections</span>
+                <span class="breadcrumb-item active" id="breadcrumb-volumes">Mots-Croisés</span>
                 <span class="breadcrumb-sep" id="breadcrumb-sep" style="display:none">›</span>
                 <span class="breadcrumb-item" id="breadcrumb-current" style="display:none"></span>
             </div>
-            <h1 id="page-title">Choose a volume:</h1>
+            <h1 id="page-title">Choix volume:</h1>
             <div class="stats">
                 <span id="stats-files"></span>
-                <button id="btn-refresh" style="display:none;margin-left:12px" title="Update puzzles status">↺ Refresh</button>
-                <button id="btn-resort" data-sort-key="filename" style="display:none;margin-left:12px" title="(instead of filenames)">Sort by Title</button>
+                <button id="btn-refresh" style="display:none;margin-left:12px" title="Met à jour l'état d'avancement des m-c.">↺ Rafraichir</button>
+                <button id="btn-resort" data-sort-key="filename" style="display:none;margin-left:12px" title="Tri par nom de fichier ou par titre">Trier par titre</button>
             </div>
             <div id="readerdiv" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:white; padding:15px; border:2px solid #333; border-radius:8px; z-index:1100; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-                <h3>Scan QRCode with Camera</h3>
+                <h3>Scanner un QRCode avec la Camera ou un screenshot</h3>
                 <div id="reader" style="width: 100%;"></div>
-                <button id="btn-qrcancel" style="margin-top:10px; width:100%; padding:8px; background:#ff4d4d; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Cancel</button>
+                <button id="btn-qrcancel" style="margin-top:10px; width:100%; padding:8px; background:#ff4d4d; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Abandon</button>
             </div>
         </header>
-        <div id="loading">Loading ...</div>
+        <div id="loading">Chargement...</div>
         <div id="file-grid"></div>
-        <div id="toast">Backup Created!</div>
+        <div id="toast">Sauvegarde effectuée!</div>
     </div>
 
     <script type="module" src="./nexplay.js"></script>
 
     <!-- Put this in both index.html AND nexplay.html -->
     <script>
-        try {
-            const lang = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
-            window.currentLang = lang === 'fr' ? 'fr' : 'en';
-            if (lang === 'fr') {
-                window.location.replace('/nexplay_fr.html');
-            }
-        } catch (e) {
-            window.currentLang = 'en';
-        }
+        window.currentLang = 'fr';
         if ('serviceWorker' in navigator) {
             // Register with absolute path
             navigator.serviceWorker.register('/sw.js').then(reg => {

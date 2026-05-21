@@ -367,16 +367,13 @@ $(document).ready(function () {
       let timer;
       const canvas = document.querySelector('.cw-canvas');
       const buttons = document.querySelector('.cw-buttons-holder');
-      //const dhi = document.querySelector('#drawer-handle-infos');
       if (buttons && buttons.children.length) {
-        const allButtons = Array.from(buttons.children);
-
-        // Match by text content – you can refine this to use classes if needed
-        const file = allButtons.find(btn => btn.textContent.includes('Crossword'));
-        const check = allButtons.find(btn => btn.textContent.includes('Check'));
-        const reveal = allButtons.find(btn => btn.textContent.includes('Reveal'));
-        const settings = allButtons.find(btn => btn.textContent.includes('Settings'));
-        timer = allButtons.find(btn => btn.textContent.match(/[\d:]+/)); // crude match for timer
+        // Find the inner element by ID, then grab its top-level wrapper container
+        const file = buttons.querySelector('#id_xword')?.closest('.cw-menu-container');
+        const check = buttons.querySelector('#id_check')?.closest('.cw-menu-container');
+        const reveal = buttons.querySelector('#id_reveal')?.closest('.cw-menu-container');
+        const settings = buttons.querySelector('#id_settings'); // No wrapper container
+        const timer = buttons.querySelector('#id_timer')?.parentElement; // Adjust based on timer DOM      
 
         // Only reflow if all buttons were found
         if (file && check && reveal && settings && timer) {

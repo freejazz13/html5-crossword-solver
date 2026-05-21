@@ -16,6 +16,7 @@ const ASSETS = [
   "/lib/jscrossword_combined.js",
   "/lib/jszip.min.js",
   "/lib/lscache.min.js",
+  "/lib/localforage.min.js",
   "/manifest.json",
   "/images/xw-solve-icon-192.png",
   "/images/xw-solve-icon-512.png",

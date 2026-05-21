@@ -5,19 +5,51 @@ import { compressFile, decompressFile } from "./bz2api.js";
 let currentVol = null; // { vol, url } — set when a volume is open
 const CACHE_NAME = 'nexplay-zips-v1';
 const META_KEY = 'nexplay-vol-info'; // localforage key for volume metadata
+const msg = {
+  en: {
+    crosswords: "Crosswords",
+    failupl: "Upload failed",
+    errformat: "Unsupported file format. only bz2, br, zip accepted",
+    importOK: "Import Successful! Reloading page...",
+    statunpl: "🎁",
+    statinp: "In Progress...",
+    statcomp: "Completed",
+    sortFIL: "Sort by Filename",
+    sortTIT: "Sort by Title",
+    chooseVol: "Choose a collection",      
+    sortlab: "Available: Filename or Title sorting"
+
+  },
+  fr: {
+    crosswords: "Mots-Croisés",
+    failupl: "Erreur durant l'export cloud",
+    errformat: "Erreur: Le format de fichier doit être zip, bz2, br",
+    importOK: "Import terminé, OK pour recharger",
+    statunpl: "🎁",
+    statinp: "En cours...",
+    statcomp: "Terminé",
+    sortFIL: "Trier par fichier",
+    sortTIT: "Trier par titre",
+    chooseVol: "Choix volume",      
+    sortlab: "Tri par nom de fich ou par titre"
+  }
+};
 
 
 // ── BACKUPS / RESTORE ────────────────────────────────────────────────────────────────
 
 async function exportData() {
     const storageData = {};
-    const isCloud = document.getElementById('cloud-check').checked;
+    const isCloudExp = document.getElementById('cloud-check').checked;
 
     // 1. Collect all data from localforage
     const keys = await localforage.keys();
     for (const key of keys) {
         storageData[key] = await localforage.getItem(key);
     }
+    const toast = document.getElementById("toast");
+    toast.textContent = "creating export...";
+    toast.className = "show";
     const jsonBytes = new TextEncoder().encode(JSON.stringify(storageData, null, 2));
     const compressed = await compressFile(new Uint8Array(jsonBytes));
     const content = new Blob([compressed], { type: 'application/octet-stream' });
@@ -36,13 +68,13 @@ async function exportData() {
     let toastMsg = `Saved to disk: ${localfilename}`;
 
     // ─── CONDITIONAL CLOUD EXPORT ───
-    if (isCloud) {
+    if (isCloudExp) {
         if (!navigator.onLine) {
             showToast("Cloud failed: You are offline.");
             return;
         }
 
-        const toast = document.getElementById("toast");
+        //const toast = document.getElementById("toast");
         toast.textContent = "Uploading to cloud...";
         toast.className = "show";
 
@@ -85,19 +117,20 @@ async function exportData() {
             // Try Clipboard
             try {
                 await navigator.clipboard.writeText(downloadUrl);
-                toastMsg += " (Copied!)";
+                toastMsg += " (url copied to clipboard)";
             } catch (clipErr) {
-                console.warn("Clipboard blocked");
+                console.warn("Clipboard copy blocked");
             }
         } catch (err) {
             // If the WAF blocks the file for being > 5MB, it ends up here
-            toastMsg = `Upload Failed: ${err.message}`;
+            const m = msg[window.currentLang]?.failupl ?? msg.en.failupl;
+            toastMsg = `${m}: ${err.message}`;
             console.error(err);
         }
     }
 
     // 3. Show Toast & Blur
-    const toast = document.getElementById("toast");
+    //const toast = document.getElementById("toast");
     toast.textContent = toastMsg;
     toast.className = "show";
 
@@ -109,64 +142,144 @@ async function exportData() {
 }
 document.getElementById("export-btn").addEventListener("click", exportData);
 
+//helper:
+function showToast(msg, dur=5000) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.className = "show";
+    setTimeout(() => { toast.className = ""; }, dur);
+}
+
+//==============
+// Helper function to process the file blob (shared between local files and QR codes)
+async function processFileBlob(file) {
+    let data;
+
+    if (file.name.endsWith('.br')) {
+        const brotli = await brotliReady;
+        const arrayBuffer = await file.arrayBuffer();
+        const decompressed = brotli.decompress(new Uint8Array(arrayBuffer));
+        const jsonString = new TextDecoder().decode(decompressed);
+        data = JSON.parse(jsonString);
+
+    } else if (file.name.endsWith('.bz2')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const decompressed = bz2.decompress(new Uint8Array(arrayBuffer));
+        const jsonString = new TextDecoder().decode(decompressed);
+        data = JSON.parse(jsonString);
+
+    } else if (file.name.endsWith('.zip')) {
+        const zip = await JSZip.loadAsync(file);
+        const backupFile = zip.file("backup.json");
+        if (!backupFile) {
+            alert("Error: ZIP does not contain 'backup.json'");
+            return;
+        }
+        const jsonString = await backupFile.async("string");
+        data = JSON.parse(jsonString);
+
+    } else {
+        const m = msg[window.currentLang]?.errformat ?? msg.en.errformat;
+        alert(m);
+        return;
+    }
+
+    // Restore keys into localforage
+    for (const k of Object.keys(data)) {
+        await localforage.setItem(k, data[k]);
+    }
+
+    const m = msg[window.currentLang]?.importOK ?? msg.en.importOK;
+    alert(m);
+    location.reload();
+}
+
 async function importData() {
-    // 1. Create a hidden file input — accept both formats
+    const fromQRCode = document.getElementById('qrcode-check').checked;
+    if (fromQRCode) {
+        if (!navigator.onLine) {
+            showToast("ERROR: You are offline.");
+            return;
+        }
+
+        // --- QR Code Mode ---
+        const readerEl = document.getElementById("readerdiv");
+        if (readerEl) readerEl.style.display = 'block';
+
+        // Initialize the scanner
+        const scanner = new Html5QrcodeScanner("reader", {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+        });
+
+        // Expose scanner to the window object so our Cancel button can access it
+        window.currentScanner = scanner;
+
+        scanner.render(async (decodedUrl) => {
+            try {
+                // Clear scanner and hide UI immediately on success
+                await scanner.clear();
+                window.currentScanner = null;
+                if (readerEl) readerEl.style.display = 'none';
+
+                const response = await fetch(decodedUrl);
+                if (!response.ok) throw new Error("Network response failed");
+
+                const blob = await response.blob();
+                const filename = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1) || 'backup.bz2';
+                const file = new File([blob], filename);
+
+                await processFileBlob(file);
+            } catch (err) {
+                console.error(err);
+                alert("Failed to download or process backup file from QR URL.");
+            }
+        }, (error) => {
+            // Quietly catch scanning artifacts
+        });
+        return;
+    }
+
+    // --- Standard Local File Mode ---
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip,.br,.bz2';
+
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         try {
-            let data;
-
-            if (file.name.endsWith('.br')) {
-                // ── Brotli file ──
-                const brotli = await brotliReady;
-                const arrayBuffer = await file.arrayBuffer();
-                const decompressed = brotli.decompress(new Uint8Array(arrayBuffer));
-                const jsonString = new TextDecoder().decode(decompressed);
-                data = JSON.parse(jsonString);
-
-            } else if (file.name.endsWith('.bz2')) {
-                // ── BZ2 file ──
-                const arrayBuffer = await file.arrayBuffer();
-                const decompressed = bz2.decompress(new Uint8Array(arrayBuffer));
-                const jsonString = new TextDecoder().decode(decompressed);
-                data = JSON.parse(jsonString);
-
-            } else if (file.name.endsWith('.zip')) {
-                // ── ZIP file ──
-                const zip = await JSZip.loadAsync(file);
-                const backupFile = zip.file("backup.json");
-                if (!backupFile) {
-                    alert("Error: ZIP does not contain 'backup.json'");
-                    return;
-                }
-                const jsonString = await backupFile.async("string");
-                data = JSON.parse(jsonString);
-
-            } else {
-                alert("Unsupported file format. Please select a .br or .zip backup file.");
-                return;
-            }
-
-            // 2. Restore keys into localforage
-            for (const k of Object.keys(data)) {
-                await localforage.setItem(k, data[k]);
-            }
-
-            alert('Import Successful! Reloading page...');
-            location.reload();
-
+            await processFileBlob(file);
         } catch (err) {
             console.error(err);
-            alert("Failed to process backup file. Is it a valid backup?");
+            alert("Failed to process backup file. Invalid file");
         }
     };
+
     input.click();
 }
+
 document.getElementById("import-btn").addEventListener("click", importData);
+// helper
+async function cancelQRScanner() {
+    const readerEl = document.getElementById("readerdiv");
+
+    if (window.currentScanner) {
+        try {
+            // Gracefully kill camera hooks and clear DOM artifacts
+            await window.currentScanner.clear();
+        } catch (err) {
+            console.error("Error clearing scanner during cancel:", err);
+        }
+        window.currentScanner = null;
+    }
+
+    // Hide the container panel cleanly
+    if (readerEl) {
+        readerEl.style.display = 'none';
+    }
+}
+document.getElementById("btn-qrcancel").addEventListener("click", cancelQRScanner);
 
 // ── Volume metadata helpers ──────────────────────────────────────────────
 
@@ -274,7 +387,7 @@ async function loadVolumes() {
             return;
         }
 
-        document.getElementById('stats-files').textContent = `${zipnames.length} collections`;
+        document.getElementById('stats-files').textContent = `${zipnames.length} volumes`;
 
         // Build stickers — use localforage metadata if available, skeleton otherwise
         const allMeta = await loadVolMeta();
@@ -304,10 +417,11 @@ function createVolumeSticker(vol) {
     sticker.className = 'file-sticker volume-sticker';
     sticker.dataset.zipname = vol.zipname;
 
+    const cw = msg[window.currentLang]?.crosswords ?? msg.en.crosswords;
     sticker.innerHTML = `
             <div class="file-title">${escapeHtml(vol.volname)}</div>
             <div class="file-details">
-                <div class="file-size">${vol.nbfiles === '?' ? '…' : vol.nbfiles + ' crosswords'}</div>
+                <div class="file-size">${vol.nbfiles === '?' ? '…' : vol.nbfiles + ' ' + cw}</div>
                 <div class="file-name">${escapeHtml(vol.zipname)}</div>
             </div>
         `;
@@ -367,7 +481,8 @@ async function goBackToVolumes() {
     bcVols.style.cursor = '';
     bcVols.onclick = null;
 
-    document.getElementById('page-title').textContent = 'Choose a collection:';
+    const m = msg[window.currentLang]?.chooseVol ?? msg.en.chooseVol;
+    document.getElementById('page-title').textContent = m;
     document.getElementById('stats-files').textContent = '';
 
     const loading = document.getElementById('loading');
@@ -417,7 +532,8 @@ async function loadVolume(url, volname, sortOrder = 'asc') {
             return;
         }
 
-        document.getElementById('stats-files').textContent = `Crosswords: ${puzzles.length}`;
+        const cw = msg[window.currentLang]?.crosswords ?? msg.en.crosswords;
+        document.getElementById('stats-files').textContent = `${cw}: ${puzzles.length}`;
 
         for (const puzfile of puzzles) {
             fileGrid.appendChild(createPuzSticker(puzfile, volname));
@@ -505,7 +621,10 @@ function createPuzSticker(puz, volname) {
 
     const currentVolTitle = currentVol.vol.volname;
     let stat = 0; // Default to unplayed
-    let stat_str = "Unplayed";
+    const unplayed = msg[window.currentLang]?.statunpl ?? msg.en.statunpl;
+    const inprogress = msg[window.currentLang]?.statinp ?? msg.en.statinp;
+    const completed = msg[window.currentLang]?.statcomp ?? msg.en.statcomp;
+    let stat_str = unplayed;
 
     // 1. Check if the file exists in statusMap
     if (statusMap.hasOwnProperty(filename)) {
@@ -517,10 +636,10 @@ function createPuzSticker(puz, volname) {
             stat = recordedStat;
             if (stat === 1) {
                 sticker.classList.add('status-1');
-                stat_str = "In Progress...";
+                stat_str = inprogress;
             } else if (stat === 2) {
                 sticker.classList.add('status-2');
-                stat_str = "COMPLETED";
+                stat_str = completed;
             }
         }
     }
@@ -570,16 +689,19 @@ async function refreshVolume(sortOrder = 'asc') {
 document.getElementById("btn-refresh").addEventListener("click", () => { sortOrder = 'asc'; refreshVolume(sortOrder); });
 //document.getElementById("btn-resort").addEventListener("click", () => { sortOrder = 'title'; refreshVolume(sortOrder); });
 const btn = document.getElementById('btn-resort');
+const sortFIL = msg[window.currentLang]?.sortFIL ?? msg.en.sortFIL;
+const sortTIT = msg[window.currentLang]?.sortTIT ?? msg.en.sortTIT;
+const sortlab = msg[window.currentLang]?.sortlab ?? msg.en.sortlab;
 btn.addEventListener('click', () => {
     if (btn.dataset.sortKey === 'filename') { // actual val
         btn.dataset.sortKey = 'title';
-        btn.textContent = 'Sort by Filename';
-        btn.title = 'instead of title';
+        btn.textContent = sortFIL;
+        btn.title = sortlab;
         sortOrder = 'title';
     } else {
         btn.dataset.sortKey = 'filename';
-        btn.textContent = 'Sort by Title';
-        btn.title = 'instead of filename';
+        btn.textContent = sortTIT;
+        btn.title = sortlab;
         sortOrder = 'asc';
     }
     refreshVolume(sortOrder);    

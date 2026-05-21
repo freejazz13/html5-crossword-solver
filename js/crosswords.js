@@ -196,6 +196,40 @@ function setupPWAInstallButton(btn) {
     var v_display_cn = default_config.display_cn;
 
 
+    const msg = {
+      en: {
+        stats: [ "Cheated:", "Errors:", "Completed:"],
+        type: [ "Letter", "Word", "Puzzle"],
+        autocheck: "Autocheck",      
+        settings: "Settings",
+        check: "Check",
+        reveal: "Reveal",      
+        crossword: "Crossword"
+      },
+      fr: {
+        stats: [ "Révélés:", "Erreurs:", "Avancement:"],
+        type: [ "Lettre", "Mot", "Grille"],
+        settings: "Réglages",
+        check: "Vérifier",
+        reveal: "Révéler",      
+        autocheck: "Vérif. auto",
+        crossword: "Grille"
+      }
+    };
+    try {
+        const lang = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
+        window.currentLang = lang === 'fr' ? 'fr' : 'en';
+    } catch (e) {
+        window.currentLang = 'en';
+    }
+    const xword = msg[window.currentLang]?.crossword ?? msg.en.crossword;
+    const Settings = msg[window.currentLang]?.settings ?? msg.en.settings;
+    const Check = msg[window.currentLang]?.check ?? msg.en.check;
+    const Reveal = msg[window.currentLang]?.reveal ?? msg.en.reveal;
+    const Autocheck = msg[window.currentLang]?.autocheck ?? msg.en.autocheck;
+    const types = msg[window.currentLang]?.type ?? msg.en.type;
+    const [Letter, _Word, Puzzle] = types;
+
     /** Template will have to change along with CSS **/
     var template = `
       <div class = "cw-main auto normal">
@@ -233,12 +267,12 @@ function setupPWAInstallButton(btn) {
           </label>
           <label class = "cw-autocheck-label">
             <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck1" checked>
-            Autocheck
+            ${Autocheck}
           </label>
           <div    class = "cw-menu-container">
-          <button type  = "button" class = "cw-button">
+          <button id="id_xword" type  = "button" class = "cw-button">
             <span class="cw-button-icon">🧩</span>
-                   Crossword
+                   ${xword}
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
@@ -253,36 +287,36 @@ function setupPWAInstallButton(btn) {
                 </div>
               </div>
               <div    class = "cw-menu-container cw-check">
-              <button type  = "button" class = "cw-button">
+              <button id="id_check" type  = "button" class = "cw-button">
                 <span class="cw-button-icon">🔍</span>
-                   Check
+                   ${Check}
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
-                <button class = "cw-menu-item cw-check-letter">Letter</button>
-                <button class = "cw-menu-item cw-check-word">Word</button>
-                <button class = "cw-menu-item cw-check-puzzle">Puzzle</button>
+                <button class = "cw-menu-item cw-check-letter">${Letter}</button>
+                <button class = "cw-menu-item cw-check-word">${_Word}</button>
+                <button class = "cw-menu-item cw-check-puzzle">${Puzzle}</button>
                 </div>
               </div>
               <div    class = "cw-menu-container cw-reveal">
-              <button type  = "button" class = "cw-button">
+              <button id="id_reveal" type  = "button" class = "cw-button">
                 <span class="cw-button-icon">💡</span>
-                   Reveal
+                   ${Reveal}
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
-                <button class = "cw-menu-item cw-reveal-letter">Letter</button>
-                <button class = "cw-menu-item cw-reveal-word">Word</button>
-                <button class = "cw-menu-item cw-reveal-puzzle">Puzzle</button>
+                <button class = "cw-menu-item cw-reveal-letter">${Letter}</button>
+                <button class = "cw-menu-item cw-reveal-word">${_Word}</button>
+                <button class = "cw-menu-item cw-reveal-puzzle">${Puzzle}</button>
                 </div>
               </div>
 
-              <button type = "button" class = "cw-button cw-settings-button">
+              <button id="id_settings" type = "button" class = "cw-button cw-settings-button">
                 <span class="cw-button-icon">⚙️</span>
-                 Settings
+                 ${Settings}
               </button>
               <span   class = "cw-flex-spacer"></span>
-              <button type  = "button" class = "cw-button cw-button-timer">00:00</button>
+              <button id="id_timer" type="button" class="cw-button cw-button-timer">00:00</button>
             </div>
             <input type  = "text" class = "cw-hidden-input">
             <div   class = "cw-canvas">
@@ -4117,7 +4151,8 @@ function setupPWAInstallButton(btn) {
         const errorsPct = Math.round((errors / total) * 100);
         const completedPct = Math.floor((filled / total) * 100);
 
-        const stats = `Cheated: ${cheated} (${cheatedPct}%) • Errors: ${errors} (${errorsPct}%) • Completed: ${completedPct}%`;
+        const m= msg[window.currentLang]?.stats ?? msg.en.stats;
+        const stats = `${m[0]} ${cheated} (${cheatedPct}%) • ${m[1]} ${errors} (${errorsPct}%) • ${m[2]} ${completedPct}%`;
         const MAX_WIDTH = 70; // may be adjusted
         let displayInfo = `${this.voltitle}${this.title} • ${this.author}`;
         if (displayInfo.length > MAX_WIDTH) {
