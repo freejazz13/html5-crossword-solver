@@ -12,6 +12,7 @@ const ASSETS = [
     "./js/crossword.mobile.js",
     "./lib/jquery.js",
     "./lib/bz2.min.js",
+    "./lib/localforage.min.js",
     "./lib/jscrossword_combined.js",
     "./lib/lscache.min.js",
     "./manifest.json",

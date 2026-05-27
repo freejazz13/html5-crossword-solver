@@ -467,24 +467,15 @@ function setupPWAInstallButton(btn) {
       constructor(parent, user_config) {
         this.parent = parent;
         this.config = {};
-        // Load solver config
-        var saved_settings = {};
-        try {
-          saved_settings = JSON.parse(
-            localStorage.getItem(SETTINGS_STORAGE_KEY)
-          );
-        } catch (error) {
-          console.log(error);
-        }
+        // Load solver config — settings are applied asynchronously via
+        // _loadSettingsAsync() once localforage resolves.
         var i;
         var configurable_settings_set = new Set(CONFIGURABLE_SETTINGS);
         for (i in default_config) {
           if (default_config.hasOwnProperty(i)) {
-            // Check saved settings before "user" settings
-            // only configurable settings can be loaded
-            if (saved_settings && saved_settings.hasOwnProperty(i) && configurable_settings_set.has(i)) {
-              this.config[i] = saved_settings[i];
-            } else if (user_config && user_config.hasOwnProperty(i)) {
+            // user_config takes priority over defaults; localforage settings
+            // are applied afterward in _loadSettingsAsync().
+            if (user_config && user_config.hasOwnProperty(i)) {
               this.config[i] = user_config[i];
             } else {
               this.config[i] = default_config[i];
@@ -497,6 +488,8 @@ function setupPWAInstallButton(btn) {
         this.is_saving = false;
         //this.backendEnabled = false;
         this.backendPromise = null;
+        // Apply persisted settings asynchronously from localforage
+        this._loadSettingsAsync(user_config);
         this.currentScale = 1.0;
         this.translatedClues = null;
 
@@ -701,8 +694,8 @@ function setupPWAInstallButton(btn) {
       }
 
       init() {
-        var parsePUZZLE_callback = $.proxy(this.parsePuzzle, this);
-        var error_callback = $.proxy(this.error, this);
+        var parsePUZZLE_callback = this.parsePuzzle.bind(this);
+        var error_callback = this.error.bind(this);
 
         // --- MODS, BASE64 & BZIP2 LOGIC ---
         const params = new URLSearchParams(window.location.search);
@@ -874,8 +867,8 @@ function setupPWAInstallButton(btn) {
               .on('dragleave dragend drop', function() {
                 div_overflow.removeClass('is-dragover');
               })
-              .on('drop', function(e) {
-                droppedFiles = e.originalEvent.dataTransfer.files;
+              .on('drop', (e) => {
+                const droppedFiles = e.originalEvent.dataTransfer.files;
                 processFiles(droppedFiles);
               });
           }
@@ -965,7 +958,7 @@ function setupPWAInstallButton(btn) {
        * - Initializes cells, words, and clues (real or fake).
        * - Enables autofill for acrostic/coded puzzles.
        */
-      parsePuzzle(data) {
+      async parsePuzzle(data) {
         // if it's already a JSCrossword, return it as-is
         //console.log("INFO in parsePuzzle");
         var puzzle;
@@ -1033,34 +1026,35 @@ function setupPWAInstallButton(btn) {
         this.savegame_name = STORAGE_KEY + '_' + myHash;
 
         const versionKey = this.savegame_name + '_version';
-        const savedVersion = localStorage.getItem(versionKey);
-
+        // (version check disabled - see commented block below)
         /*
+        const savedVersion = await localforage.getItem(versionKey);
         if (savedVersion !== PUZZLE_STORAGE_VERSION) {
-          console.log('[Crossword] Savegame version mismatch. Clearing old localStorage.');
-          localStorage.removeItem(this.savegame_name);
-          localStorage.removeItem(this.savegame_name + "_notes");
-          localStorage.setItem(versionKey, PUZZLE_STORAGE_VERSION);
+          console.log('[Crossword] Savegame version mismatch. Clearing old localforage.');
+          await localforage.removeItem(this.savegame_name);
+          await localforage.removeItem(this.savegame_name + "_notes");
+          await localforage.setItem(versionKey, PUZZLE_STORAGE_VERSION);
         }
         */
 
         this.stat_errors = {};
         this.stat_cheated = {};
-        const jsxw2_cells = this.loadGame();
+        const jsxw2_cells = await this.loadGame();
         if (jsxw2_cells) {
-          console.log('Loading puzzle from localStorage');
-          var noteObj = JSON.parse(localStorage.getItem(this.savegame_name + "_notes"));
+          console.log('Loading puzzle from localforage');
+          var noteObj = await localforage.getItem(this.savegame_name + "_notes");
           if (noteObj && noteObj.length > 0) {
             for (var entry of noteObj) {
               this.notes.set(entry.key, entry.value);
             }
           }
-          var statObj = JSON.parse(localStorage.getItem(this.savegame_name + "_misc"));
+          var statObj = await localforage.getItem(this.savegame_name + "_misc");
           if (statObj && Object.keys(statObj).length > 0) {
               this.stat_cheated = statObj.stat_cheated;
               this.stat_errors = statObj.stat_errors;
+              this.v_autocheck = statObj.autocheck ?? true;
+              this.v_autocheck = !this.v_autocheck ; this.toggleAutoCheck(); // fix checkboxes
               xw_timer_seconds = statObj.timeplayed;
-
           }
           puzzle.cells = jsxw2_cells;
         }
@@ -1610,7 +1604,7 @@ function setupPWAInstallButton(btn) {
         this.root.delegate(
           '.cw-menu-container > button',
           'click',
-          $.proxy(this.handleClickOpenMenu, this)
+          this.handleClickOpenMenu.bind(this)
         );
 
         // Click to jump to clue, but DON'T if user just selected text (avoid nuking selection)
@@ -1646,34 +1640,34 @@ function setupPWAInstallButton(btn) {
         }
         */
 
-        this.svg.on('click', $.proxy(this.mouseClicked, this));
+        this.svg.on('click', this.mouseClicked.bind(this));
 
         // REVEAL
         this.reveal_letter.on(
           'click',
-          $.proxy(this.check_reveal, this, 'letter', 'reveal')
+          this.check_reveal.bind(this, 'letter', 'reveal')
         );
         this.reveal_word.on(
           'click',
-          $.proxy(this.check_reveal, this, 'word', 'reveal')
+          this.check_reveal.bind(this, 'word', 'reveal')
         );
         this.reveal_puzzle.on(
           'click',
-          $.proxy(this.check_reveal, this, 'puzzle', 'reveal')
+          this.check_reveal.bind(this, 'puzzle', 'reveal')
         );
 
         // CHECK
         this.check_letter.on(
           'click',
-          $.proxy(this.check_reveal, this, 'letter', 'check')
+          this.check_reveal.bind(this, 'letter', 'check')
         );
         this.check_word.on(
           'click',
-          $.proxy(this.check_reveal, this, 'word', 'check')
+          this.check_reveal.bind(this, 'word', 'check')
         );
         this.check_puzzle.on(
           'click',
-          $.proxy(this.check_reveal, this, 'puzzle', 'check')
+          this.check_reveal.bind(this, 'puzzle', 'check')
         );
 
         // PRINTER
@@ -1682,11 +1676,11 @@ function setupPWAInstallButton(btn) {
         // CLEAR
         this.clear_btn.on(
           'click',
-          $.proxy(this.check_reveal, this, 'puzzle', 'clear')
+          this.check_reveal.bind(this, 'puzzle', 'clear')
         );
 
         // SAVE
-        this.save_btn.on('click', $.proxy(this.saveAsIpuz, this));
+        this.save_btn.on('click', this.saveAsIpuz.bind(this));
         this.save_db_btn.on('click', (e) => { this.saveDb(e); });
         this.load_db_btn.on('click', (e) => { this.loadDb(e); });
         this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
@@ -1721,14 +1715,14 @@ function setupPWAInstallButton(btn) {
         });
 
         // TIMER
-        //this.timer_button.on('click', $.proxy(this.toggleTimer, this));
+        //this.timer_button.on('click', this.toggleTimer.bind(this));
         this.timer_button.on('click', (e) => { this.toggleTimer(e); });
 
         // SETTINGS
-        this.settings_btn.on('click', $.proxy(this.openSettings, this));
+        this.settings_btn.on('click', this.openSettings.bind(this));
 
         // INFO
-        this.info_btn.on('click', $.proxy(this.showInfo, this));
+        this.info_btn.on('click', this.showInfo.bind(this));
 
         // PREV/NEXT BUTTONS FOR MOBILE
         this.root.find('.cw-button-prev-clue').on('click', () => {
@@ -1742,7 +1736,7 @@ function setupPWAInstallButton(btn) {
 
         // NOTEPAD
         if (this.notepad) {
-          this.notepad_icon.on('click', $.proxy(this.showNotepad, this));
+          this.notepad_icon.on('click', this.showNotepad.bind(this));
           this.notepad_btn.show();
         } else {
           this.notepad_icon.hide();
@@ -1753,9 +1747,9 @@ function setupPWAInstallButton(btn) {
           setTimeout(() => this.showNotepad(), 300);
         }
 
-        this.notepad_btn.on('click', $.proxy(this.showNotepad, this));
+        this.notepad_btn.on('click', this.showNotepad.bind(this));
 
-        $(document).on('keydown', $.proxy(this.keyPressed, this));
+        $(document).on('keydown', this.keyPressed.bind(this));
         $(document).on('keyup', (e) => { 
           const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // check only if a real key was pressed
           if (isPrintableChar && this.v_autocheck) { this.check_reveal('letter', 'check'); }
@@ -3779,19 +3773,34 @@ function setupPWAInstallButton(btn) {
         });
       }
 
+      /** Re-apply settings from localforage asynchronously after the constructor. */
+      async _loadSettingsAsync(user_config) {
+        try {
+          const saved_settings = await localforage.getItem(SETTINGS_STORAGE_KEY);
+          if (saved_settings && typeof saved_settings === 'object') {
+            const configurable_settings_set = new Set(CONFIGURABLE_SETTINGS);
+            for (const key in saved_settings) {
+              if (saved_settings.hasOwnProperty(key) && configurable_settings_set.has(key)) {
+                this.config[key] = saved_settings[key];
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[localforage] Could not load settings:', err);
+        }
+      }
+
+      /** Save user-configurable settings to localforage (async, fire-and-forget). */
       saveSettings() {
         // we only save settings that are configurable
-        var ss1 = {
-          ...this.config
-        };
+        var ss1 = { ...this.config };
         var savedSettings = {};
         CONFIGURABLE_SETTINGS.forEach(function(x) {
           savedSettings[x] = ss1[x];
-        })
-        localStorage.setItem(
-          SETTINGS_STORAGE_KEY,
-          JSON.stringify(savedSettings)
-        );
+        });
+        localforage.setItem(SETTINGS_STORAGE_KEY, savedSettings).catch(function(err) {
+          console.warn('[localforage] Could not save settings:', err);
+        });
       }
 
       toggleClueNumbers(e) {
@@ -3813,7 +3822,7 @@ function setupPWAInstallButton(btn) {
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.v_autocheck ? 'none' : 'block';
         $('#autocheck1').prop('checked', this.v_autocheck);
-        if (this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
+        if (!this.root.hasClass('loading') && this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
         document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.v_autocheck ? '' : 'none'; });
       }
 
@@ -3982,49 +3991,53 @@ function setupPWAInstallButton(btn) {
         }
     }
 
-      /* Save the game to local storage */
-      saveGame() {
+      /* Save the game to localforage (async) */
+      async saveGame() {
         // fill jsxw
         this.fillJsXw();
-        // stringify
-        const jsxw_str = JSON.stringify(this.jsxw.cells);
-        localStorage.setItem(this.savegame_name, jsxw_str);
-        localStorage.setItem(this.savegame_name + "_notes", JSON.stringify(Array.from(this.notes.entries()).map(n => {
-          return {
-            key: n[0],
-            value: n[1]
-          }
-        })));
-        localStorage.setItem(this.savegame_name + "_misc", JSON.stringify({
+        try {
+          await localforage.setItem(this.savegame_name, this.jsxw.cells);
+          await localforage.setItem(
+            this.savegame_name + "_notes",
+            Array.from(this.notes.entries()).map(n => ({ key: n[0], value: n[1] }))
+          );
+          await localforage.setItem(this.savegame_name + "_misc", {
             stat_cheated: this.stat_cheated,
             stat_errors: this.stat_errors,
             timeplayed: xw_timer_seconds,
             filename: this.filename,
             voltitle: this.volname,
+            autocheck: this.v_autocheck,
             status: this.isSolved ? 2 : 1
-        }));
+          });
+        } catch (err) {
+          console.warn('[localforage] saveGame failed:', err);
+        }
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
         if (this.v_autosave) { this.saveDb(false);} // no fillJsXw required its just been done
       }
 
       /* Show "load game" menu" */
-      loadGameMenu() {
-        // Find all the savegames
+      async loadGameMenu() {
+        // Find all the savegames from localforage
         var innerHTML = '';
-        for (var i = 0; i < localStorage.length; i++) {
-          var thisKey = localStorage.key(i);
-          if (thisKey.startsWith(STORAGE_KEY)) {
-            var thisJsXw = JSON.parse(localStorage.getItem(localStorage.key(i)));
-            var thisDisplay = thisKey.substr(STORAGE_KEY.length);
-            innerHTML += `
-            <label class="settings-label">
-              <input id="${thisKey}" checked="" type="radio" class="loadgame-changer">
-                ${thisDisplay}
-              </input>
-            </label>
-            `;
+        try {
+          const keys = await localforage.keys();
+          for (const thisKey of keys) {
+            if (thisKey.startsWith(STORAGE_KEY) && !thisKey.includes('_notes') && !thisKey.includes('_misc') && !thisKey.includes('_version')) {
+              var thisDisplay = thisKey.substr(STORAGE_KEY.length);
+              innerHTML += `
+              <label class="settings-label">
+                <input id="${thisKey}" checked="" type="radio" class="loadgame-changer">
+                  ${thisDisplay}
+                </input>
+              </label>
+              `;
+            }
           }
+        } catch (err) {
+          console.warn('[localforage] loadGameMenu failed:', err);
         }
         if (!innerHTML) {
           innerHTML = 'No save games found.';
@@ -4039,15 +4052,16 @@ function setupPWAInstallButton(btn) {
         this.createModalBox('Load Game', loadgameHTML);
       }
 
-      /* Load a game from local storage */
-      loadGame() {
-        var jsxw_cells = JSON.parse(localStorage.getItem(this.savegame_name));
-        // don't actually *load* it, just return the jsxw
-        return jsxw_cells;
-        //if (jsxw) {
-        //  this.removeListeners();
-        //  this.parsePuzzle(jsxw);
-        //}
+      /* Load a game from localforage (async) */
+      async loadGame() {
+        try {
+          var jsxw_cells = await localforage.getItem(this.savegame_name);
+          // don't actually *load* it, just return the jsxw
+          return jsxw_cells;
+        } catch (err) {
+          console.warn('[localforage] loadGame failed:', err);
+          return null;
+        }
       }
 
 // ----------------------- cheat & errors helpers -------------------------------//
@@ -4104,7 +4118,7 @@ function setupPWAInstallButton(btn) {
         const completedPct = Math.floor((filled / total) * 100);
 
         const stats = `Cheated: ${cheated} (${cheatedPct}%) • Errors: ${errors} (${errorsPct}%) • Completed: ${completedPct}%`;
-        const MAX_WIDTH = 80; // may be adjusted
+        const MAX_WIDTH = 70; // may be adjusted
         let displayInfo = `${this.voltitle}${this.title} • ${this.author}`;
         if (displayInfo.length > MAX_WIDTH) {
             // If combined is too long, drop author
