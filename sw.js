@@ -22,33 +22,60 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
-    // FIX 1: Forces this new worker to become the active one immediately, skipping the "waiting" phase
-    self.skipWaiting();
-
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-    );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    for (const url of ASSETS) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) await cache.put(url, response);
+      } catch (e) {
+        console.warn(`Failed to pre-cache: ${url}`);
+      }
+    }
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", (event) => {
-    // FIX 2: Wipe out the old, stale caches so the browser is forced to use the new one
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cache => {
-                    if (cache !== CACHE_NAME) {
-                        return caches.delete(cache);
-                    }
-                })
-            );
-        }).then(() => clients.claim()) // FIX 3: Tells the new worker to take control of the currently open tabs immediately
-    );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => key !== CACHE_NAME ? caches.delete(key) : Promise.resolve()));
+    await clients.claim();
+  })());
 });
 
 self.addEventListener("fetch", (event) => {
-    event.respondWith(
-        caches.match(event.request).then(cached => {
-            return cached || fetch(event.request).catch(() => cached);
-        })
-    );
+  const req = event.request;
+  const url = new URL(req.url); // Extract the URL object from the request
+
+  // checks whether a requested file is hosted on own server or on a third-party server (like a CDN).
+  // location.origin: The domain where  Service Worker is actually running (website's home address).
+  // url.origin: The scheme, domain, and port of the file being requested.
+  if (req.method !== "GET" || url.origin !== location.origin) {
+    return; // Let the browser handle these normally via network
+  }
+
+  if (req.mode === "navigate") {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(req);
+        if (response.ok && !response.redirected) return response;
+      } catch {}
+      const cached = await caches.match("/");
+      return cached || caches.match("/nexplay");
+    })());
+    return;
+  }
+
+  event.respondWith((async () => {
+    const cached = await caches.match(req, { ignoreSearch: true });
+    if (cached) return cached;
+
+    try {
+      return await fetch(req);
+    } catch (e) {
+      // Return a graceful error instead of an uncaught rejection
+      return new Response("Offline and not cached", { status: 503 });
+    }
+  })());
 });
