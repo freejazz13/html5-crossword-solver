@@ -1,3 +1,18 @@
+/*
+ * Useful bookmarklet to clear data: 
+javascript:(async()=>{
+  const origin = location.origin;
+  const regs = await navigator.serviceWorker.getRegistrations();
+  for(const r of regs) await r.unregister();
+  const keys = await caches.keys();
+  for(const k of keys) await caches.delete(k);
+  localStorage.clear();
+  sessionStorage.clear();
+  indexedDB.databases && (await indexedDB.databases()).forEach(db=>indexedDB.deleteDatabase(db.name));
+  alert('Done: '+origin);
+})();
+*/
+
 // CRITICAL: You MUST change this string (e.g., v3, v4) every time you deploy a new update!
 const CACHE_NAME = "xw-solver-v2";
 

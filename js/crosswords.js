@@ -196,6 +196,50 @@ function setupPWAInstallButton(btn) {
     var v_display_cn = default_config.display_cn;
 
 
+    const msg = {
+      en: {
+        stats: [ "Cheated:", "Errors:", "Completed:"],
+        type: [ "Letter", "Word", "Puzzle"],
+        autocheck: "Autocheck",      
+        settings: "Settings",
+        check: "Check",
+        reveal: "Reveal",      
+        crossword: "Crossword",
+        save: "Save as Ipuz",
+        restart: "Restart",
+        print: "Print"
+
+      },
+      fr: {
+        stats: [ "Révélés:", "Erreurs:", "Avancement:"],
+        type: [ "Lettre", "Mot", "Grille"],
+        settings: "Config.",
+        check: "Vérifier",
+        reveal: "Révéler",      
+        autocheck: "Vérif. auto",
+        crossword: "Grille",
+        save: "Sauvegarder",
+        restart: "Redémarrer",
+        print: "Imprimer"
+      }
+    };
+    try {
+        const lang = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
+        window.currentLang = lang === 'fr' ? 'fr' : 'en';
+    } catch (e) {
+        window.currentLang = 'en';
+    }
+    const xword = msg[window.currentLang]?.crossword ?? msg.en.crossword;
+    const Settings = msg[window.currentLang]?.settings ?? msg.en.settings;
+    const Check = msg[window.currentLang]?.check ?? msg.en.check;
+    const Reveal = msg[window.currentLang]?.reveal ?? msg.en.reveal;
+    const Autocheck = msg[window.currentLang]?.autocheck ?? msg.en.autocheck;
+    const types = msg[window.currentLang]?.type ?? msg.en.type;
+    const [Letter, _Word, Puzzle] = types;
+    const Print = msg[window.currentLang]?.print ?? msg.en.print;
+    const saveAsiPuz = msg[window.currentLang]?.save ?? msg.en.save;
+    const Restart = msg[window.currentLang]?.restart ?? msg.en.restart;
+
     /** Template will have to change along with CSS **/
     var template = `
       <div class = "cw-main auto normal">
@@ -233,56 +277,56 @@ function setupPWAInstallButton(btn) {
           </label>
           <label class = "cw-autocheck-label">
             <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck1" checked>
-            Autocheck
+            ${Autocheck}
           </label>
           <div    class = "cw-menu-container">
-          <button type  = "button" class = "cw-button">
+          <button id="id_xword" type  = "button" class = "cw-button">
             <span class="cw-button-icon">🧩</span>
-                   Crossword
+                   ${xword}
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
                 <button class = "cw-menu-item cw-save-db" backend-required>Save to DB</button>
                 <button class = "cw-menu-item cw-load-db" backend-required>Load from DB</button>
-                <button class = "cw-menu-item cw-file-info">Info</button>
+                <button class = "cw-menu-item cw-file-info">Infos</button>
                 <button class = "cw-menu-item cw-file-notepad">Notes</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
-                <button class = "cw-menu-item cw-file-print">Print</button>
-                <button class = "cw-menu-item cw-file-save">Save as iPuz</button>
-                <button class = "cw-menu-item cw-file-clear">Restart</button>
+                <button class = "cw-menu-item cw-file-print">${Print}</button>
+                <button class = "cw-menu-item cw-file-save">${saveAsiPuz}</button>
+                <button class = "cw-menu-item cw-file-clear">${Restart}</button>
                 </div>
               </div>
               <div    class = "cw-menu-container cw-check">
-              <button type  = "button" class = "cw-button">
+              <button id="id_check" type  = "button" class = "cw-button">
                 <span class="cw-button-icon">🔍</span>
-                   Check
+                   ${Check}
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
-                <button class = "cw-menu-item cw-check-letter">Letter</button>
-                <button class = "cw-menu-item cw-check-word">Word</button>
-                <button class = "cw-menu-item cw-check-puzzle">Puzzle</button>
+                <button class = "cw-menu-item cw-check-letter">${Letter}</button>
+                <button class = "cw-menu-item cw-check-word">${_Word}</button>
+                <button class = "cw-menu-item cw-check-puzzle">${Puzzle}</button>
                 </div>
               </div>
               <div    class = "cw-menu-container cw-reveal">
-              <button type  = "button" class = "cw-button">
+              <button id="id_reveal" type  = "button" class = "cw-button">
                 <span class="cw-button-icon">💡</span>
-                   Reveal
+                   ${Reveal}
                   <span class = "cw-arrow"></span>
                 </button>
                 <div    class = "cw-menu">
-                <button class = "cw-menu-item cw-reveal-letter">Letter</button>
-                <button class = "cw-menu-item cw-reveal-word">Word</button>
-                <button class = "cw-menu-item cw-reveal-puzzle">Puzzle</button>
+                <button class = "cw-menu-item cw-reveal-letter">${Letter}</button>
+                <button class = "cw-menu-item cw-reveal-word">${_Word}</button>
+                <button class = "cw-menu-item cw-reveal-puzzle">${Puzzle}</button>
                 </div>
               </div>
 
-              <button type = "button" class = "cw-button cw-settings-button">
+              <button id="id_settings" type = "button" class = "cw-button cw-settings-button">
                 <span class="cw-button-icon">⚙️</span>
-                 Settings
+                 ${Settings}
               </button>
               <span   class = "cw-flex-spacer"></span>
-              <button type  = "button" class = "cw-button cw-button-timer">00:00</button>
+              <button id="id_timer" type="button" class="cw-button cw-button-timer">00:00</button>
             </div>
             <input type  = "text" class = "cw-hidden-input">
             <div   class = "cw-canvas">
@@ -1898,31 +1942,18 @@ function setupPWAInstallButton(btn) {
 
         // Allow user to close the div
         const this_hidden_input = this.hidden_input;
-        var span = this.root.find('.modal-close').get(0);
-        // When the user clicks on <span> (x), close the modal
-        span.onclick = function() {
+        const closeModal = () => {
           modal.style.display = 'none';
-          if (!IS_MOBILE) {
-            this_hidden_input.focus();
-          }
+          window.onclick = null;
+          if (!IS_MOBILE) { this_hidden_input.focus(); }
         };
+        var span = this.root.find('.modal-close').get(0);
+        span.onclick = closeModal;
         // When the user clicks anywhere outside of the modal, close it
-        window.onclick = function(event) {
-          if (event.target == modal) {
-            modal.style.display = 'none';
-            if (!IS_MOBILE) {
-              this_hidden_input.focus();
-            }
-          }
-        };
+        window.onclick = (event) => { if (event.target == modal) closeModal(); };
         // Clicking the button should close the modal
         var modalButton = document.getElementById('modal-button');
-        modalButton.onclick = function() {
-          modal.style.display = 'none';
-          if (!IS_MOBILE) {
-            this_hidden_input.focus();
-          }
-        };
+        modalButton.onclick = closeModal;
       }
 
       setConfig(name, value) {
@@ -2096,10 +2127,11 @@ function setupPWAInstallButton(btn) {
 
           // attach metadata
           clue_el.data({
+            clue: clue,
             word: clue.word,
             number: clue.number,
             clues: clues_group.id,
-          }).addClass(`cw-clue word-${clue.word}`);
+          }).addClass(`cw-clue word-${clue.word} group-${clues_group.id}`);
 
           // restore any saved note
           /*
@@ -3039,24 +3071,22 @@ function setupPWAInstallButton(btn) {
   } //FUNCTION keyPressed
 
       saveAndUpdateStats() {
-        this.saveGame(); // save locally and to backend if present
         this.updateStatsUI();
-
-        /* unused code for us
-        if (this.is_autofill && this.selected_cell) {
-          const key = this.selected_cell.number || this.selected_cell.top_right_number;
-          const same_number_cells = this.number_to_cells[key] || [];
-
-          for (const cell of same_number_cells) {
-            if (cell !== this.selected_cell) {
-              this.updateCell(cell, {
-                letter: this.selected_cell.letter,
-                checked: this.selected_cell.checked
-              });
-            }
-          }
+        if (this._saveInProgress) {
+          this._savePending = true;
+          return;
         }
-       */
+        this._doSave();
+      }
+
+      async _doSave() {
+        this._saveInProgress = true;
+        this._savePending = false;
+        await this.saveGame();
+        this._saveInProgress = false;
+        if (this._savePending) {
+          this._doSave();
+        }
       }
 
       // Detects user inputs to hidden input element
@@ -3516,12 +3546,14 @@ function setupPWAInstallButton(btn) {
       }
 
       showInfo() {
+        const title = window.currentLang === 'en' ? "Title" : "Titre";
+        const author = window.currentLang === 'en' ? "Author" : "Auteur";
         this.createModalBox(
           'Info',
           `
-            <p><b>Title: ${this.title}</b></p>
+            <p><b>${title}: ${this.title}</b></p>
             ${this.voltitle ? `<p><b>Volume: </b>${this.voltitle}</p>` : ''}
-            <p><b>Author:</b> ${escape(this.author)}</p>
+            <p><b>${author}:</b> ${escape(this.author)}</p>
             <p><b>Notes:</b> ${escape(this.puznotes)}</p>
             <p><b>Dimensions:</b> ${this.grid_width}x${this.grid_height}</b></p>
           `
@@ -3689,8 +3721,145 @@ function setupPWAInstallButton(btn) {
             -->
           </div>
         `;
+        var settingsHTML_FR = `
+        <div class="settings-wrapper">
+          <!-- Skip filled letters -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Durant le jeu:
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="skip_filled_letters" checked="checked" type="checkbox" name="skip_filled_letters" class="settings-changer">
+                  Ignorer les cases remplies
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="gray_completed_clues" type="checkbox" name="gray_completed_clues" class="settings-changer">
+                  Neutraliser déf. résolues
+                </input>
+              </label>
+            </div>
+          </div>
 
-        this.createModalBox('Settings', settingsHTML);
+          <!-- When changing direction with arrow keys -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Au changement de dir. avec les flèches
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="arrow_stay" checked="" type="radio" name="arrow_direction" class="settings-changer">
+                  Rester sur la même case
+                </input>
+              </label class="settings-label">
+              <label class="settings-label">
+                <input id="arrow_move" checked="" type="radio" name="arrow_direction" class="settings-changer">
+                  Bouger dans le sens de la flèche
+                </input>
+              </label>
+              <label class="settings-label">
+                <input id="arrow_move_filled" checked="" type="radio" name="arrow_direction" class="settings-changer">
+                  Bouger dans le sens de la flèche si la case est remplie
+                </input>
+              </label>
+            </div>
+          </div>
+
+          <!-- Space bar -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Touche ESPACE
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="space_clear" checked="" type="radio" name="space_bar" class="settings-changer">
+                  Effacer et se déplacer
+                </input>
+              </label class="settings-label">
+              <label class="settings-label">
+                <input id="space_switch" checked="" type="radio" name="space_bar" class="settings-changer">
+                  Changer de direction
+                </input>
+              </label>
+            </div>
+          </div>
+
+          <!-- Tab key -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Touche TAB
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="tab_noskip" checked="" type="radio" name="tab_key" class="settings-changer">
+                  Mot suivant
+                </input>
+              </label class="settings-label">
+              <label class="settings-label">
+                <input id="tab_skip" checked="" type="radio" name="tab_key" class="settings-changer">
+                  Mot suivant non résolu 
+                </input>
+              </label>
+            </div>
+          </div>
+
+          <!-- Miscellaneous -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Divers
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="timer_autostart" checked="" type="checkbox" name="timer_autostart" class="settings-changer">
+                  Démarrer chrono à l'ouverture du jeu
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="confetti_enabled" checked="" type="checkbox" name="confetti_enabled" class="settings-changer">
+                  Effet Confetti à la fin
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
+                  Vérif AUTO (🅰️)
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="display-cn" checked="" type="checkbox" name="display-cn" class="yy-settings-changer">
+                  Afficher N° d'indices (style anglo-saxon)
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="display-cheats" checked="" type="checkbox" name="display-cheats" class="yy-settings-changer">
+                  Affichage Erreurs/Revelés dans la grille
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label" backend-required>
+                <input id="autosave2" checked="" type="checkbox" name="autosave2" class="z-settings-changer">
+                  Autosave Crossword (&#8597;&#65039;)
+                </input>
+              </label>
+            </div>
+        `;
+
+        if (window.currentLang === 'fr') {
+            this.createModalBox('Préférences', settingsHTML_FR);
+        } else {
+            this.createModalBox('Settings', settingsHTML);
+        }
         $('#autocheck2').prop('checked', this.v_autocheck);
         $('#autosave2').prop('checked', this.v_autosave);
         $('#display-cn').prop('checked', v_display_cn);
@@ -4117,7 +4286,8 @@ function setupPWAInstallButton(btn) {
         const errorsPct = Math.round((errors / total) * 100);
         const completedPct = Math.floor((filled / total) * 100);
 
-        const stats = `Cheated: ${cheated} (${cheatedPct}%) • Errors: ${errors} (${errorsPct}%) • Completed: ${completedPct}%`;
+        const m = msg[window.currentLang]?.stats ?? msg.en.stats;
+        const stats = `${m[0]} ${cheated} (${cheatedPct}%) • ${m[1]} ${errors} (${errorsPct}%) • ${m[2]} ${completedPct}%`;
         const MAX_WIDTH = 70; // may be adjusted
         let displayInfo = `${this.voltitle}${this.title} • ${this.author}`;
         if (displayInfo.length > MAX_WIDTH) {
@@ -4425,33 +4595,26 @@ function setupPWAInstallButton(btn) {
         const groupId = clueEl.data('clues');
         const group = this.clueGroups.find(g => g.id === groupId);
 
-        if (!this.config.gray_completed_clues && (!group || !group.isFake) && !this.fakeclues) {
-          // Reset clue styling if the setting is turned off and this is not a fake clue context
+        if (this.config.gray_completed_clues && this.words?.[clue?.word]?.isFilled() === true) {
+          textEl.css({
+             "text-decoration": "",
+             "color": "#aaa"
+          });
+        } else {
+          // Reset clue styling if the setting is turned off
           textEl.css({
             "text-decoration": "",
             "color": ""
           });
-          return;
         }
-
-        // Determine if it should be gray based on fakeclues context or word fill state
-        let shouldGray = false;
-        if (this.fakeclues || (group && group.isFake)) {
-          shouldGray = Boolean(clue.fakeClueCompleted);
-        } else if (clue.word && this.words[clue.word]) {
-          shouldGray = this.words[clue.word].isFilled();
-        }
-
-        textEl.css({
-          "text-decoration": "",
-          "color": shouldGray ? "#aaa" : ""
-        });
       }
 
       updateCell(cell, properties) {
         Object.assign(cell, properties);
         this.adjustCell(cell);
-        this.styleClues();
+        if (! IS_MOBILE && this.config.gray_completed_clues) {
+            this.styleClues();
+        }
       }
 
       setSelectedCell(new_cell) {

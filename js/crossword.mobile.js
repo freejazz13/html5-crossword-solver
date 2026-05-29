@@ -65,19 +65,8 @@ $(document).ready(function () {
     crosswordRoot.classList.add('mobile');
     document.body.classList.add('mobile-mode');
 
-    // Viewport handlers
-    window.visualViewport?.addEventListener('resize', detectKeyboardAndResize);
+    // Non-visualViewport resize fallback (visualViewport resize is already registered above)
     window.addEventListener('resize', detectKeyboardAndResize);
-    window.visualViewport?.addEventListener('resize', () => {
-      setCSSViewportHeight();
-      detectKeyboardAndResize();
-    });
-
-    window.addEventListener('orientationchange', () => {
-      setTimeout(() => {
-        setCSSViewportHeight();
-      }, 300);
-    });
   }
 
   function setCSSViewportHeight() {
@@ -367,16 +356,13 @@ $(document).ready(function () {
       let timer;
       const canvas = document.querySelector('.cw-canvas');
       const buttons = document.querySelector('.cw-buttons-holder');
-      //const dhi = document.querySelector('#drawer-handle-infos');
       if (buttons && buttons.children.length) {
-        const allButtons = Array.from(buttons.children);
-
-        // Match by text content – you can refine this to use classes if needed
-        const file = allButtons.find(btn => btn.textContent.includes('Crossword'));
-        const check = allButtons.find(btn => btn.textContent.includes('Check'));
-        const reveal = allButtons.find(btn => btn.textContent.includes('Reveal'));
-        const settings = allButtons.find(btn => btn.textContent.includes('Settings'));
-        timer = allButtons.find(btn => btn.textContent.match(/[\d:]+/)); // crude match for timer
+        // Find the inner element by ID, then grab its top-level wrapper container
+        const file = buttons.querySelector('#id_xword')?.closest('.cw-menu-container');
+        const check = buttons.querySelector('#id_check')?.closest('.cw-menu-container');
+        const reveal = buttons.querySelector('#id_reveal')?.closest('.cw-menu-container');
+        const settings = buttons.querySelector('#id_settings'); // No wrapper container
+        timer = buttons.querySelector('#id_timer');
 
         // Only reflow if all buttons were found
         if (file && check && reveal && settings && timer) {
@@ -549,7 +535,7 @@ $(document).ready(function () {
       const htmlString = `
                   <div id="twlm-container" style=" display: flex; align-items: center; width: 100%; background: var(--clue-active-color); position: relative;">
                     <div style="padding-left: 2px; z-index: 2;">
-                        <span id="switchListGrid" style="cursor: pointer; user-select: none; font-size: 1em; padding: 4px;">📋</span>
+                        <span id="switchListGrid" style="cursor: pointer; user-select: none; font-size: 1em; padding: 4px;">📄</span>
                     </div>
                     <span id="this-word-letters-mobile" style=" position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; letter-spacing: 2px; font-weight: bold; z-index: 1; text-align: center; "></span>
                   </div>`;
@@ -561,7 +547,7 @@ $(document).ready(function () {
      const switcher = wrapper.querySelector('#switchListGrid');
      switcher.onclick = (e) => {
                 const el = e.currentTarget;
-                el.textContent = gCrossword.isListView ? '📋':'𖣯' ;
+                el.textContent = gCrossword.isListView ? '📄':'𖣯' ;
                 //el.textContent = isGrid ? '📋' : '🔄';
                 toggleClueListView();
                 };
@@ -1074,6 +1060,10 @@ function createCustomKeyboard() {
         }
       }
 
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) clearBackspaceState();
+      });
+
       backspace.addEventListener('pointerdown', () => {
         backspaceHeld = false;
         backspaceFired = false;
@@ -1081,7 +1071,14 @@ function createCustomKeyboard() {
           backspaceHeld = true;
           performBackspace();
           backspaceFired = true;
-          backspaceInterval = setInterval(performBackspace, 120);
+          backspaceInterval = setInterval(() => {
+            try {
+              performBackspace();
+            } catch (e) {
+              clearBackspaceState();
+              console.error('[backspace interval]', e);
+            }
+          }, 120);
         }, 600);
       });
       backspace.addEventListener('pointerup', () => {

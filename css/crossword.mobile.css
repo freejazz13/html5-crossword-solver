@@ -216,6 +216,10 @@ html.mobile-mode {
   background: var(--main-bg-color);
 }
 
+/* If the row contains 5 or more buttons, cap the gap much tighter */
+.crossword.mobile .cw-buttons-row:has(button:nth-child(5)) {
+  gap: clamp(0.2em, 2vw, 1em);
+}
 .crossword.mobile .cw-buttons-row {
   display: flex;
   justify-content: center;
