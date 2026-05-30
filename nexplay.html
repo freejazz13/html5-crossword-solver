@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
     <meta charset="UTF-8">
@@ -23,9 +23,9 @@
     <div class="container">
         <header>
             <div class="header-actions">
-                <label class="cloud-label"> <input type="checkbox" id="cloud-check">Cloud Export</label>
-                <label class="cloud-label"> <input type="checkbox" id="qrcode-check">Import from QRcode</label>
-                <button class="action-btn" onclick="showHelp()" title="Help">Help</button>
+                <label id="cloud-check-txt" class="cloud-label"> <input type="checkbox" id="cloud-check">Cloud Export</label>
+                <label id="qrcode-check-txt" class="cloud-label"> <input type="checkbox" id="qrcode-check">Import from QRcode</label>
+                <button id="help-btn" class="action-btn" onclick="showHelp()" title="Help">Help</button>
                 <button class="action-btn" id="export-btn" title="Save current games progress">Export</button>
                 <button class="action-btn" id="import-btn" title="Import from a backup">Import</button>
             </div>
@@ -61,17 +61,34 @@
 
     <script type="module" src="./nexplay.js"></script>
 
-    <!-- Put this in both index.html AND nexplay.html -->
     <script>
         try {
             const lang = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
             window.currentLang = lang === 'fr' ? 'fr' : 'en';
             if (lang === 'fr') {
-                window.location.replace('/nexplay_fr.html');
+                document.querySelector('#cloud-check-txt').innerHTML = '<input type="checkbox" id="cloud-check"> Exporter vers Cloud';
+                document.querySelector('#qrcode-check-txt').innerHTML = "<input type='checkbox' id='qrcode-check'>Importer d'un QRcode";
+                document.querySelector('#help-btn').textContent = "Aide";
+                document.querySelector('#help-btn').title = "Aide";
+                document.querySelector('#export-btn').textContent = "Exporter";
+                document.querySelector('#export-btn').title = "Sauvegarde de l'état de vos m-c.";
+                document.querySelector('#import-btn').textContent = "Importer";
+                document.querySelector('#import-btn').title = "Restaurer l'état depuis un fichier ou d'un QRcode";
+                document.querySelector('#breadcrumb-volumes').textContent = "Mots-Croisés";
+                document.querySelector('#btn-refresh').textContent = "↺ Rafraichir";
+                document.querySelector('#btn-refresh').title = "Met à jour l'état d'avancement des m-c.";
+                document.querySelector('#btn-qrcancel').textContent = "Abandon";
+                document.querySelector('#btn-resort').textContent = "Trier par titre";
+                document.querySelector('#btn-resort').title="Tri par nom de fichier ou par titre";
+                document.querySelector('#readerdiv h3').textContent = 'Scanner un QRCode avec la Camera ou un screenshot';
+                document.querySelector('#loading').textContent = 'Chargement...';
+                document.querySelector('#toast').textContent = 'Sauvegarde effectuée!';
+                document.querySelector('#page-title').textContent = "Choix d'un Volume";
             }
         } catch (e) {
             window.currentLang = 'en';
         }
+        //-- Put this in both index.html AND nexplay.html --
         if ('serviceWorker' in navigator) {
             // Register with absolute path
             navigator.serviceWorker.register('/sw.js').then(reg => {

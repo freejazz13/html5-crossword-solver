@@ -59,7 +59,7 @@ self.addEventListener("fetch", (event) => {
     return; // Let the browser handle these normally via network
   }
 
-  if (req.mode === "navigate") {
+  if (req.mode === "navigate") { //Filters out background asset requests (like images, CSS, or API calls) and triggers only when the user is loading an HTML page.
     event.respondWith((async () => {
       try {
         const response = await fetch(req);

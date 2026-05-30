@@ -209,7 +209,7 @@ function setupPWAInstallButton(btn) {
       fr: {
         stats: [ "Révélés:", "Erreurs:", "Avancement:"],
         type: [ "Lettre", "Mot", "Grille"],
-        settings: "Réglages",
+        settings: "Config.",
         check: "Vérifier",
         reveal: "Révéler",      
         autocheck: "Vérif. auto",
@@ -3723,8 +3723,145 @@ function setupPWAInstallButton(btn) {
             -->
           </div>
         `;
+        var settingsHTML_FR = `
+        <div class="settings-wrapper">
+          <!-- Skip filled letters -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Durant le jeu:
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="skip_filled_letters" checked="checked" type="checkbox" name="skip_filled_letters" class="settings-changer">
+                  Ignorer les cases remplies
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="gray_completed_clues" type="checkbox" name="gray_completed_clues" class="settings-changer">
+                  Neutraliser déf. résolues
+                </input>
+              </label>
+            </div>
+          </div>
 
-        this.createModalBox('Settings', settingsHTML);
+          <!-- When changing direction with arrow keys -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Au changement de dir. avec les flèches
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="arrow_stay" checked="" type="radio" name="arrow_direction" class="settings-changer">
+                  Rester sur la même case
+                </input>
+              </label class="settings-label">
+              <label class="settings-label">
+                <input id="arrow_move" checked="" type="radio" name="arrow_direction" class="settings-changer">
+                  Bouger dans le sens de la flèche
+                </input>
+              </label>
+              <label class="settings-label">
+                <input id="arrow_move_filled" checked="" type="radio" name="arrow_direction" class="settings-changer">
+                  Bouger dans le sens de la flèche si la case est remplie
+                </input>
+              </label>
+            </div>
+          </div>
+
+          <!-- Space bar -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Touche ESPACE
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="space_clear" checked="" type="radio" name="space_bar" class="settings-changer">
+                  Effacer et se déplacer
+                </input>
+              </label class="settings-label">
+              <label class="settings-label">
+                <input id="space_switch" checked="" type="radio" name="space_bar" class="settings-changer">
+                  Changer de direction
+                </input>
+              </label>
+            </div>
+          </div>
+
+          <!-- Tab key -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Touche TAB
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="tab_noskip" checked="" type="radio" name="tab_key" class="settings-changer">
+                  Mot suivant
+                </input>
+              </label class="settings-label">
+              <label class="settings-label">
+                <input id="tab_skip" checked="" type="radio" name="tab_key" class="settings-changer">
+                  Mot suivant non résolu 
+                </input>
+              </label>
+            </div>
+          </div>
+
+          <!-- Miscellaneous -->
+          <div class="settings-setting">
+            <div class="settings-description">
+              Divers
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="timer_autostart" checked="" type="checkbox" name="timer_autostart" class="settings-changer">
+                  Démarrer chrono à l'ouverture du jeu
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="confetti_enabled" checked="" type="checkbox" name="confetti_enabled" class="settings-changer">
+                  Effet Confetti à la fin
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
+                  Vérif AUTO (🅰️)
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="display-cn" checked="" type="checkbox" name="display-cn" class="yy-settings-changer">
+                  Afficher N° d'indices (style anglo-saxon)
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="display-cheats" checked="" type="checkbox" name="display-cheats" class="yy-settings-changer">
+                  Affichage Erreurs/Revelés dans la grille
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label" backend-required>
+                <input id="autosave2" checked="" type="checkbox" name="autosave2" class="z-settings-changer">
+                  Autosave Crossword (&#8597;&#65039;)
+                </input>
+              </label>
+            </div>
+        `;
+
+        if (window.currentLang = 'fr') {
+            this.createModalBox('Préférences', settingsHTML_FR);
+        } else {
+            this.createModalBox('Settings', settingsHTML);
+        }
         $('#autocheck2').prop('checked', this.v_autocheck);
         $('#autosave2').prop('checked', this.v_autosave);
         $('#display-cn').prop('checked', v_display_cn);

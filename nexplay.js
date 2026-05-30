@@ -30,7 +30,7 @@ const msg = {
     statcomp: "Terminé",
     sortFIL: "Trier par fichier",
     sortTIT: "Trier par titre",
-    chooseVol: "Choix volume",      
+    chooseVol: "Choix d'un Volume",      
     sortlab: "Tri par nom de fich ou par titre"
   }
 };

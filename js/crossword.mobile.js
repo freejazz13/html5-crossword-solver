@@ -546,7 +546,7 @@ $(document).ready(function () {
       const htmlString = `
                   <div id="twlm-container" style=" display: flex; align-items: center; width: 100%; background: var(--clue-active-color); position: relative;">
                     <div style="padding-left: 2px; z-index: 2;">
-                        <span id="switchListGrid" style="cursor: pointer; user-select: none; font-size: 1em; padding: 4px;">📋</span>
+                        <span id="switchListGrid" style="cursor: pointer; user-select: none; font-size: 1em; padding: 4px;">📄</span>
                     </div>
                     <span id="this-word-letters-mobile" style=" position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; letter-spacing: 2px; font-weight: bold; z-index: 1; text-align: center; "></span>
                   </div>`;
@@ -558,7 +558,7 @@ $(document).ready(function () {
      const switcher = wrapper.querySelector('#switchListGrid');
      switcher.onclick = (e) => {
                 const el = e.currentTarget;
-                el.textContent = gCrossword.isListView ? '📋':'𖣯' ;
+                el.textContent = gCrossword.isListView ? '📄':'𖣯' ;
                 //el.textContent = isGrid ? '📋' : '🔄';
                 toggleClueListView();
                 };
