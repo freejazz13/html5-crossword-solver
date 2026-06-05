@@ -65,19 +65,8 @@ $(document).ready(function () {
     crosswordRoot.classList.add('mobile');
     document.body.classList.add('mobile-mode');
 
-    // Viewport handlers
-    window.visualViewport?.addEventListener('resize', detectKeyboardAndResize);
+    // Non-visualViewport resize fallback (visualViewport resize is already registered above)
     window.addEventListener('resize', detectKeyboardAndResize);
-    window.visualViewport?.addEventListener('resize', () => {
-      setCSSViewportHeight();
-      detectKeyboardAndResize();
-    });
-
-    window.addEventListener('orientationchange', () => {
-      setTimeout(() => {
-        setCSSViewportHeight();
-      }, 300);
-    });
   }
 
   function setCSSViewportHeight() {
@@ -373,7 +362,7 @@ $(document).ready(function () {
         const check = buttons.querySelector('#id_check')?.closest('.cw-menu-container');
         const reveal = buttons.querySelector('#id_reveal')?.closest('.cw-menu-container');
         const settings = buttons.querySelector('#id_settings'); // No wrapper container
-        const timer = buttons.querySelector('#id_timer')?.parentElement; // Adjust based on timer DOM      
+        timer = buttons.querySelector('#id_timer');
 
         // Only reflow if all buttons were found
         if (file && check && reveal && settings && timer) {
@@ -1071,6 +1060,10 @@ function createCustomKeyboard() {
         }
       }
 
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) clearBackspaceState();
+      });
+
       backspace.addEventListener('pointerdown', () => {
         backspaceHeld = false;
         backspaceFired = false;
@@ -1078,7 +1071,14 @@ function createCustomKeyboard() {
           backspaceHeld = true;
           performBackspace();
           backspaceFired = true;
-          backspaceInterval = setInterval(performBackspace, 120);
+          backspaceInterval = setInterval(() => {
+            try {
+              performBackspace();
+            } catch (e) {
+              clearBackspaceState();
+              console.error('[backspace interval]', e);
+            }
+          }, 120);
         }, 600);
       });
       backspace.addEventListener('pointerup', () => {

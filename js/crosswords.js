@@ -204,7 +204,11 @@ function setupPWAInstallButton(btn) {
         settings: "Settings",
         check: "Check",
         reveal: "Reveal",      
-        crossword: "Crossword"
+        crossword: "Crossword",
+        save: "Save as Ipuz",
+        restart: "Restart",
+        print: "Print"
+
       },
       fr: {
         stats: [ "Révélés:", "Erreurs:", "Avancement:"],
@@ -213,7 +217,10 @@ function setupPWAInstallButton(btn) {
         check: "Vérifier",
         reveal: "Révéler",      
         autocheck: "Vérif. auto",
-        crossword: "Grille"
+        crossword: "Grille",
+        save: "Sauvegarder",
+        restart: "Redémarrer",
+        print: "Imprimer"
       }
     };
     try {
@@ -229,6 +236,9 @@ function setupPWAInstallButton(btn) {
     const Autocheck = msg[window.currentLang]?.autocheck ?? msg.en.autocheck;
     const types = msg[window.currentLang]?.type ?? msg.en.type;
     const [Letter, _Word, Puzzle] = types;
+    const Print = msg[window.currentLang]?.print ?? msg.en.print;
+    const saveAsiPuz = msg[window.currentLang]?.save ?? msg.en.save;
+    const Restart = msg[window.currentLang]?.restart ?? msg.en.restart;
 
     /** Template will have to change along with CSS **/
     var template = `
@@ -278,12 +288,12 @@ function setupPWAInstallButton(btn) {
                 <div    class = "cw-menu">
                 <button class = "cw-menu-item cw-save-db" backend-required>Save to DB</button>
                 <button class = "cw-menu-item cw-load-db" backend-required>Load from DB</button>
-                <button class = "cw-menu-item cw-file-info">Info</button>
+                <button class = "cw-menu-item cw-file-info">Infos</button>
                 <button class = "cw-menu-item cw-file-notepad">Notes</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
-                <button class = "cw-menu-item cw-file-print">Print</button>
-                <button class = "cw-menu-item cw-file-save">Save as iPuz</button>
-                <button class = "cw-menu-item cw-file-clear">Restart</button>
+                <button class = "cw-menu-item cw-file-print">${Print}</button>
+                <button class = "cw-menu-item cw-file-save">${saveAsiPuz}</button>
+                <button class = "cw-menu-item cw-file-clear">${Restart}</button>
                 </div>
               </div>
               <div    class = "cw-menu-container cw-check">
@@ -1932,31 +1942,18 @@ function setupPWAInstallButton(btn) {
 
         // Allow user to close the div
         const this_hidden_input = this.hidden_input;
-        var span = this.root.find('.modal-close').get(0);
-        // When the user clicks on <span> (x), close the modal
-        span.onclick = function() {
+        const closeModal = () => {
           modal.style.display = 'none';
-          if (!IS_MOBILE) {
-            this_hidden_input.focus();
-          }
+          window.onclick = null;
+          if (!IS_MOBILE) { this_hidden_input.focus(); }
         };
+        var span = this.root.find('.modal-close').get(0);
+        span.onclick = closeModal;
         // When the user clicks anywhere outside of the modal, close it
-        window.onclick = function(event) {
-          if (event.target == modal) {
-            modal.style.display = 'none';
-            if (!IS_MOBILE) {
-              this_hidden_input.focus();
-            }
-          }
-        };
+        window.onclick = (event) => { if (event.target == modal) closeModal(); };
         // Clicking the button should close the modal
         var modalButton = document.getElementById('modal-button');
-        modalButton.onclick = function() {
-          modal.style.display = 'none';
-          if (!IS_MOBILE) {
-            this_hidden_input.focus();
-          }
-        };
+        modalButton.onclick = closeModal;
       }
 
       setConfig(name, value) {
@@ -2130,10 +2127,11 @@ function setupPWAInstallButton(btn) {
 
           // attach metadata
           clue_el.data({
+            clue: clue,
             word: clue.word,
             number: clue.number,
             clues: clues_group.id,
-          }).addClass(`cw-clue word-${clue.word}`);
+          }).addClass(`cw-clue word-${clue.word} group-${clues_group.id}`);
 
           // restore any saved note
           /*
@@ -3073,24 +3071,22 @@ function setupPWAInstallButton(btn) {
   } //FUNCTION keyPressed
 
       saveAndUpdateStats() {
-        this.saveGame(); // save locally and to backend if present
         this.updateStatsUI();
-
-        /* unused code for us
-        if (this.is_autofill && this.selected_cell) {
-          const key = this.selected_cell.number || this.selected_cell.top_right_number;
-          const same_number_cells = this.number_to_cells[key] || [];
-
-          for (const cell of same_number_cells) {
-            if (cell !== this.selected_cell) {
-              this.updateCell(cell, {
-                letter: this.selected_cell.letter,
-                checked: this.selected_cell.checked
-              });
-            }
-          }
+        if (this._saveInProgress) {
+          this._savePending = true;
+          return;
         }
-       */
+        this._doSave();
+      }
+
+      async _doSave() {
+        this._saveInProgress = true;
+        this._savePending = false;
+        await this.saveGame();
+        this._saveInProgress = false;
+        if (this._savePending) {
+          this._doSave();
+        }
       }
 
       // Detects user inputs to hidden input element
@@ -3550,12 +3546,14 @@ function setupPWAInstallButton(btn) {
       }
 
       showInfo() {
+        const title = window.currentLang === 'en' ? "Title" : "Titre";
+        const author = window.currentLang === 'en' ? "Author" : "Auteur";
         this.createModalBox(
           'Info',
           `
-            <p><b>Title: ${this.title}</b></p>
+            <p><b>${title}: ${this.title}</b></p>
             ${this.voltitle ? `<p><b>Volume: </b>${this.voltitle}</p>` : ''}
-            <p><b>Author:</b> ${escape(this.author)}</p>
+            <p><b>${author}:</b> ${escape(this.author)}</p>
             <p><b>Notes:</b> ${escape(this.puznotes)}</p>
             <p><b>Dimensions:</b> ${this.grid_width}x${this.grid_height}</b></p>
           `
@@ -3857,7 +3855,7 @@ function setupPWAInstallButton(btn) {
             </div>
         `;
 
-        if (window.currentLang = 'fr') {
+        if (window.currentLang === 'fr') {
             this.createModalBox('Préférences', settingsHTML_FR);
         } else {
             this.createModalBox('Settings', settingsHTML);
@@ -4288,7 +4286,7 @@ function setupPWAInstallButton(btn) {
         const errorsPct = Math.round((errors / total) * 100);
         const completedPct = Math.floor((filled / total) * 100);
 
-        const m= msg[window.currentLang]?.stats ?? msg.en.stats;
+        const m = msg[window.currentLang]?.stats ?? msg.en.stats;
         const stats = `${m[0]} ${cheated} (${cheatedPct}%) • ${m[1]} ${errors} (${errorsPct}%) • ${m[2]} ${completedPct}%`;
         const MAX_WIDTH = 70; // may be adjusted
         let displayInfo = `${this.voltitle}${this.title} • ${this.author}`;
@@ -4597,33 +4595,26 @@ function setupPWAInstallButton(btn) {
         const groupId = clueEl.data('clues');
         const group = this.clueGroups.find(g => g.id === groupId);
 
-        if (!this.config.gray_completed_clues && (!group || !group.isFake) && !this.fakeclues) {
-          // Reset clue styling if the setting is turned off and this is not a fake clue context
+        if (this.config.gray_completed_clues && this.words?.[clue?.word]?.isFilled() === true) {
+          textEl.css({
+             "text-decoration": "",
+             "color": "#aaa"
+          });
+        } else {
+          // Reset clue styling if the setting is turned off
           textEl.css({
             "text-decoration": "",
             "color": ""
           });
-          return;
         }
-
-        // Determine if it should be gray based on fakeclues context or word fill state
-        let shouldGray = false;
-        if (this.fakeclues || (group && group.isFake)) {
-          shouldGray = Boolean(clue.fakeClueCompleted);
-        } else if (clue.word && this.words[clue.word]) {
-          shouldGray = this.words[clue.word].isFilled();
-        }
-
-        textEl.css({
-          "text-decoration": "",
-          "color": shouldGray ? "#aaa" : ""
-        });
       }
 
       updateCell(cell, properties) {
         Object.assign(cell, properties);
         this.adjustCell(cell);
-        this.styleClues();
+        if (! IS_MOBILE && this.config.gray_completed_clues) {
+            this.styleClues();
+        }
       }
 
       setSelectedCell(new_cell) {
