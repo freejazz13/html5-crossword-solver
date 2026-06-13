@@ -1,5 +1,5 @@
 // CRITICAL: You MUST change this string (e.g., v3, v4) every time you deploy a new update!
-const CACHE_NAME = "xw-solver-v6";
+const CACHE_NAME = "nexplay-2026-06-13-750706";
 
 const ASSETS = [
   "/",
