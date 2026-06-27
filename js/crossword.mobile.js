@@ -37,7 +37,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 var gCrossword;
 let isAltKeyboard = false;
-//var v_autocheck;
 
 $(document).ready(function () {
   let initialWindowHeight = window.innerHeight;
@@ -635,7 +634,9 @@ $(document).ready(function () {
         gCrossword.setActiveWord(firstWord);
         gCrossword.setActiveCell(firstWord.getFirstCell());
         gCrossword.renderCells();
-        if (gCrossword.v_autocheck) { gCrossword.check_reveal('puzzle', 'check'); }
+        if (gCrossword.config.autocheck) { gCrossword.check_reveal('puzzle', 'check'); }
+        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = gCrossword.config.autocheck ? '' : 'none'; });
+        console.log('mobile autocheck emoji set');
         // Match the width of the top clue bar to the grid
         setTimeout(() => {
           const gridEl = document.getElementById('cw-puzzle-grid');
@@ -896,7 +897,7 @@ function createCustomKeyboard() {
                 //gCrossword.renderCells("dir switch"); // re-render after direction switch
             } else { // 2. Default behavior for normal letters
               gCrossword.hiddenInputChanged(letter);
-              if (gCrossword.v_autocheck) { gCrossword.check_reveal('letter', 'check'); }
+              if (gCrossword.config.autocheck) { gCrossword.check_reveal('letter', 'check'); }
             }
           }
         });

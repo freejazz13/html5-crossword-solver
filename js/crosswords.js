@@ -40,7 +40,7 @@ reminder cell structure:
 const CONFIGURABLE_SETTINGS = [
   "skip_filled_letters", "arrow_direction", "space_bar", "tab_key",
   "timer_autostart", "dark_mode_enabled", "gray_completed_clues",
-  "confetti_enabled"
+  "confetti_enabled", "autosave", "autocheck", "display_cn", "displayCheatMarks"
 ];
 
 // Since DarkReader is an external library, make sure it exists
@@ -49,6 +49,13 @@ try {
 } catch {
   DarkReader = false;
 }
+
+// enable debug (console logs) via url param: &debug=1
+const params = new URLSearchParams(window.location.search);
+const CONSOLE_DEBUG = params.get('debug') === '1';
+//const CONSOLE_DEBUG = true;
+// "rewrite" console.warn if debug is 1
+const showTrace = CONSOLE_DEBUG ? console.warn.bind(console) : () => {};
 
 // one-time check for mobile device status
 const IS_MOBILE = CrosswordShared.isMobileDevice();
@@ -130,7 +137,7 @@ function setupPWAInstallButton(btn) {
       lock_theme: false,
       autocheck: true,
       displayCheatMarks: false,
-      autosave: false,
+      autosave: true,
       display_cn: false,
       min_sidebar_clue_width: 220
     };
@@ -193,7 +200,6 @@ function setupPWAInstallButton(btn) {
       return isSafari || isFirefox;
     })();
     var xw_timer, xw_timer_seconds = 0;
-    var v_display_cn = default_config.display_cn;
 
 
     const msg = {
@@ -510,6 +516,7 @@ function setupPWAInstallButton(btn) {
     class CrossWord {
       constructor(parent, user_config) {
         this.parent = parent;
+
         this.config = {};
         // Load solver config — settings are applied asynchronously via
         // _loadSettingsAsync() once localforage resolves.
@@ -526,14 +533,11 @@ function setupPWAInstallButton(btn) {
             }
           }
         }
-        this.v_autocheck = default_config.autocheck;
-        this.v_displayCheatMarks = default_config.displayCheatMarks;
-        this.v_autosave = default_config.autosave;
         this.is_saving = false;
         //this.backendEnabled = false;
         this.backendPromise = null;
         // Apply persisted settings asynchronously from localforage
-        this._loadSettingsAsync(user_config);
+        this._loadSettingsAsync();
         this.currentScale = 1.0;
         this.translatedClues = null;
 
@@ -738,6 +742,7 @@ function setupPWAInstallButton(btn) {
       }
 
       init() {
+        showTrace("entering init")
         var parsePUZZLE_callback = this.parsePuzzle.bind(this);
         var error_callback = this.error.bind(this);
 
@@ -967,10 +972,9 @@ function setupPWAInstallButton(btn) {
             const data = await response.json();
             this.back_saveDB = data['back_saveDB'];
             this.back_loadDB = data['back_loadDB'];
-            this.v_autosave = true;
-            $('#autosave1').prop('checked', this.v_autosave);
-            $('#autosave2').prop('checked', this.v_autosave);
-            document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
+            $('#autosave1').prop('checked', this.config.autosave);
+            $('#autosave2').prop('checked', this.config.autosave);
+            document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.config.autosave ? '' : 'none'; });
             document.querySelectorAll('.signal-emoji').forEach(el => { el.title = "Backend present"; });
             //this.backendEnabled = true;
             return true;
@@ -1004,7 +1008,7 @@ function setupPWAInstallButton(btn) {
        */
       async parsePuzzle(data) {
         // if it's already a JSCrossword, return it as-is
-        //console.log("INFO in parsePuzzle");
+        console.log("INFO entering parsePuzzle");
         var puzzle;
         if (data instanceof JSCrossword) {
           puzzle = data;
@@ -1096,8 +1100,7 @@ function setupPWAInstallButton(btn) {
           if (statObj && Object.keys(statObj).length > 0) {
               this.stat_cheated = statObj.stat_cheated;
               this.stat_errors = statObj.stat_errors;
-              this.v_autocheck = statObj.autocheck ?? true;
-              this.v_autocheck = !this.v_autocheck ; this.toggleAutoCheck(); // fix checkboxes
+              //this.config.autocheck = statObj.autocheck ?? true;
               xw_timer_seconds = statObj.timeplayed;
           }
           puzzle.cells = jsxw2_cells;
@@ -1401,9 +1404,9 @@ function setupPWAInstallButton(btn) {
 
         this.nonBlackCells=this.getNonBlackCells();
 
-        this.completeLoad(); // will try to loadDb
+        this.completeLoad(); // will try to loadDb puz +  settings whenever backendEnabled
+        this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
         this.updateStatsUI()
-        //if (this.v_autocheck) { this.check_reveal( 'puzzle', 'check'); this.renderCells() ; }
       } // END parsePuzzle
 // -----------------------------------------------------------------------------------------------------------------------
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
@@ -1441,6 +1444,7 @@ function setupPWAInstallButton(btn) {
       }
 // -----------------------------------------------------------------------------------------------------------------------
       completeLoad() {
+        showTrace("entering completeLoad")
         // Force the header to wrap its content
     $('.cw-header').css('flex-wrap', 'wrap');
 
@@ -1529,7 +1533,7 @@ function setupPWAInstallButton(btn) {
         }
 
         const menu = document.querySelector('.cw-check');
-        menu.style.display = this.v_autocheck ? 'none' : 'block';
+        menu.style.display = this.config.autocheck ? 'none' : 'block';
 
         // update from DB
         this.loadDb();
@@ -1796,7 +1800,7 @@ function setupPWAInstallButton(btn) {
         $(document).on('keydown', this.keyPressed.bind(this));
         $(document).on('keyup', (e) => { 
           const isPrintableChar = e.key.length === 1 && /^[a-z]$/i.test(e.key); // check only if a real key was pressed
-          if (isPrintableChar && this.v_autocheck) { this.check_reveal('letter', 'check'); }
+          if (isPrintableChar && this.config.autocheck) { this.check_reveal('letter', 'check'); }
         });  
 
         this.svgContainer.addEventListener('click', (e) => {
@@ -2372,7 +2376,7 @@ function setupPWAInstallButton(btn) {
         }
         this.adjustCellLetter(cell);
 
-        const showNumber = v_display_cn && shouldRender && cell.number;
+        const showNumber = this.config.display_cn && shouldRender && cell.number;
         if (showNumber && !elements.number) {
           const number = elements.number = document.createElementNS(this.svgNS, 'text');
           number.setAttribute('font-family', 'Arial, sans-serif');
@@ -2387,7 +2391,7 @@ function setupPWAInstallButton(btn) {
         // 1. Error Indicator: Top-Right Orange Triangle
         //if (elements.showcheats) {
 
-        if (this.v_displayCheatMarks && this.v_autocheck && this.stat_errors[`${cell.x},${cell.y}`] ) {
+        if (this.config.displayCheatMarks && this.config.autocheck && this.stat_errors[`${cell.x},${cell.y}`] ) {
             const size = this.cell_size;
             const cellX = (cell.x - 1) * size;
             const cellY = (cell.y - 1) * size;
@@ -2403,7 +2407,7 @@ function setupPWAInstallButton(btn) {
 
         // 2. Cheated Indicator: Bottom-Right Red Triangle
         //if (elements.showcheats) {
-        if (this.v_displayCheatMarks && this.v_autocheck && this.stat_cheated[`${cell.x},${cell.y}`]) {
+        if (this.config.displayCheatMarks && this.config.autocheck && this.stat_cheated[`${cell.x},${cell.y}`]) {
             const size = this.cell_size;
             const cellX = (cell.x - 1) * size;
             const cellY = (cell.y - 1) * size;
@@ -2500,7 +2504,7 @@ function setupPWAInstallButton(btn) {
         }
 	     
 
-        if (v_display_cn && elements.number) {
+        if (this.config.display_cn && elements.number) {
           elements.number.setAttribute('x', cellX + size * 0.1);
           elements.number.setAttribute('y', cellY + size * 0.3);
           elements.number.setAttribute('font-size', `${size / 3.75}px`);
@@ -3046,7 +3050,7 @@ function setupPWAInstallButton(btn) {
               }
 
               // dont change cell if wrong:
-              if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) next_cell=null;
+              if (this.config.autocheck && (this.selected_cell.letter != this.selected_cell.solution)) next_cell=null;
               if (next_cell) {
                 this.setActiveCell(next_cell);
               }
@@ -3095,7 +3099,7 @@ function setupPWAInstallButton(btn) {
         if (this.selected_cell) {
           if (rebus_string && rebus_string.trim()) { //mobile case rebus_string= letter entered
             this.selected_cell.letter = rebus_string.toUpperCase(); // ✅ Use rebus string if available
-            if (this.v_autocheck && (this.selected_cell.letter != this.selected_cell.solution)) { // wrong entry
+            if (this.config.autocheck && (this.selected_cell.letter != this.selected_cell.solution)) { // wrong entry
               this.updateCell(this.selected_cell, { letter: this.selected_cell.letter,  checked: true });
               next_cell=null;
               return;
@@ -3860,12 +3864,12 @@ function setupPWAInstallButton(btn) {
         } else {
             this.createModalBox('Settings', settingsHTML);
         }
-        $('#autocheck2').prop('checked', this.v_autocheck);
-        $('#autosave2').prop('checked', this.v_autosave);
-        $('#display-cn').prop('checked', v_display_cn);
-        $('#display-cheats').prop('checked', this.v_displayCheatMarks);
-        document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
-        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.v_autocheck ? '' : 'none'; });
+        $('#autocheck2').prop('checked', this.config.autocheck);
+        $('#autosave2').prop('checked', this.config.autosave);
+        $('#display-cn').prop('checked', this.config.display_cn);
+        $('#display-cheats').prop('checked', this.config.displayCheatMarks);
+        document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.config.autosave ? '' : 'none'; });
+        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.config.autocheck ? '' : 'none'; });
         // Show the proper value for each of these fields
         var classChangers = document.getElementsByClassName('settings-changer');
         for (var cc of classChangers) {
@@ -3943,7 +3947,8 @@ function setupPWAInstallButton(btn) {
       }
 
       /** Re-apply settings from localforage asynchronously after the constructor. */
-      async _loadSettingsAsync(user_config) {
+      async _loadSettingsAsync() {
+        showTrace("entering _loadSettingsAsync");
         try {
           const saved_settings = await localforage.getItem(SETTINGS_STORAGE_KEY);
           if (saved_settings && typeof saved_settings === 'object') {
@@ -3957,10 +3962,12 @@ function setupPWAInstallButton(btn) {
         } catch (err) {
           console.warn('[localforage] Could not load settings:', err);
         }
+      showTrace("exiting _loadSettingsAsync");
       }
 
       /** Save user-configurable settings to localforage (async, fire-and-forget). */
       saveSettings() {
+        showTrace("entering saveSettings()")
         // we only save settings that are configurable
         var ss1 = { ...this.config };
         var savedSettings = {};
@@ -3970,36 +3977,48 @@ function setupPWAInstallButton(btn) {
         localforage.setItem(SETTINGS_STORAGE_KEY, savedSettings).catch(function(err) {
           console.warn('[localforage] Could not save settings:', err);
         });
+        this.saveDb(savedSettings); // save only settings
       }
 
       toggleClueNumbers(e) {
-        v_display_cn = !v_display_cn;
-        if (v_display_cn) {
+        this.config.display_cn = !this.config.display_cn;
+        if (this.config.display_cn) {
             $('.cw-cell-number').show();
         } else {
             $('.cw-cell-number').hide();
         }
         this.renderCells();  // FIX ?
+        this.saveSettings();
       }
       toggleDisplayCheats(e) {
-        this.v_displayCheatMarks = !this.v_displayCheatMarks;
+        this.config.displayCheatMarks = !this.config.displayCheatMarks;
         this.renderCells();  //FIX ?
+        this.config.displayCheatMarks = this.config.displayCheatMarks;
+        this.saveSettings();
       }
 
-      toggleAutoCheck(e) {
-        this.v_autocheck = !this.v_autocheck;
+      toggleAutoCheck(e, mustSaveSettings=true) {
+        showTrace("entering toggleAutoCheck")
+        if (typeof e === 'boolean') { // specify if settings must be saved or not (when loading initially)
+            mustSaveSettings = e;
+            e = null;
+        } 
+        this.config.autocheck = !this.config.autocheck;
         const menu = document.querySelector('.cw-check');
-        menu.style.display = this.v_autocheck ? 'none' : 'block';
-        $('#autocheck1').prop('checked', this.v_autocheck);
-        if (!this.root.hasClass('loading') && this.v_autocheck) { this.check_reveal('puzzle', 'check'); } 
-        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.v_autocheck ? '' : 'none'; });
+        menu.style.display = this.config.autocheck ? 'none' : 'block';
+        $('#autocheck1').prop('checked', this.config.autocheck);
+        if (!this.root.hasClass('loading') && this.config.autocheck) { this.check_reveal('puzzle', 'check'); } 
+        document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.config.autocheck ? '' : 'none'; });
+        if (mustSaveSettings) this.saveSettings();
+        showTrace("exiting toggleAutoCheck")
       }
 
       toggleAutoSave(e) {
-        this.v_autosave = !this.v_autosave;
-        $('#autosave1').prop('checked', this.v_autosave);
-        $('#autosave2').prop('checked', this.v_autosave);
-        document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.v_autosave ? '' : 'none'; });
+        this.config.autosave = !this.config.autosave;
+        $('#autosave1').prop('checked', this.config.autosave);
+        $('#autosave2').prop('checked', this.config.autosave);
+        document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.config.autosave ? '' : 'none'; });
+        this.saveSettings();
       }
 
       
@@ -4043,11 +4062,22 @@ function setupPWAInstallButton(btn) {
         }
       }
       
+      
+/* STACK:
+loadDb()
+completeLoad()
+parsePuzzle()
+init()
+CrossWord()
+createCrossword()
+script.onload()
+*/
       /* load last state from DB */
       async loadDb(e) {
         const isAvailable = await this.backendPromise; // will wait until decision about backend is made
         if (!isAvailable) return;
         this.fillJsXw();
+        showTrace("entering loadDB")
         try {
             const response = await fetch(this.back_loadDB, {
                 method: 'POST',
@@ -4062,7 +4092,7 @@ function setupPWAInstallButton(btn) {
                 return; 
             }
             const data = await response.json();
-            console.log("json returned by nexus_update:", data);
+            console.log("json returned by nexus_load:", data);
             if (data.status != 0) {
                 if (data.status == 2) this.toggleAutoSave(); // NO puz found with this ID
                 alert(data.message);
@@ -4079,15 +4109,32 @@ function setupPWAInstallButton(btn) {
                 this.stat_errors = data.error_list?.length ? Object.fromEntries(data.error_list.map(c => [c, true])) : {};
                 this.stat_cheated = data.cheated_list?.length ? Object.fromEntries(data.cheated_list.map(c => [c, true])) : {};
                 xw_timer_seconds = data.timeplayed ?? 0;
+                // update settings if was avail via backend:
+                if (Object.keys(data.nexus_config).length > 0) { // runs if the object has properties
+                    showTrace("processing loadDB settings")
+                    try {
+                        const configurable_settings_set = new Set(CONFIGURABLE_SETTINGS);
+                        for (const key in data.nexus_config) {
+                            if (data.nexus_config.hasOwnProperty(key) && configurable_settings_set.has(key)) {
+                                this.config[key] = data.nexus_config[key];
+                            }
+                        }
+                        this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
+                    } catch (e) {
+                        console.error("Failed to parse nexus_config JSON:", e);
+                        data.nexus_config = {}; // Fallback default
+                    }
+                }
 
                 this.renderCells(); 
                 this.updateStatsUI();
+                showTrace("exiting loadDB")
             }
     
         } catch (error) {
             console.error('Error loading stats:', error);
         }
-     }
+     } // loadDb
 // Example usage:
 // const state = '-----CAUSA-.-------------';
     updateCellsFromState(cells, stateString) {
@@ -4108,24 +4155,37 @@ function setupPWAInstallButton(btn) {
     console.log("Grid updated.");
   }
 
-    /* Save the game state to DB */
-    async saveDb(e, mustFill=true) {
-        if (typeof e === 'boolean') {
+    /* Save the game/settings state to DB if backend avail */
+    async saveDb(e, mustFill=true, saveSettings=null) {
+        const isAvailable = await this.backendPromise;
+        if (!isAvailable) return;
+
+        if (typeof e === 'object') { // save ONLY settings
+            saveSettings = e;
+            mustFill = false;
+            e = null;
+        } else if (typeof e === 'boolean') { // true => must fill Jsxw
             mustFill = e;
             e = null;
         }
-        const isAvailable = await this.backendPromise;
-        if (! this.v_autosave || !isAvailable) return;
         if (this.is_saving) return; // Exit if a save is already running
         this.is_saving = true;
     
         if (mustFill) this.fillJsXw();
-        const payload = {
-            ...this.jsxw,
-            error_list: Object.keys(this.stat_errors),
-            cheated_list: Object.keys(this.stat_cheated),
-            timeplayed: xw_timer_seconds
-        };
+        let payload;
+        if (saveSettings) {
+            showTrace("saveDB =>savesettings: ",saveSettings)
+            payload = {
+                nexus_config: saveSettings
+                };
+        } else {
+            payload = {
+                ...this.jsxw,
+                error_list: Object.keys(this.stat_errors),
+                cheated_list: Object.keys(this.stat_cheated),
+                timeplayed: xw_timer_seconds
+            };
+        }
     
         try {
             const stream = new Blob([JSON.stringify(payload)], { type: 'application/json' }).stream();
@@ -4176,7 +4236,6 @@ function setupPWAInstallButton(btn) {
             timeplayed: xw_timer_seconds,
             filename: this.filename,
             voltitle: this.volname,
-            autocheck: this.v_autocheck,
             status: this.isSolved ? 2 : 1
           });
         } catch (err) {
@@ -4184,7 +4243,7 @@ function setupPWAInstallButton(btn) {
         }
 
         /*localStorage.setItem(this.savegame_name + '_version', PUZZLE_STORAGE_VERSION);*/
-        if (this.v_autosave) { this.saveDb(false);} // no fillJsXw required its just been done
+        if (this.config.autosave) { this.saveDb(false);} // no fillJsXw required its just been done
       }
 
       /* Show "load game" menu" */
