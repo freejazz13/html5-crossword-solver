@@ -3962,6 +3962,7 @@ function setupPWAInstallButton(btn) {
         } catch (err) {
           console.warn('[localforage] Could not load settings:', err);
         }
+      this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
       showTrace("exiting _loadSettingsAsync");
       }
 

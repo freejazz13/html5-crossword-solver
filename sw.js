@@ -14,7 +14,7 @@ javascript:(async()=>{
 */
 
 // CRITICAL: You MUST change this string (e.g., v3, v4) every time you deploy a new update!
-const CACHE_NAME = "master-2026-07-01-1077621";
+const CACHE_NAME = "master-2026-07-04-1283488";
 
 const ASSETS = [
     "./",
