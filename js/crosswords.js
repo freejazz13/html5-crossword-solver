@@ -13,6 +13,17 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/* CALL STACK:
+=================================================================================
+script.onload()
+createCrossword()
+CrossWord().create
+  init()
+    parsePuzzle() (async)
+      completeLoad()
+      loadSettingsAsync
+      loadDb() (if backend present)
+
 /* ==============================================================================
 reminder cell structure:
 
@@ -40,7 +51,7 @@ reminder cell structure:
 const CONFIGURABLE_SETTINGS = [
   "skip_filled_letters", "arrow_direction", "space_bar", "tab_key",
   "timer_autostart", "dark_mode_enabled", "gray_completed_clues",
-  "confetti_enabled", "autosave", "autocheck", "display_cn", "displayCheatMarks"
+  "confetti_enabled", "autosave", "autocheck", "display_cn", "displayCheatMarks", "disableCheats"
 ];
 
 // Since DarkReader is an external library, make sure it exists
@@ -137,6 +148,7 @@ function setupPWAInstallButton(btn) {
       lock_theme: false,
       autocheck: true,
       displayCheatMarks: false,
+      disableCheats: false,
       autosave: true,
       display_cn: false,
       min_sidebar_clue_width: 220
@@ -213,20 +225,26 @@ function setupPWAInstallButton(btn) {
         crossword: "Crossword",
         save: "Save as Ipuz",
         restart: "Restart",
-        print: "Print"
+        print: "Print",
+        across: "Across",
+        down: "Down",
+        solved: "Puzzle Solved! \nYou finished in:"
 
       },
       fr: {
         stats: [ "Révélés:", "Erreurs:", "Avancement:"],
         type: [ "Lettre", "Mot", "Grille"],
-        settings: "Config.",
+        settings: "Options",
         check: "Vérifier",
         reveal: "Révéler",      
         autocheck: "Vérif. auto",
         crossword: "Grille",
         save: "Sauvegarder",
         restart: "Redémarrer",
-        print: "Imprimer"
+        print: "Imprimer (PDF)",
+        across: "Horizontalement",
+        down: "Verticalement",
+        solved: "Félicitations!\nTerminé en:"
       }
     };
     try {
@@ -281,7 +299,7 @@ function setupPWAInstallButton(btn) {
             <input type = "checkbox" class="cw-autosave-checkbox" id="autosave1" >
             Autosave
           </label>
-          <label class = "cw-autocheck-label">
+          <label class = "cw-autocheck-label cw-disable-me">
             <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck1" checked>
             ${Autocheck}
           </label>
@@ -302,13 +320,13 @@ function setupPWAInstallButton(btn) {
                 <button class = "cw-menu-item cw-file-clear">${Restart}</button>
                 </div>
               </div>
-              <div    class = "cw-menu-container cw-check">
+              <div class = "cw-menu-container cw-check">
               <button id="id_check" type  = "button" class = "cw-button">
                 <span class="cw-button-icon">🔍</span>
                    ${Check}
                   <span class = "cw-arrow"></span>
-                </button>
-                <div    class = "cw-menu">
+              </button>
+              <div class = "cw-menu">
                 <button class = "cw-menu-item cw-check-letter">${Letter}</button>
                 <button class = "cw-menu-item cw-check-word">${_Word}</button>
                 <button class = "cw-menu-item cw-check-puzzle">${Puzzle}</button>
@@ -518,8 +536,6 @@ function setupPWAInstallButton(btn) {
         this.parent = parent;
 
         this.config = {};
-        // Load solver config — settings are applied asynchronously via
-        // _loadSettingsAsync() once localforage resolves.
         var i;
         var configurable_settings_set = new Set(CONFIGURABLE_SETTINGS);
         for (i in default_config) {
@@ -536,8 +552,10 @@ function setupPWAInstallButton(btn) {
         this.is_saving = false;
         //this.backendEnabled = false;
         this.backendPromise = null;
-        // Apply persisted settings asynchronously from localforage
-        this._loadSettingsAsync();
+        // Apply persisted settings asynchronously from localforage.
+        // store promise so Callers that need config/initPageElements to be finished can
+        // await this.settingsReady:
+        this.settingsReady = this._loadSettingsAsync();      
         this.currentScale = 1.0;
         this.translatedClues = null;
 
@@ -647,15 +665,10 @@ function setupPWAInstallButton(btn) {
 
           // Scrollbars
           root.style.setProperty("--clue-scrollbar-color-thumb", Color.averageColors(selectedColor, '#333333', 0.5));
-        };
+        }; //updateCSS
 
         this.updateCSS(COLOR_WORD, COLOR_SELECTED);
 
-        /** enable dark mode if requested **/
-        if (this.config.dark_mode_enabled) {
-          document.body.classList.add('dark-mode');
-          this.updateCSS(COLOR_WORD, COLOR_SELECTED);
-        }
 
         this.cell_size = 40;
         //this.top_text_height = 0;
@@ -741,7 +754,7 @@ function setupPWAInstallButton(btn) {
         };
       }
 
-      init() {
+      init() { // called by Constructor
         showTrace("entering init")
         var parsePUZZLE_callback = this.parsePuzzle.bind(this);
         var error_callback = this.error.bind(this);
@@ -841,8 +854,8 @@ function setupPWAInstallButton(btn) {
                 if (bytes[0] === 0x42 && bytes[1] === 0x5a && bytes[2] === 0x68) {
                     try {               
                         bytes = bz2.decompress(bytes);
-                    }catch (e) {
-                     console.error("bzip2 library error",e);
+                    } catch (e) {
+                        console.error("bzip2 library error",e);
                     }
                 }
                 Promise.resolve(bytes)
@@ -851,11 +864,7 @@ function setupPWAInstallButton(btn) {
             } catch (e) {
                 console.error("Data load failed:", e);
             }
-        } else if (
-          this.config.puzzle_file &&
-          this.config.puzzle_file.hasOwnProperty('url') &&
-          this.config.puzzle_file.hasOwnProperty('type')
-        ) {
+        } else if ( this.config.puzzle_file && this.config.puzzle_file.hasOwnProperty('url') && this.config.puzzle_file.hasOwnProperty('type')) {
           this.root.addClass('loading');
           var loaded_callback = parsePUZZLE_callback;
           loadFileFromServer(
@@ -948,6 +957,7 @@ function setupPWAInstallButton(btn) {
         const svg = document.getElementById('cw-puzzle-grid');
         //this.initBackend();
         this.backendPromise = this.initBackend();
+        showTrace("exiting init")
       } // ========> END INIT
 
       error(message) {
@@ -990,8 +1000,8 @@ function setupPWAInstallButton(btn) {
         if (!rawTitle) return '';
         const title = rawTitle.trim().toUpperCase();
 
-        if (title === 'ACROSS') return 'Across';
-        if (title === 'DOWN') return 'Down';
+        if (title === 'ACROSS') return msg[window.currentLang]?.across ?? msg.en.across;
+        if (title === 'DOWN') return   msg[window.currentLang]?.down ?? msg.en.down;
 
         return rawTitle; // Preserve original if it's custom
       }
@@ -1008,7 +1018,7 @@ function setupPWAInstallButton(btn) {
        */
       async parsePuzzle(data) {
         // if it's already a JSCrossword, return it as-is
-        console.log("INFO entering parsePuzzle");
+        showTrace("entering parsePuzzle");
         var puzzle;
         if (data instanceof JSCrossword) {
           puzzle = data;
@@ -1158,7 +1168,10 @@ function setupPWAInstallButton(btn) {
           $('.cw-check').css({
             display: 'none'
           });
+        } else {
+          this.has_check = true;
         }
+                
 
         // === Build cells ===
         this.cells = {};
@@ -1404,9 +1417,18 @@ function setupPWAInstallButton(btn) {
 
         this.nonBlackCells=this.getNonBlackCells();
 
-        this.completeLoad(); // will try to loadDb puz +  settings whenever backendEnabled
-        this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
+        this.completeLoad();
+        // update from  local then from DB if backendEnabled
+        await this.settingsReady;
+        await this.loadDb();
+        this.initPageElements();
         this.updateStatsUI()
+        /** enable dark mode if requested **/
+        if (this.config.dark_mode_enabled) {
+          document.body.classList.add('dark-mode');
+          this.updateCSS(this.config.color_word, this.config.color_selected);
+        }
+        showTrace("exit parsePuzzle");
       } // END parsePuzzle
 // -----------------------------------------------------------------------------------------------------------------------
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
@@ -1533,10 +1555,8 @@ function setupPWAInstallButton(btn) {
         }
 
         const menu = document.querySelector('.cw-check');
-        menu.style.display = this.config.autocheck ? 'none' : 'block';
+        menu.style.display = this.has_check && this.config.autocheck ? 'none' : 'block';
 
-        // update from DB
-        this.loadDb();
         // Start the timer if necessary
         if (this.config.timer_autostart) {
           this.toggleTimer();
@@ -1595,6 +1615,7 @@ function setupPWAInstallButton(btn) {
           }
         });
 
+        showTrace("EXIT completeLoad")
       } // end completeLoad
 // -----------------------------------------------------------------------------------------------------------------------      
 
@@ -2918,6 +2939,7 @@ function setupPWAInstallButton(btn) {
             }
             break;
           case 45:            // insert -- reveal letter
+            if (this.config.disableCheats) break;
             if (e.shiftKey) { // SHIFT insert -- reveal word, BUT do not count as cheat : typing accelerator
                 this.check_reveal( 'word', 'reveal', true); // 3rd parameter will be treated NOT as event but as boolean skipCheat = true
             } else if (e.ctrlKey) { // CTRL insert : real cheating.
@@ -3174,9 +3196,11 @@ function setupPWAInstallButton(btn) {
           var display_seconds = xw_timer_seconds % 60;
           var display_minutes = (xw_timer_seconds - display_seconds) / 60;
           var minDisplay = display_minutes == 1 ? 'minute' : 'minutes';
-          var secDisplay = display_seconds == 1 ? 'second' : 'seconds';
+          var secDisplay = 'sec.';
           var allMin = display_minutes > 0 ? `${display_minutes} ${minDisplay} ` : '';
-          timerMessage = `<br /><br /><center>You finished in ${allMin} ${display_seconds} ${secDisplay}.</center>`;
+          const m = msg[window.currentLang]?.solved ?? msg.en.solved;
+          timerMessage = `<br /><br /><center>${m} ${allMin} ${display_seconds} ${secDisplay}.</center>`;
+          timerMessage = escape(timerMessage).trim().replaceAll('\n', '<br />');
 
           // stop the timer
           clearTimeout(xw_timer);
@@ -3199,20 +3223,15 @@ function setupPWAInstallButton(btn) {
         }
         this.saveGame()
 
-        /* const winSound = new Audio('./sounds/hny.mp3');
-           winSound.play();*/
         const here = this
 
-        function showSuccessMsg(rawMessage) {
-
-          let solvedMessage = escape(rawMessage).trim().replaceAll('\n', '<br />');
-          solvedMessage += timerMessage;
-          here.createModalBox('🎉🎉🎉', solvedMessage);
+        function showSuccessMsg() {
+          here.createModalBox('🎉🎉🎉', timerMessage);
         }
 
         // show completion message if newly solved
         if (!wasSolved) {
-          showSuccessMsg(this.completion_message);
+          showSuccessMsg();
         }
       }
 
@@ -3685,7 +3704,7 @@ function setupPWAInstallButton(btn) {
               </label>
             </div>
             <div class="settings-option">
-              <label class="settings-label">
+              <label class="settings-label cw-disable-me">
                 <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
                   Autocheck (🅰️)
                 </input>
@@ -3695,6 +3714,13 @@ function setupPWAInstallButton(btn) {
               <label class="settings-label">
                 <input id="display-cn" checked="" type="checkbox" name="display-cn" class="yy-settings-changer">
                   Display cell numbers
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="disable-cheats" checked="" type="checkbox" name="disable-cheats" class="yy-settings-changer">
+                  Disable any kind of cheat
                 </input>
               </label>
             </div>
@@ -3712,9 +3738,6 @@ function setupPWAInstallButton(btn) {
                 </input>
               </label>
             </div>
-
-
-            <!--
             <div class="settings-option">
               <label class="settings-label">
                 <input id="dark_mode_enabled" checked="" type="checkbox" name="dark_mode_enabled" class="settings-changer">
@@ -3722,7 +3745,6 @@ function setupPWAInstallButton(btn) {
                 </input>
               </label>
             </div>
-            -->
           </div>
         `;
         var settingsHTML_FR = `
@@ -3830,7 +3852,7 @@ function setupPWAInstallButton(btn) {
               </label>
             </div>
             <div class="settings-option">
-              <label class="settings-label">
+              <label class="settings-label cw-disable-me">
                 <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
                   Vérif AUTO (🅰️)
                 </input>
@@ -3840,6 +3862,13 @@ function setupPWAInstallButton(btn) {
               <label class="settings-label">
                 <input id="display-cn" checked="" type="checkbox" name="display-cn" class="yy-settings-changer">
                   Afficher N° d'indices (style anglo-saxon)
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="disable-cheats" checked="" type="checkbox" name="disable-cheats" class="yy-settings-changer">
+                  Désactiver tout moyen d'aide
                 </input>
               </label>
             </div>
@@ -3857,6 +3886,14 @@ function setupPWAInstallButton(btn) {
                 </input>
               </label>
             </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="dark_mode_enabled" checked="" type="checkbox" name="dark_mode_enabled" class="settings-changer">
+                  Mode sombre
+                </input>
+              </label>
+            </div>
+          </div>
         `;
 
         if (window.currentLang === 'fr') {
@@ -3868,6 +3905,8 @@ function setupPWAInstallButton(btn) {
         $('#autosave2').prop('checked', this.config.autosave);
         $('#display-cn').prop('checked', this.config.display_cn);
         $('#display-cheats').prop('checked', this.config.displayCheatMarks);
+        $('#disable-cheats').prop('checked', this.config.disableCheats);
+        document.querySelectorAll('.cw-disable-me').forEach(el => { el.style.display = this.config.disableCheats ? 'none' : ''; })
         document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.config.autosave ? '' : 'none'; });
         document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.config.autocheck ? '' : 'none'; });
         // Show the proper value for each of these fields
@@ -3881,46 +3920,35 @@ function setupPWAInstallButton(btn) {
             document.getElementById(cc.id)['checked'] = this.config[cc.name];
           }
         }
-        // Add a listener for these events
+        // Add a listener for change event:
         this.root
-          .find('.settings-wrapper')
-          .get(0)
-          .addEventListener('click', (event) => {
-            if (event.target.name == 'autocheck2' ) {
-                this.toggleAutoCheck();
-            }
-            if (event.target.name == 'autosave2' ) {
-                this.toggleAutoSave();
-            }
-            if (event.target.name == 'display-cn' ) {
-                this.toggleClueNumbers();
-            }
-            if (event.target.name == 'display-cheats' ) {
-                this.toggleDisplayCheats();
-            }
-            if (event.target.className === 'settings-changer') {
-              if (event.target.type === 'checkbox') {
-                this.config[event.target.name] = event.target.checked;
-
-                // Toggle dark mode via CSS class
-                if (event.target.name == 'dark_mode_enabled') {
-                  document.body.classList.toggle('dark-mode', event.target.checked);
-                  this.updateCSS(this.config.color_word, this.config.color_selected);
-                  this.renderCells();
+        .find('.settings-wrapper')
+        .get(0)
+        .addEventListener('change', (event) => {
+            const target = event.target;
+        
+            var mustSaveSettings = true; // as some changes trigger it already, dont duplicate this async call
+            if (target.name === 'autocheck2') { this.toggleAutoCheck(); mustSaveSettings = false; }
+            else if (target.name === 'autosave2') { this.toggleAutoSave() ; mustSaveSettings = false; }
+            else if (target.name === 'display-cn') { this.toggleClueNumbers() ; mustSaveSettings = false; }
+            else if (target.name === 'display-cheats') { this.toggleDisplayCheats() ; mustSaveSettings = false; }
+            else if (target.name === 'disable-cheats') { this.toggleDisableCheats(event, null) ; mustSaveSettings = false; }
+            else if (target.classList.contains('settings-changer')) {
+              if (target.type === 'checkbox') {
+                this.config[target.name] = target.checked;
+                if (target.name === 'dark_mode_enabled') {
+                    document.body.classList.toggle('dark-mode', target.checked);
+                    this.updateCSS(this.config.color_word, this.config.color_selected);
+                    this.renderCells();
                 }
-
-                // If the toggled setting is gray_completed_clues, re-render clues immediately
-                if (event.target.name === 'gray_completed_clues') {
-                  this.styleClues();
-                  this.syncTopTextWidth();
+                if (target.name === 'gray_completed_clues') {
+                    this.styleClues();
+                    this.syncTopTextWidth();
                 }
-
-              } else if (event.target.type === 'radio') {
-                this.config[event.target.name] = event.target.id;
-              }
-            }
-            this.saveSettings();
-          });
+              } else if (target.type === 'radio') { this.config[target.name] = target.id; }
+            } else return; // Ignore non-setting changes
+            if (mustSaveSettings) this.saveSettings();
+        });
       } // OPEN SETTINGS
 
       fillJsXw() {
@@ -3962,13 +3990,12 @@ function setupPWAInstallButton(btn) {
         } catch (err) {
           console.warn('[localforage] Could not load settings:', err);
         }
-      this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
       showTrace("exiting _loadSettingsAsync");
       }
 
       /** Save user-configurable settings to localforage (async, fire-and-forget). */
       saveSettings() {
-        showTrace("entering saveSettings()")
+        showTrace("entering saveSettings")
         // we only save settings that are configurable
         var ss1 = { ...this.config };
         var savedSettings = {};
@@ -3979,6 +4006,7 @@ function setupPWAInstallButton(btn) {
           console.warn('[localforage] Could not save settings:', err);
         });
         this.saveDb(savedSettings); // save only settings
+        showTrace("exit saveSettings")
       }
 
       toggleClueNumbers(e) {
@@ -3994,20 +4022,79 @@ function setupPWAInstallButton(btn) {
       toggleDisplayCheats(e) {
         this.config.displayCheatMarks = !this.config.displayCheatMarks;
         this.renderCells();  //FIX ?
-        this.config.displayCheatMarks = this.config.displayCheatMarks;
+        //this.config.displayCheatMarks = this.config.displayCheatMarks;
         this.saveSettings();
       }
 
-      toggleAutoCheck(e, mustSaveSettings=true) {
-        showTrace("entering toggleAutoCheck")
+/*
+ * truth table on actions based on AC (this.config.autocheck) and DC (this.config.disableCheats) initial conf values:
++---------+-------+------------------+-------+--------------------------+
+| INITIAL VALUES  |            ACTIONS on page elements                 |
++---------+-------+------------------+-------+--------------------------+
+|   DC    |  AC   | AC Btn Visible?  |AC btn chkd?| Check Menu Visible? |
++---------+-------+------------------+-------+--------------------------+
+|  FALSE  | FALSE |      TRUE        |     FALSE  |        TRUE         |
+|  FALSE  | TRUE  |      TRUE        |     TRUE   |        FALSE        |
+|  TRUE   | FALSE |      FALSE       |     FALSE  |        FALSE        |
+|  TRUE   | TRUE  |      FALSE       |     FALSE  |        FALSE        |
++---------+-------+------------------+-----------+----------------------+
+*/
+      initPageElements() {
+          const ac=this.config.autocheck;
+          const dc=this.config.disableCheats;
+          showTrace("entering initPageElements ac/dc="+ac+" "+dc)
+          if (dc) {
+               this.toggleDisableCheats(null, true);
+          } else {
+               // restore visiblility for all
+               document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me').forEach(el => el.style.display = 'block');
+               this.toggleAutoCheck(null, false, ac); // set to ac val
+          }
+          showTrace("exit initPageElements")
+      }
+
+      toggleDisableCheats(e, forceValue=null) {
+        showTrace("enter toggleDisableCheats forceval:"+forceValue);
+        let DCstate = null;      
+        if (forceValue !== null) {
+            DCstate = (this.config.disableCheats = forceValue);
+        } else {
+            DCstate = (this.config.disableCheats = !this.config.disableCheats);
+        }
+        //const DCstate = (this.config.disableCheats = !this.config.disableCheats);
+        const displayStyle = DCstate ? 'none' : 'block';
+
+        // Batch toggle visibility for all cheat menu/element selectors at once
+        document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me').forEach(el => el.style.display = displayStyle);
+
+        // Toggle keyboard classes (for style => see crossword.shared.css)
+        document.querySelectorAll('.solveword-key').forEach(el => el.classList.toggle('toggle-cheat-keys', DCstate));
+
+        if (DCstate){
+            this.toggleAutoCheck(e, false, false);
+            const menu = document.querySelector('.cw-check'); menu.style.display = 'none';
+        }
+        if (forceValue === null) this.saveSettings(); //real toggle
+        showTrace("exit toggleDisableCheats");
+      }
+
+      toggleAutoCheck(e, mustSaveSettings=true, forceValue=null) { // if forceValue isnt null, toggle will force to forceValue (as boolean)
+        showTrace("entering toggleAutoCheck mustSaveSettings:"+mustSaveSettings +" forceval: "+forceValue)
         if (typeof e === 'boolean') { // specify if settings must be saved or not (when loading initially)
             mustSaveSettings = e;
             e = null;
         } 
-        this.config.autocheck = !this.config.autocheck;
+        // we wanna force NOT toggle here!
+        if (forceValue !== null) {
+            this.config.autocheck = forceValue;
+        } else {
+            this.config.autocheck = !this.config.autocheck;
+        }
+        // dont display check menu if ac is on:
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.config.autocheck ? 'none' : 'block';
         $('#autocheck1').prop('checked', this.config.autocheck);
+        $('#autocheck2').prop('checked', this.config.autocheck);
         if (!this.root.hasClass('loading') && this.config.autocheck) { this.check_reveal('puzzle', 'check'); } 
         document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.config.autocheck ? '' : 'none'; });
         if (mustSaveSettings) this.saveSettings();
@@ -4063,16 +4150,6 @@ function setupPWAInstallButton(btn) {
         }
       }
       
-      
-/* STACK:
-loadDb()
-completeLoad()
-parsePuzzle()
-init()
-CrossWord()
-createCrossword()
-script.onload()
-*/
       /* load last state from DB */
       async loadDb(e) {
         const isAvailable = await this.backendPromise; // will wait until decision about backend is made
@@ -4120,7 +4197,7 @@ script.onload()
                                 this.config[key] = data.nexus_config[key];
                             }
                         }
-                        this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
+                        //this.initPageElements(this.config.autocheck,this.config.disableCheats);
                     } catch (e) {
                         console.error("Failed to parse nexus_config JSON:", e);
                         data.nexus_config = {}; // Fallback default
@@ -4157,27 +4234,31 @@ script.onload()
   }
 
     /* Save the game/settings state to DB if backend avail */
-    async saveDb(e, mustFill=true, saveSettings=null) {
+    async saveDb(e, mustFill=true, currentSettings=null) {
         const isAvailable = await this.backendPromise;
         if (!isAvailable) return;
+        showTrace("entering saveDB");
 
         if (typeof e === 'object') { // save ONLY settings
-            saveSettings = e;
+            currentSettings = e;
             mustFill = false;
             e = null;
         } else if (typeof e === 'boolean') { // true => must fill Jsxw
             mustFill = e;
             e = null;
         }
-        if (this.is_saving) return; // Exit if a save is already running
+        if (this.is_saving) { // Exit if a save is already running
+            showTrace("saveDB already in progress! exiting");
+            return;
+        }
         this.is_saving = true;
     
         if (mustFill) this.fillJsXw();
         let payload;
-        if (saveSettings) {
-            showTrace("saveDB =>savesettings: ",saveSettings)
+        if (currentSettings) {
+            showTrace("saveDB will savesettings: obj= ",currentSettings)
             payload = {
-                nexus_config: saveSettings
+                nexus_config: currentSettings
                 };
         } else {
             payload = {
@@ -4219,6 +4300,7 @@ script.onload()
         } finally {
             this.is_saving = false; // Always unlock, even on error
         }
+        showTrace("exit saveDB")
     }
 
       /* Save the game to localforage (async) */
