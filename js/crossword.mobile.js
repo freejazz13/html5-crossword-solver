@@ -920,6 +920,7 @@ function createCustomKeyboard() {
 
         // Helper to trigger reveal and refresh UI
         function triggerReveal(type) {
+            if (gCrossword.config.disableCheats) return;
             gCrossword.check_reveal(type, 'reveal');
             //gCrossword.renderCells();
             gCrossword.checkIfSolved();
@@ -988,6 +989,7 @@ function createCustomKeyboard() {
       }
 
       function performsolveword() {
+        if (gCrossword.config.disableCheats) return;
         gCrossword.check_reveal('word', 'reveal', true); // NOT COUNTING CHEAT
         //gCrossword.renderCells();
         gCrossword.checkIfSolved();

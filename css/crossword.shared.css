@@ -87,6 +87,11 @@ body:not(.backend-active) .sync-emoji {
   opacity: 0.4;
 }
 
+.toogle-cheat-keys {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
 /* Color/Bright when backend active */
 body.backend-active .signal-emoji {
   filter: grayscale(0);

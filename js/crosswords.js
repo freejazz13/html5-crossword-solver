@@ -40,7 +40,7 @@ reminder cell structure:
 const CONFIGURABLE_SETTINGS = [
   "skip_filled_letters", "arrow_direction", "space_bar", "tab_key",
   "timer_autostart", "dark_mode_enabled", "gray_completed_clues",
-  "confetti_enabled", "autosave", "autocheck", "display_cn", "displayCheatMarks"
+  "confetti_enabled", "autosave", "autocheck", "display_cn", "displayCheatMarks", "disableCheats"
 ];
 
 // Since DarkReader is an external library, make sure it exists
@@ -137,6 +137,7 @@ function setupPWAInstallButton(btn) {
       lock_theme: false,
       autocheck: true,
       displayCheatMarks: false,
+      disableCheats: false,
       autosave: true,
       display_cn: false,
       min_sidebar_clue_width: 220
@@ -281,7 +282,7 @@ function setupPWAInstallButton(btn) {
             <input type = "checkbox" class="cw-autosave-checkbox" id="autosave1" >
             Autosave
           </label>
-          <label class = "cw-autocheck-label">
+          <label class = "cw-autocheck-label cw-disable-me">
             <input type = "checkbox" class="cw-autocheck-checkbox" id="autocheck1" checked>
             ${Autocheck}
           </label>
@@ -1533,7 +1534,7 @@ function setupPWAInstallButton(btn) {
         }
 
         const menu = document.querySelector('.cw-check');
-        menu.style.display = this.config.autocheck ? 'none' : 'block';
+        menu.style.display = this.has_check && this.config.autocheck ? 'none' : 'block';
 
         // update from DB
         this.loadDb();
@@ -2918,6 +2919,7 @@ function setupPWAInstallButton(btn) {
             }
             break;
           case 45:            // insert -- reveal letter
+            if (this.config.disableCheats) break;
             if (e.shiftKey) { // SHIFT insert -- reveal word, BUT do not count as cheat : typing accelerator
                 this.check_reveal( 'word', 'reveal', true); // 3rd parameter will be treated NOT as event but as boolean skipCheat = true
             } else if (e.ctrlKey) { // CTRL insert : real cheating.
@@ -3700,6 +3702,13 @@ function setupPWAInstallButton(btn) {
             </div>
             <div class="settings-option">
               <label class="settings-label">
+                <input id="disable-cheats" checked="" type="checkbox" name="disable-cheats" class="yy-settings-changer">
+                  Disable any kind of cheat
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
                 <input id="display-cheats" checked="" type="checkbox" name="display-cheats" class="yy-settings-changer">
                   Display cheats marks in grid
                 </input>
@@ -3845,6 +3854,13 @@ function setupPWAInstallButton(btn) {
             </div>
             <div class="settings-option">
               <label class="settings-label">
+                <input id="disable-cheats" checked="" type="checkbox" name="disable-cheats" class="yy-settings-changer">
+                  Supprimer tout moyen d'aide
+                </input>
+              </label>
+            </div>
+            <div class="settings-option">
+              <label class="settings-label">
                 <input id="display-cheats" checked="" type="checkbox" name="display-cheats" class="yy-settings-changer">
                   Affichage Erreurs/Revelés dans la grille
                 </input>
@@ -3868,6 +3884,7 @@ function setupPWAInstallButton(btn) {
         $('#autosave2').prop('checked', this.config.autosave);
         $('#display-cn').prop('checked', this.config.display_cn);
         $('#display-cheats').prop('checked', this.config.displayCheatMarks);
+        $('#disable-cheats').prop('checked', this.config.disableCheats);
         document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.config.autosave ? '' : 'none'; });
         document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.config.autocheck ? '' : 'none'; });
         // Show the proper value for each of these fields
@@ -3897,6 +3914,9 @@ function setupPWAInstallButton(btn) {
             }
             if (event.target.name == 'display-cheats' ) {
                 this.toggleDisplayCheats();
+            }
+            if (event.target.name == 'disable-cheats' ) {
+                this.toggleDisableCheats();
             }
             if (event.target.className === 'settings-changer') {
               if (event.target.type === 'checkbox') {
@@ -3997,17 +4017,54 @@ function setupPWAInstallButton(btn) {
         this.config.displayCheatMarks = this.config.displayCheatMarks;
         this.saveSettings();
       }
+      toggleDisableCheats(e) {
+        const DCstate = (this.config.disableCheats = !this.config.disableCheats);
+        const displayVal = DCstate ? 'none' : 'block';
 
-      toggleAutoCheck(e, mustSaveSettings=true) {
+        // Batch toggle visibility for all menu/element selectors at once
+        document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me, #id_check').forEach(el => el.style.display = displayVal);
+
+        // Toggle keyboard classes
+        document.querySelectorAll('.solveword-key').forEach(el => el.classList.toggle('toogle-cheat-keys', DCstate));
+
+        if (DCstate) this.toggleAutoCheck(e, false, false);
+        this.saveSettings();
+      }
+
+      toggleDisableCheats000(e) {
+        this.config.disableCheats= !this.config.disableCheats;
+        const menu = document.querySelector('.cw-check');
+        if (menu) { menu.style.display = this.config.disableCheats ? 'none' : 'block'; }
+        const menu2 = document.querySelector('.cw-reveal');
+        if (menu2) { menu2.style.display = this.config.disableCheats ? 'none' : 'block'; }
+        const elt = document.querySelector('.cw-disable-me');
+        if (elt) { elt.style.display = this.config.disableCheats ? 'none' : 'block'; }
+        const elt2 = document.querySelector('#id_check');
+        if (elt2) { elt2.style.display = this.config.disableCheats ? 'none' : 'block'; }
+
+        const solve_keys = document.querySelectorAll('.solveword-key');
+        solve_keys.forEach(element => { element.classList.toggle('toogle-cheat-keys', this.config.disableCheats); });
+
+        if (this.config.disableCheats) this.toggleAutoCheck(e, false, false); // disable ac (ie: forceValue to false) only when disableCheats becomes true
+        this.saveSettings();
+      }
+
+      toggleAutoCheck(e, mustSaveSettings=true, forceValue=null) {
         showTrace("entering toggleAutoCheck")
         if (typeof e === 'boolean') { // specify if settings must be saved or not (when loading initially)
             mustSaveSettings = e;
             e = null;
         } 
-        this.config.autocheck = !this.config.autocheck;
+        // we wanna force NOT toggle here!
+        if (forceValue !== null) {
+            this.config.autocheck = forceValue;
+        } else {
+            this.config.autocheck = !this.config.autocheck;
+        }
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.config.autocheck ? 'none' : 'block';
         $('#autocheck1').prop('checked', this.config.autocheck);
+        $('#autocheck2').prop('checked', this.config.autocheck);
         if (!this.root.hasClass('loading') && this.config.autocheck) { this.check_reveal('puzzle', 'check'); } 
         document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.config.autocheck ? '' : 'none'; });
         if (mustSaveSettings) this.saveSettings();
