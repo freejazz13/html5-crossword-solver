@@ -224,7 +224,8 @@ function setupPWAInstallButton(btn) {
         crossword: "Crossword",
         save: "Save as Ipuz",
         restart: "Restart",
-        print: "Print"
+        print: "Print",
+        solved: "Puzzle Solved! \nYou finished in:"
 
       },
       fr: {
@@ -237,7 +238,8 @@ function setupPWAInstallButton(btn) {
         crossword: "Grille",
         save: "Sauvegarder",
         restart: "Redémarrer",
-        print: "Imprimer"
+        print: "Imprimer (PDF)",
+        solved: "Félicitations!\nTerminé en:"
       }
     };
     try {
@@ -3192,7 +3194,9 @@ function setupPWAInstallButton(btn) {
           var minDisplay = display_minutes == 1 ? 'minute' : 'minutes';
           var secDisplay = display_seconds == 1 ? 'second' : 'seconds';
           var allMin = display_minutes > 0 ? `${display_minutes} ${minDisplay} ` : '';
-          timerMessage = `<br /><br /><center>You finished in ${allMin} ${display_seconds} ${secDisplay}.</center>`;
+          const m = msg[window.currentLang]?.solved ?? msg.en.solved;
+          timerMessage = `<br /><br /><center>${m} ${allMin} ${display_seconds} ${secDisplay}.</center>`;
+          timerMessage = escape(timerMessage).trim().replaceAll('\n', '<br />');
 
           // stop the timer
           clearTimeout(xw_timer);
@@ -3215,20 +3219,15 @@ function setupPWAInstallButton(btn) {
         }
         this.saveGame()
 
-        /* const winSound = new Audio('./sounds/hny.mp3');
-           winSound.play();*/
         const here = this
 
-        function showSuccessMsg(rawMessage) {
-
-          let solvedMessage = escape(rawMessage).trim().replaceAll('\n', '<br />');
-          solvedMessage += timerMessage;
-          here.createModalBox('🎉🎉🎉', solvedMessage);
+        function showSuccessMsg() {
+          here.createModalBox('🎉🎉🎉', timerMessage);
         }
 
         // show completion message if newly solved
         if (!wasSolved) {
-          showSuccessMsg(this.completion_message);
+          showSuccessMsg();
         }
       }
 

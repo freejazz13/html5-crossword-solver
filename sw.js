@@ -1,5 +1,5 @@
 // CRITICAL: You MUST change this string (e.g., v3, v4) every time you deploy a new update!
-const CACHE_NAME = "nexplay-2026-09-10-2453383";
+const CACHE_NAME = "nexplay-2026-09-11-2507023";
 
 const ASSETS = [
   "/",
