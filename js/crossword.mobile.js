@@ -84,6 +84,7 @@ $(document).ready(function () {
 
     wrapper.appendChild(newKeyboard);
     wrapper.style.height = `${newKeyboard.offsetHeight}px`;
+  /*        
     window.addEventListener('resize', syncKb);
   // ── Sync keyboard height to placeholder ──
   function syncKb() {
@@ -91,6 +92,7 @@ $(document).ready(function () {
     const h = keyboard.getBoundingClientRect().height;
     document.getElementById('placeholder').style.height = h + 'px';
   }
+  */
 
     /* // Reattach Rebus key
     newKeyboard.querySelector('.cw-key-rebus')?.addEventListener('click', () => {
@@ -825,7 +827,6 @@ $(document).ready(function () {
       if (startScale < 1.0 && gCrossword.currentScale >= 1) { gCrossword.currentScale = 1 ; tx = 0; ty = 0; applyTransform(); }
     }
   }, { passive: true });
-  //syncKb();
 
 });
 //-------------------------------------------------------------------------------------------------
@@ -907,7 +908,7 @@ function createCustomKeyboard() {
       // ================ 💡 : solve letter / word with short / long press : COUNTING CHEAT ========================
       function solveLetterWord(rowDiv, letter) {
         const solveLW = document.createElement('div');
-        solveLW.className = 'custom-key solveword-key';
+        solveLW.className = `custom-key solveword-key${ gCrossword.config.disableCheats ? ' toggle-cheat-keys' : ''}`;
         solveLW.textContent = letter; // 💡
 
         let solvewordTimeout;
@@ -972,7 +973,7 @@ function createCustomKeyboard() {
     if (rowIndex === 2) {
       // ================ ✅ : solve word with long press NOT COUNTING CHEAT ========================
       const solveword = document.createElement('div');
-      solveword.className = 'custom-key solveword-key';
+      solveword.className = `custom-key solveword-key${ gCrossword.config.disableCheats ? ' toggle-cheat-keys' : ''}`;
       solveword.textContent = '\u{2705}'; // ✅
       //'\u{1F503}';  🔃
 
@@ -1001,7 +1002,18 @@ function createCustomKeyboard() {
         solvewordTimeout = setTimeout(() => {
           solvewordHeld = true;
           performsolveword();
-          solvewordFired = true;
+          
+
+
+
+
+
+
+
+
+
+
+                solvewordFired = true;
         }, 400);
       });
       solveword.addEventListener('pointerup', () => {

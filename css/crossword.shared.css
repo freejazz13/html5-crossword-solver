@@ -87,7 +87,7 @@ body:not(.backend-active) .sync-emoji {
   opacity: 0.4;
 }
 
-.toogle-cheat-keys {
+.toggle-cheat-keys {
   filter: grayscale(1);
   opacity: 0.4;
 }

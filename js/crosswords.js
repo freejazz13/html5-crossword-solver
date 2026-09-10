@@ -13,6 +13,16 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/* STACK:
+=================================================================================
+script.onload()
+createCrossword()
+CrossWord()
+init()
+parsePuzzle()
+completeLoad()
+loadDb() (if backend present)
+
 /* ==============================================================================
 reminder cell structure:
 
@@ -949,6 +959,7 @@ function setupPWAInstallButton(btn) {
         const svg = document.getElementById('cw-puzzle-grid');
         //this.initBackend();
         this.backendPromise = this.initBackend();
+        showTrace("exiting init")
       } // ========> END INIT
 
       error(message) {
@@ -1009,7 +1020,7 @@ function setupPWAInstallButton(btn) {
        */
       async parsePuzzle(data) {
         // if it's already a JSCrossword, return it as-is
-        console.log("INFO entering parsePuzzle");
+        showTrace("entering parsePuzzle");
         var puzzle;
         if (data instanceof JSCrossword) {
           puzzle = data;
@@ -1407,7 +1418,9 @@ function setupPWAInstallButton(btn) {
 
         this.completeLoad(); // will try to loadDb puz +  settings whenever backendEnabled
         this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
+        this.toggleDisableCheats(null,this.config.disableCheats); // force "refresh"
         this.updateStatsUI()
+        showTrace("exit parsePuzzle");
       } // END parsePuzzle
 // -----------------------------------------------------------------------------------------------------------------------
       // Return the next non-block, in-bounds cell from a start cell in a given direction.
@@ -1596,6 +1609,7 @@ function setupPWAInstallButton(btn) {
           }
         });
 
+        showTrace("EXIT completeLoad")
       } // end completeLoad
 // -----------------------------------------------------------------------------------------------------------------------      
 
@@ -3687,7 +3701,7 @@ function setupPWAInstallButton(btn) {
               </label>
             </div>
             <div class="settings-option">
-              <label class="settings-label">
+              <label class="settings-label cw-disable-me">
                 <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
                   Autocheck (🅰️)
                 </input>
@@ -3839,7 +3853,7 @@ function setupPWAInstallButton(btn) {
               </label>
             </div>
             <div class="settings-option">
-              <label class="settings-label">
+              <label class="settings-label cw-disable-me">
                 <input id="autocheck2" checked="" type="checkbox" name="autocheck2" class="xx-settings-changer">
                   Vérif AUTO (🅰️)
                 </input>
@@ -3855,7 +3869,7 @@ function setupPWAInstallButton(btn) {
             <div class="settings-option">
               <label class="settings-label">
                 <input id="disable-cheats" checked="" type="checkbox" name="disable-cheats" class="yy-settings-changer">
-                  Supprimer tout moyen d'aide
+                  Désactiver tout moyen d'aide
                 </input>
               </label>
             </div>
@@ -3885,6 +3899,7 @@ function setupPWAInstallButton(btn) {
         $('#display-cn').prop('checked', this.config.display_cn);
         $('#display-cheats').prop('checked', this.config.displayCheatMarks);
         $('#disable-cheats').prop('checked', this.config.disableCheats);
+        document.querySelectorAll('.cw-disable-me').forEach(el => { el.style.display = this.config.disableCheats ? 'none' : ''; })
         document.querySelectorAll('.sync-emoji').forEach(el => { el.style.display = this.config.autosave ? '' : 'none'; });
         document.querySelectorAll('.autocheck-emoji').forEach(el => { el.style.display = this.config.autocheck ? '' : 'none'; });
         // Show the proper value for each of these fields
@@ -3916,7 +3931,7 @@ function setupPWAInstallButton(btn) {
                 this.toggleDisplayCheats();
             }
             if (event.target.name == 'disable-cheats' ) {
-                this.toggleDisableCheats();
+                this.toggleDisableCheats(event,null);
             }
             if (event.target.className === 'settings-changer') {
               if (event.target.type === 'checkbox') {
@@ -3983,6 +3998,7 @@ function setupPWAInstallButton(btn) {
           console.warn('[localforage] Could not load settings:', err);
         }
       this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
+      this.toggleDisableCheats(null,this.config.disableCheats); // force "refresh"
       showTrace("exiting _loadSettingsAsync");
       }
 
@@ -4014,42 +4030,33 @@ function setupPWAInstallButton(btn) {
       toggleDisplayCheats(e) {
         this.config.displayCheatMarks = !this.config.displayCheatMarks;
         this.renderCells();  //FIX ?
-        this.config.displayCheatMarks = this.config.displayCheatMarks;
+        //this.config.displayCheatMarks = this.config.displayCheatMarks;
         this.saveSettings();
       }
-      toggleDisableCheats(e) {
-        const DCstate = (this.config.disableCheats = !this.config.disableCheats);
-        const displayVal = DCstate ? 'none' : 'block';
 
-        // Batch toggle visibility for all menu/element selectors at once
-        document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me, #id_check').forEach(el => el.style.display = displayVal);
+      toggleDisableCheats(e, forceValue=null) {
+        showTrace("enter toggleDisableCheats");
+        let DCstate = null;      
+        if (forceValue !== null) {
+            DCstate = (this.config.disableCheats = forceValue);
+        } else {
+            DCstate = (this.config.disableCheats = !this.config.disableCheats);
+        }
+        //const DCstate = (this.config.disableCheats = !this.config.disableCheats);
+        const displayStyle = DCstate ? 'none' : 'block';
 
-        // Toggle keyboard classes
-        document.querySelectorAll('.solveword-key').forEach(el => el.classList.toggle('toogle-cheat-keys', DCstate));
+        // Batch toggle visibility for all cheat menu/element selectors at once
+        document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me, #id_check').forEach(el => el.style.display = displayStyle);
+
+        // Toggle keyboard classes (for style => see crossword.shared.css)
+        document.querySelectorAll('.solveword-key').forEach(el => el.classList.toggle('toggle-cheat-keys', DCstate));
 
         if (DCstate) this.toggleAutoCheck(e, false, false);
-        this.saveSettings();
+        if (forceValue === null) this.saveSettings(); //real toggle
+        showTrace("exit toggleDisableCheats");
       }
 
-      toggleDisableCheats000(e) {
-        this.config.disableCheats= !this.config.disableCheats;
-        const menu = document.querySelector('.cw-check');
-        if (menu) { menu.style.display = this.config.disableCheats ? 'none' : 'block'; }
-        const menu2 = document.querySelector('.cw-reveal');
-        if (menu2) { menu2.style.display = this.config.disableCheats ? 'none' : 'block'; }
-        const elt = document.querySelector('.cw-disable-me');
-        if (elt) { elt.style.display = this.config.disableCheats ? 'none' : 'block'; }
-        const elt2 = document.querySelector('#id_check');
-        if (elt2) { elt2.style.display = this.config.disableCheats ? 'none' : 'block'; }
-
-        const solve_keys = document.querySelectorAll('.solveword-key');
-        solve_keys.forEach(element => { element.classList.toggle('toogle-cheat-keys', this.config.disableCheats); });
-
-        if (this.config.disableCheats) this.toggleAutoCheck(e, false, false); // disable ac (ie: forceValue to false) only when disableCheats becomes true
-        this.saveSettings();
-      }
-
-      toggleAutoCheck(e, mustSaveSettings=true, forceValue=null) {
+      toggleAutoCheck(e, mustSaveSettings=true, forceValue=null) { // if forceValue isnt null, toggle will force to forceValue (as boolean)
         showTrace("entering toggleAutoCheck")
         if (typeof e === 'boolean') { // specify if settings must be saved or not (when loading initially)
             mustSaveSettings = e;
@@ -4178,6 +4185,7 @@ script.onload()
                             }
                         }
                         this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
+                        this.toggleDisableCheats(null,this.config.disableCheats); // force "refresh"
                     } catch (e) {
                         console.error("Failed to parse nexus_config JSON:", e);
                         data.nexus_config = {}; // Fallback default
