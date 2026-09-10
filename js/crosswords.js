@@ -225,13 +225,15 @@ function setupPWAInstallButton(btn) {
         save: "Save as Ipuz",
         restart: "Restart",
         print: "Print",
+        across: "Across",
+        down: "Down",
         solved: "Puzzle Solved! \nYou finished in:"
 
       },
       fr: {
         stats: [ "Révélés:", "Erreurs:", "Avancement:"],
         type: [ "Lettre", "Mot", "Grille"],
-        settings: "Config.",
+        settings: "Options",
         check: "Vérifier",
         reveal: "Révéler",      
         autocheck: "Vérif. auto",
@@ -239,6 +241,8 @@ function setupPWAInstallButton(btn) {
         save: "Sauvegarder",
         restart: "Redémarrer",
         print: "Imprimer (PDF)",
+        across: "Horizontalement",
+        down: "Verticalement",
         solved: "Félicitations!\nTerminé en:"
       }
     };
@@ -1004,8 +1008,8 @@ function setupPWAInstallButton(btn) {
         if (!rawTitle) return '';
         const title = rawTitle.trim().toUpperCase();
 
-        if (title === 'ACROSS') return 'Across';
-        if (title === 'DOWN') return 'Down';
+        if (title === 'ACROSS') return msg[window.currentLang]?.across ?? msg.en.across;
+        if (title === 'DOWN') return   msg[window.currentLang]?.down ?? msg.en.down;
 
         return rawTitle; // Preserve original if it's custom
       }
@@ -4046,6 +4050,7 @@ function setupPWAInstallButton(btn) {
 
         // Batch toggle visibility for all cheat menu/element selectors at once
         document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me, #id_check').forEach(el => el.style.display = displayStyle);
+        document.getElementById('id_check').style.display = DCstate ? 'none' : '';
 
         // Toggle keyboard classes (for style => see crossword.shared.css)
         document.querySelectorAll('.solveword-key').forEach(el => el.classList.toggle('toggle-cheat-keys', DCstate));
