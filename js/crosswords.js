@@ -319,13 +319,13 @@ function setupPWAInstallButton(btn) {
                 <button class = "cw-menu-item cw-file-clear">${Restart}</button>
                 </div>
               </div>
-              <div    class = "cw-menu-container cw-check">
+              <div class = "cw-menu-container cw-check">
               <button id="id_check" type  = "button" class = "cw-button">
                 <span class="cw-button-icon">🔍</span>
                    ${Check}
                   <span class = "cw-arrow"></span>
-                </button>
-                <div    class = "cw-menu">
+              </button>
+              <div class = "cw-menu">
                 <button class = "cw-menu-item cw-check-letter">${Letter}</button>
                 <button class = "cw-menu-item cw-check-word">${_Word}</button>
                 <button class = "cw-menu-item cw-check-puzzle">${Puzzle}</button>
@@ -1176,7 +1176,10 @@ function setupPWAInstallButton(btn) {
           $('.cw-check').css({
             display: 'none'
           });
+        } else {
+          this.has_check = true;
         }
+                
 
         // === Build cells ===
         this.cells = {};
@@ -1423,8 +1426,7 @@ function setupPWAInstallButton(btn) {
         this.nonBlackCells=this.getNonBlackCells();
 
         this.completeLoad(); // will try to loadDb puz +  settings whenever backendEnabled
-        this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
-        this.toggleDisableCheats(null,this.config.disableCheats); // force "refresh"
+        //this.initPageElements(this.config.autocheck,this.config.disableCheats);
         this.updateStatsUI()
         showTrace("exit parsePuzzle");
       } // END parsePuzzle
@@ -4000,8 +4002,7 @@ function setupPWAInstallButton(btn) {
         } catch (err) {
           console.warn('[localforage] Could not load settings:', err);
         }
-      this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
-      this.toggleDisableCheats(null,this.config.disableCheats); // force "refresh"
+      this.initPageElements(this.config.autocheck,this.config.disableCheats);
       showTrace("exiting _loadSettingsAsync");
       }
 
@@ -4037,8 +4038,31 @@ function setupPWAInstallButton(btn) {
         this.saveSettings();
       }
 
+/*
+ * truth table on actions based on AC (this.config.autocheck) and DC (this.config.disableCheats) initial conf values:
++---------+-------+------------------+-------+--------------------------+
+| INITIAL VALUES  |            ACTIONS on page elements                 |
++---------+-------+------------------+-------+--------------------------+
+|   DC    |  AC   | AC Btn Visible?  |AC btn chkd?| Check Menu Visible? |
++---------+-------+------------------+-------+--------------------------+
+|  FALSE  | FALSE |      TRUE        |     FALSE  |        TRUE         |
+|  FALSE  | TRUE  |      TRUE        |     TRUE   |        FALSE        |
+|  TRUE   | FALSE |      FALSE       |     FALSE  |        FALSE        |
+|  TRUE   | TRUE  |      FALSE       |     FALSE  |        FALSE        |
++---------+-------+------------------+-----------+----------------------+
+*/
+      initPageElements(ac,dc) {
+              if (dc) {
+                   this.toggleDisableCheats(null, true);
+              } else {
+                   // restore visiblility for all
+                   document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me').forEach(el => el.style.display = 'block');
+                   this.toggleAutoCheck(null, false, ac); // set to ac val
+              }
+      }
+
       toggleDisableCheats(e, forceValue=null) {
-        showTrace("enter toggleDisableCheats");
+        showTrace("enter toggleDisableCheats forceval:"+forceValue);
         let DCstate = null;      
         if (forceValue !== null) {
             DCstate = (this.config.disableCheats = forceValue);
@@ -4049,19 +4073,21 @@ function setupPWAInstallButton(btn) {
         const displayStyle = DCstate ? 'none' : 'block';
 
         // Batch toggle visibility for all cheat menu/element selectors at once
-        document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me, #id_check').forEach(el => el.style.display = displayStyle);
-        document.getElementById('id_check').style.display = DCstate ? 'none' : '';
+        document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me').forEach(el => el.style.display = displayStyle);
 
         // Toggle keyboard classes (for style => see crossword.shared.css)
         document.querySelectorAll('.solveword-key').forEach(el => el.classList.toggle('toggle-cheat-keys', DCstate));
 
-        if (DCstate) this.toggleAutoCheck(e, false, false);
+        if (DCstate){
+            this.toggleAutoCheck(e, false, false);
+            const menu = document.querySelector('.cw-check'); menu.style.display = 'none';
+        }
         if (forceValue === null) this.saveSettings(); //real toggle
         showTrace("exit toggleDisableCheats");
       }
 
       toggleAutoCheck(e, mustSaveSettings=true, forceValue=null) { // if forceValue isnt null, toggle will force to forceValue (as boolean)
-        showTrace("entering toggleAutoCheck")
+        showTrace("entering toggleAutoCheck mustSaveSettings:"+mustSaveSettings +" forceval: "+forceValue)
         if (typeof e === 'boolean') { // specify if settings must be saved or not (when loading initially)
             mustSaveSettings = e;
             e = null;
@@ -4072,6 +4098,7 @@ function setupPWAInstallButton(btn) {
         } else {
             this.config.autocheck = !this.config.autocheck;
         }
+        // dont display check menu if ac is on:
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.config.autocheck ? 'none' : 'block';
         $('#autocheck1').prop('checked', this.config.autocheck);
@@ -4188,8 +4215,7 @@ script.onload()
                                 this.config[key] = data.nexus_config[key];
                             }
                         }
-                        this.config.autocheck = !this.config.autocheck ; this.toggleAutoCheck(false); // set checkboxes correctly
-                        this.toggleDisableCheats(null,this.config.disableCheats); // force "refresh"
+                        this.initPageElements(this.config.autocheck,this.config.disableCheats);
                     } catch (e) {
                         console.error("Failed to parse nexus_config JSON:", e);
                         data.nexus_config = {}; // Fallback default
