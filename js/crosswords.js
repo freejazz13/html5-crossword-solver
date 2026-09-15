@@ -4018,7 +4018,7 @@ function setupPWAInstallButton(btn) {
         localforage.setItem(SETTINGS_STORAGE_KEY, savedSettings).catch(function(err) {
           console.warn('[localforage] Could not save settings:', err);
         });
-        this.saveDb(savedSettings); // save only settings
+        this.saveDb(savedSettings); //backend avail: save only settings
       }
 
       toggleClueNumbers(e) {
@@ -4082,7 +4082,7 @@ function setupPWAInstallButton(btn) {
             this.toggleAutoCheck(e, false, false);
             const menu = document.querySelector('.cw-check'); menu.style.display = 'none';
         }
-        if (forceValue === null) this.saveSettings(); //real toggle
+        this.saveSettings();
         showTrace("exit toggleDisableCheats");
       }
 
