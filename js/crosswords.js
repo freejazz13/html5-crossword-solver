@@ -13,15 +13,16 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
-/* STACK:
+/* CALL STACK:
 =================================================================================
 script.onload()
 createCrossword()
-CrossWord()
-init()
-parsePuzzle()
-completeLoad()
-loadDb() (if backend present)
+CrossWord().create
+  init()
+    parsePuzzle() (async)
+      completeLoad()
+      loadSettingsAsync
+      loadDb() (if backend present)
 
 /* ==============================================================================
 reminder cell structure:
@@ -552,9 +553,9 @@ function setupPWAInstallButton(btn) {
         //this.backendEnabled = false;
         this.backendPromise = null;
         // Apply persisted settings asynchronously from localforage.
-        // Callers that need config/initPageElements to be finished can
-        // `await crossword.settingsReady`.
-        //this.settingsReady = this._loadSettingsAsync();      
+        // store promise so Callers that need config/initPageElements to be finished can
+        // await this.settingsReady:
+        this.settingsReady = this._loadSettingsAsync();      
         this.currentScale = 1.0;
         this.translatedClues = null;
 
@@ -664,7 +665,7 @@ function setupPWAInstallButton(btn) {
 
           // Scrollbars
           root.style.setProperty("--clue-scrollbar-color-thumb", Color.averageColors(selectedColor, '#333333', 0.5));
-        };
+        }; //updateCSS
 
         this.updateCSS(COLOR_WORD, COLOR_SELECTED);
 
@@ -758,7 +759,7 @@ function setupPWAInstallButton(btn) {
         };
       }
 
-      init() {
+      init() { // called by Constructor
         showTrace("entering init")
         var parsePUZZLE_callback = this.parsePuzzle.bind(this);
         var error_callback = this.error.bind(this);
@@ -859,7 +860,7 @@ function setupPWAInstallButton(btn) {
                     try {               
                         bytes = bz2.decompress(bytes);
                     } catch (e) {
-                     console.error("bzip2 library error",e);
+                        console.error("bzip2 library error",e);
                     }
                 }
                 Promise.resolve(bytes)
@@ -1421,8 +1422,11 @@ function setupPWAInstallButton(btn) {
 
         this.nonBlackCells=this.getNonBlackCells();
 
-        this.completeLoad(); // will try to loadDb puz +  settings whenever backendEnabled
-        // ** this.initPageElements(this.config.autocheck,this.config.disableCheats);
+        this.completeLoad();
+        // update from  local then from DB if backendEnabled
+        await this.settingsReady;
+        await this.loadDb();
+        this.initPageElements();
         this.updateStatsUI()
         showTrace("exit parsePuzzle");
       } // END parsePuzzle
@@ -1553,8 +1557,6 @@ function setupPWAInstallButton(btn) {
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.has_check && this.config.autocheck ? 'none' : 'block';
 
-        // update from DB
-        this.loadDb();
         // Start the timer if necessary
         if (this.config.timer_autostart) {
           this.toggleTimer();
@@ -3998,7 +4000,6 @@ function setupPWAInstallButton(btn) {
         } catch (err) {
           console.warn('[localforage] Could not load settings:', err);
         }
-      //this.initPageElements(this.config.autocheck,this.config.disableCheats);
       showTrace("exiting _loadSettingsAsync");
       }
 
@@ -4158,16 +4159,6 @@ function setupPWAInstallButton(btn) {
         }
       }
       
-      
-/* STACK:
-loadDb()
-completeLoad()
-parsePuzzle()
-init()
-CrossWord()
-createCrossword()
-script.onload()
-*/
       /* load last state from DB */
       async loadDb(e) {
         const isAvailable = await this.backendPromise; // will wait until decision about backend is made
@@ -4216,7 +4207,6 @@ script.onload()
                             }
                         }
                         //this.initPageElements(this.config.autocheck,this.config.disableCheats);
-                        this.initPageElements();
                     } catch (e) {
                         console.error("Failed to parse nexus_config JSON:", e);
                         data.nexus_config = {}; // Fallback default
