@@ -78,6 +78,33 @@
           // ✅ Desktop JS + Init
           const script = document.createElement('script');
           script.src = './js/crosswords.js';
+          script.onload = async () => {
+            console.log('[Desktop] crosswords.js loaded — initializing crossword');
+            const params = CrosswordShared.getCrosswordParams();
+            window.gCrossword = CrosswordNexus.createCrossword($('div.crossword'), params);
+
+            // Wait for persisted settings _loadSettingsAsync) to finish before touching the grid.
+            await window.gCrossword?._loadSettingsAsync();
+            window.gCrossword.initPageElements();
+
+            setTimeout(() => {
+                const svg = document.getElementById('cw-puzzle-grid');
+                const cw = window.gCrossword;
+                if (svg && cw?.renderCells && cw.grid_width && cw.grid_height) {
+                    console.log('[Fix] Final render pass after layout settle');
+                    cw.renderCells();
+                    cw.windowResized?.();
+                    cw.syncTopTextWidth?.();
+                    if (cw.config.autocheck) cw.check_reveal('puzzle', 'check');
+                } else {
+                    console.warn('[Fix] Skipping renderCells — grid size not yet initialized', {
+                        grid_width: cw?.grid_width,
+                        grid_height: cw?.grid_height
+                    });
+               }
+             }, 350);
+            };      
+/*                
           script.onload = () => {
             console.log('[Desktop] crosswords.js loaded — initializing crossword');
 
@@ -103,7 +130,7 @@
               }
             }, 350);
           };
-
+*/
           window.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(script);
           });
