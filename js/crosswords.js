@@ -13,15 +13,16 @@ Redistribution and use in source and binary forms, with or without modification,
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
-/* STACK:
+/* CALL STACK:
 =================================================================================
 script.onload()
 createCrossword()
-CrossWord()
-init()
-parsePuzzle()
-completeLoad()
-loadDb() (if backend present)
+CrossWord().create
+  init()
+    parsePuzzle() (async)
+      completeLoad()
+      loadSettingsAsync
+      loadDb() (if backend present)
 
 /* ==============================================================================
 reminder cell structure:
@@ -535,8 +536,6 @@ function setupPWAInstallButton(btn) {
         this.parent = parent;
 
         this.config = {};
-        // Load solver config — settings are applied asynchronously via
-        // _loadSettingsAsync() once localforage resolves.
         var i;
         var configurable_settings_set = new Set(CONFIGURABLE_SETTINGS);
         for (i in default_config) {
@@ -553,8 +552,10 @@ function setupPWAInstallButton(btn) {
         this.is_saving = false;
         //this.backendEnabled = false;
         this.backendPromise = null;
-        // Apply persisted settings asynchronously from localforage
-        this._loadSettingsAsync();
+        // Apply persisted settings asynchronously from localforage.
+        // store promise so Callers that need config/initPageElements to be finished can
+        // await this.settingsReady:
+        this.settingsReady = this._loadSettingsAsync();      
         this.currentScale = 1.0;
         this.translatedClues = null;
 
@@ -664,7 +665,7 @@ function setupPWAInstallButton(btn) {
 
           // Scrollbars
           root.style.setProperty("--clue-scrollbar-color-thumb", Color.averageColors(selectedColor, '#333333', 0.5));
-        };
+        }; //updateCSS
 
         this.updateCSS(COLOR_WORD, COLOR_SELECTED);
 
@@ -758,7 +759,7 @@ function setupPWAInstallButton(btn) {
         };
       }
 
-      init() {
+      init() { // called by Constructor
         showTrace("entering init")
         var parsePUZZLE_callback = this.parsePuzzle.bind(this);
         var error_callback = this.error.bind(this);
@@ -858,8 +859,8 @@ function setupPWAInstallButton(btn) {
                 if (bytes[0] === 0x42 && bytes[1] === 0x5a && bytes[2] === 0x68) {
                     try {               
                         bytes = bz2.decompress(bytes);
-                    }catch (e) {
-                     console.error("bzip2 library error",e);
+                    } catch (e) {
+                        console.error("bzip2 library error",e);
                     }
                 }
                 Promise.resolve(bytes)
@@ -868,11 +869,7 @@ function setupPWAInstallButton(btn) {
             } catch (e) {
                 console.error("Data load failed:", e);
             }
-        } else if (
-          this.config.puzzle_file &&
-          this.config.puzzle_file.hasOwnProperty('url') &&
-          this.config.puzzle_file.hasOwnProperty('type')
-        ) {
+        } else if ( this.config.puzzle_file && this.config.puzzle_file.hasOwnProperty('url') && this.config.puzzle_file.hasOwnProperty('type')) {
           this.root.addClass('loading');
           var loaded_callback = parsePUZZLE_callback;
           loadFileFromServer(
@@ -1425,8 +1422,11 @@ function setupPWAInstallButton(btn) {
 
         this.nonBlackCells=this.getNonBlackCells();
 
-        this.completeLoad(); // will try to loadDb puz +  settings whenever backendEnabled
-        //this.initPageElements(this.config.autocheck,this.config.disableCheats);
+        this.completeLoad();
+        // update from  local then from DB if backendEnabled
+        await this.settingsReady;
+        await this.loadDb();
+        this.initPageElements();
         this.updateStatsUI()
         showTrace("exit parsePuzzle");
       } // END parsePuzzle
@@ -1557,8 +1557,6 @@ function setupPWAInstallButton(btn) {
         const menu = document.querySelector('.cw-check');
         menu.style.display = this.has_check && this.config.autocheck ? 'none' : 'block';
 
-        // update from DB
-        this.loadDb();
         // Start the timer if necessary
         if (this.config.timer_autostart) {
           this.toggleTimer();
@@ -4002,7 +4000,6 @@ function setupPWAInstallButton(btn) {
         } catch (err) {
           console.warn('[localforage] Could not load settings:', err);
         }
-      this.initPageElements(this.config.autocheck,this.config.disableCheats);
       showTrace("exiting _loadSettingsAsync");
       }
 
@@ -4018,7 +4015,7 @@ function setupPWAInstallButton(btn) {
         localforage.setItem(SETTINGS_STORAGE_KEY, savedSettings).catch(function(err) {
           console.warn('[localforage] Could not save settings:', err);
         });
-        this.saveDb(savedSettings); //backend avail: save only settings
+        this.saveDb(savedSettings); // save only settings
       }
 
       toggleClueNumbers(e) {
@@ -4051,14 +4048,18 @@ function setupPWAInstallButton(btn) {
 |  TRUE   | TRUE  |      FALSE       |     FALSE  |        FALSE        |
 +---------+-------+------------------+-----------+----------------------+
 */
-      initPageElements(ac,dc) {
-              if (dc) {
-                   this.toggleDisableCheats(null, true);
-              } else {
-                   // restore visiblility for all
-                   document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me').forEach(el => el.style.display = 'block');
-                   this.toggleAutoCheck(null, false, ac); // set to ac val
-              }
+      initPageElements() {
+          const ac=this.config.autocheck;
+          const dc=this.config.disableCheats;
+          showTrace("entering initPageElements ac/dc="+ac+" "+dc)
+          if (dc) {
+               this.toggleDisableCheats(null, true);
+          } else {
+               // restore visiblility for all
+               document.querySelectorAll('.cw-check, .cw-reveal, .cw-disable-me').forEach(el => el.style.display = 'block');
+               this.toggleAutoCheck(null, false, ac); // set to ac val
+          }
+          showTrace("exit initPageElements")
       }
 
       toggleDisableCheats(e, forceValue=null) {
@@ -4082,7 +4083,7 @@ function setupPWAInstallButton(btn) {
             this.toggleAutoCheck(e, false, false);
             const menu = document.querySelector('.cw-check'); menu.style.display = 'none';
         }
-        this.saveSettings();
+        if (forceValue === null) this.saveSettings(); //real toggle
         showTrace("exit toggleDisableCheats");
       }
 
@@ -4158,16 +4159,6 @@ function setupPWAInstallButton(btn) {
         }
       }
       
-      
-/* STACK:
-loadDb()
-completeLoad()
-parsePuzzle()
-init()
-CrossWord()
-createCrossword()
-script.onload()
-*/
       /* load last state from DB */
       async loadDb(e) {
         const isAvailable = await this.backendPromise; // will wait until decision about backend is made
@@ -4215,7 +4206,7 @@ script.onload()
                                 this.config[key] = data.nexus_config[key];
                             }
                         }
-                        this.initPageElements(this.config.autocheck,this.config.disableCheats);
+                        //this.initPageElements(this.config.autocheck,this.config.disableCheats);
                     } catch (e) {
                         console.error("Failed to parse nexus_config JSON:", e);
                         data.nexus_config = {}; // Fallback default
