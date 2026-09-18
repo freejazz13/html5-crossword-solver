@@ -669,11 +669,6 @@ function setupPWAInstallButton(btn) {
 
         this.updateCSS(COLOR_WORD, COLOR_SELECTED);
 
-        /** enable dark mode if requested **/
-        if (this.config.dark_mode_enabled) {
-          document.body.classList.add('dark-mode');
-          this.updateCSS(COLOR_WORD, COLOR_SELECTED);
-        }
 
         this.cell_size = 40;
         //this.top_text_height = 0;
@@ -1428,6 +1423,11 @@ function setupPWAInstallButton(btn) {
         await this.loadDb();
         this.initPageElements();
         this.updateStatsUI()
+        /** enable dark mode if requested **/
+        if (this.config.dark_mode_enabled) {
+          document.body.classList.add('dark-mode');
+          this.updateCSS(this.config.color_word, this.config.color_selected);
+        }
         showTrace("exit parsePuzzle");
       } // END parsePuzzle
 // -----------------------------------------------------------------------------------------------------------------------
@@ -3738,9 +3738,6 @@ function setupPWAInstallButton(btn) {
                 </input>
               </label>
             </div>
-
-
-            <!--
             <div class="settings-option">
               <label class="settings-label">
                 <input id="dark_mode_enabled" checked="" type="checkbox" name="dark_mode_enabled" class="settings-changer">
@@ -3748,7 +3745,6 @@ function setupPWAInstallButton(btn) {
                 </input>
               </label>
             </div>
-            -->
           </div>
         `;
         var settingsHTML_FR = `
@@ -3890,6 +3886,14 @@ function setupPWAInstallButton(btn) {
                 </input>
               </label>
             </div>
+            <div class="settings-option">
+              <label class="settings-label">
+                <input id="dark_mode_enabled" checked="" type="checkbox" name="dark_mode_enabled" class="settings-changer">
+                  Mode sombre
+                </input>
+              </label>
+            </div>
+          </div>
         `;
 
         if (window.currentLang === 'fr') {
@@ -3916,49 +3920,35 @@ function setupPWAInstallButton(btn) {
             document.getElementById(cc.id)['checked'] = this.config[cc.name];
           }
         }
-        // Add a listener for these events
+        // Add a listener for change event:
         this.root
-          .find('.settings-wrapper')
-          .get(0)
-          .addEventListener('click', (event) => {
-            if (event.target.name == 'autocheck2' ) {
-                this.toggleAutoCheck();
-            }
-            if (event.target.name == 'autosave2' ) {
-                this.toggleAutoSave();
-            }
-            if (event.target.name == 'display-cn' ) {
-                this.toggleClueNumbers();
-            }
-            if (event.target.name == 'display-cheats' ) {
-                this.toggleDisplayCheats();
-            }
-            if (event.target.name == 'disable-cheats' ) {
-                this.toggleDisableCheats(event,null);
-            }
-            if (event.target.className === 'settings-changer') {
-              if (event.target.type === 'checkbox') {
-                this.config[event.target.name] = event.target.checked;
-
-                // Toggle dark mode via CSS class
-                if (event.target.name == 'dark_mode_enabled') {
-                  document.body.classList.toggle('dark-mode', event.target.checked);
-                  this.updateCSS(this.config.color_word, this.config.color_selected);
-                  this.renderCells();
+        .find('.settings-wrapper')
+        .get(0)
+        .addEventListener('change', (event) => {
+            const target = event.target;
+        
+            var mustSaveSettings = true; // as some changes trigger it already, dont duplicate this async call
+            if (target.name === 'autocheck2') { this.toggleAutoCheck(); mustSaveSettings = false; }
+            else if (target.name === 'autosave2') { this.toggleAutoSave() ; mustSaveSettings = false; }
+            else if (target.name === 'display-cn') { this.toggleClueNumbers() ; mustSaveSettings = false; }
+            else if (target.name === 'display-cheats') { this.toggleDisplayCheats() ; mustSaveSettings = false; }
+            else if (target.name === 'disable-cheats') { this.toggleDisableCheats(event, null) ; mustSaveSettings = false; }
+            else if (target.classList.contains('settings-changer')) {
+              if (target.type === 'checkbox') {
+                this.config[target.name] = target.checked;
+                if (target.name === 'dark_mode_enabled') {
+                    document.body.classList.toggle('dark-mode', target.checked);
+                    this.updateCSS(this.config.color_word, this.config.color_selected);
+                    this.renderCells();
                 }
-
-                // If the toggled setting is gray_completed_clues, re-render clues immediately
-                if (event.target.name === 'gray_completed_clues') {
-                  this.styleClues();
-                  this.syncTopTextWidth();
+                if (target.name === 'gray_completed_clues') {
+                    this.styleClues();
+                    this.syncTopTextWidth();
                 }
-
-              } else if (event.target.type === 'radio') {
-                this.config[event.target.name] = event.target.id;
-              }
-            }
-            this.saveSettings();
-          });
+              } else if (target.type === 'radio') { this.config[target.name] = target.id; }
+            } else return; // Ignore non-setting changes
+            if (mustSaveSettings) this.saveSettings();
+        });
       } // OPEN SETTINGS
 
       fillJsXw() {
@@ -4005,7 +3995,7 @@ function setupPWAInstallButton(btn) {
 
       /** Save user-configurable settings to localforage (async, fire-and-forget). */
       saveSettings() {
-        showTrace("entering saveSettings()")
+        showTrace("entering saveSettings")
         // we only save settings that are configurable
         var ss1 = { ...this.config };
         var savedSettings = {};
@@ -4016,6 +4006,7 @@ function setupPWAInstallButton(btn) {
           console.warn('[localforage] Could not save settings:', err);
         });
         this.saveDb(savedSettings); // save only settings
+        showTrace("exit saveSettings")
       }
 
       toggleClueNumbers(e) {
@@ -4243,27 +4234,31 @@ function setupPWAInstallButton(btn) {
   }
 
     /* Save the game/settings state to DB if backend avail */
-    async saveDb(e, mustFill=true, saveSettings=null) {
+    async saveDb(e, mustFill=true, currentSettings=null) {
         const isAvailable = await this.backendPromise;
         if (!isAvailable) return;
+        showTrace("entering saveDB");
 
         if (typeof e === 'object') { // save ONLY settings
-            saveSettings = e;
+            currentSettings = e;
             mustFill = false;
             e = null;
         } else if (typeof e === 'boolean') { // true => must fill Jsxw
             mustFill = e;
             e = null;
         }
-        if (this.is_saving) return; // Exit if a save is already running
+        if (this.is_saving) { // Exit if a save is already running
+            showTrace("saveDB already in progress! exiting");
+            return;
+        }
         this.is_saving = true;
     
         if (mustFill) this.fillJsXw();
         let payload;
-        if (saveSettings) {
-            showTrace("saveDB =>savesettings: ",saveSettings)
+        if (currentSettings) {
+            showTrace("saveDB will savesettings: obj= ",currentSettings)
             payload = {
-                nexus_config: saveSettings
+                nexus_config: currentSettings
                 };
         } else {
             payload = {
@@ -4305,6 +4300,7 @@ function setupPWAInstallButton(btn) {
         } finally {
             this.is_saving = false; // Always unlock, even on error
         }
+        showTrace("exit saveDB")
     }
 
       /* Save the game to localforage (async) */

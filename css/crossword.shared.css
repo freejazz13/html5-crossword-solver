@@ -106,6 +106,8 @@ body.dark-mode {
     --copyright-text-color: #aaaaaa;
     
     --button-menu-bg-color: #2c2c2c;
+    --button-menu-text-color: #e0e0e0;
+	--button-bg-color: #d9ce6c;
 
     --top-text-wrapper-bg-color: #2c2c2c;
     --top-text-wrapper-text-color: #e0e0e0;
@@ -115,13 +117,15 @@ body.dark-mode {
     --clue-passive-text-color: #dddddd;
     --clue-hover-color: #2a2a2a;
     --cluenote-text-color: #cccccc;
+    --clue-active-color: #c2b648;
     
     --grid-block-color: #000000;
-    --grid-none-color: #1e1e1e;
+    --grid-none-color: #828282;
     --grid-none-text-color: #e0e0e0;
     --grid-stroke-color: #555555;
     --grid-number-color: #bbbbbb;
     --grid-letter-color: #ffffff;
+	--grid-selected-square-color: #d9372e;
 
     --modal-content-bg-color: #2c2c2c;
     --modal-text-color: #e0e0e0;
@@ -134,6 +138,25 @@ body.dark-mode {
     --mobile-shadow: 0 -2px 6px rgba(0, 0, 0, 0.5);
     --border-color: rgba(255, 255, 255, 0.1);
 }
+/* black text in checkbox */
+body.dark-mode .cw-autocheck-label {
+    color: black;
+}
+/* Disable hover effects in dark mode */
+body.dark-mode .cw-button:hover {
+  /*background-color: #d9ce6c;*/
+  color: black;
+  transform: none;  /* Remove movement */
+  box-shadow: none; /* Remove shadow */
+  cursor: default;
+}
+
+body.dark-mode #this-word-letters {
+  color: black;
+  }
+body.dark-mode .cw-clue.passive {
+  background: #333333;
+  }
 .cw-main,
 .cw-main * {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
