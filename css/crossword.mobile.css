@@ -21,6 +21,28 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
   margin-right: 5px;
 }
 
+
+/* dark mode quick & dirty fixes*/
+body.dark-mode .crossword.mobile {
+	--button-bg-color: #68a6f7;
+    --clue-active-color: #68a6f7;
+    --main-text-color: black;
+}
+
+
+/* Target SVG text elements inside selected/linked cells */
+body.dark-mode .crossword.mobile .cw-cell + text,
+body.dark-mode .crossword.mobile .cw-cell text {
+  fill: #000000;
+}
+
+body.dark-mode .crossword.mobile .custom-key,
+body.dark-mode .crossword.mobile .cw-menu-item,
+body.dark-mode .crossword.mobile .modal-body,
+body.dark-mode .crossword.mobile .cw-clue-list-clue-text {
+    color:white;
+}
+
 /**
 * Clues
 **/
