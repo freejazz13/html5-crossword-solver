@@ -1,0 +1,15 @@
+{
+  "name": "Alphacross Web",
+  "short_name": "Alphacross Web",
+  "start_url": "/x",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/play/images/nexus2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
