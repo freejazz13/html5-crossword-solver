@@ -1753,7 +1753,7 @@ function setupPWAInstallButton(btn) {
 
         // SAVE
         this.save_btn.on('click', this.saveAsIpuz.bind(this));
-        this.save_db_btn.on('click', (e) => { this.saveDb(e); });
+        this.save_db_btn.on('click', () => { this.saveDb(null); });
         this.amuse_btn.on('click', (e) => { this.toAmuse(e); });
         this.load_db_btn.on('click', (e) => { this.loadDb(e); });
         this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
@@ -4269,14 +4269,14 @@ function setupPWAInstallButton(btn) {
             } else {
                 // Request failed (e.g., status 500)
                 newWin.close();
-                alert(`Error ${response.error}`);
+                alert(`Error ${data.error}`);
                 return; 
             }
             newWin.location.href = data.url;
     
         } catch (error) {
                 newWin.close();
-                alert(`Error ${response.error}`);
+                alert(`Error ${data.error}`);
                 return; 
         }
     }
@@ -4303,7 +4303,7 @@ function setupPWAInstallButton(btn) {
         if (mustFill) this.fillJsXw();
         let payload;
         if (currentSettings) {
-            showTrace("saveDB will savesettings: obj= ",currentSettings)
+            showTrace("saveDB will savesettings: obj= ",currentSettings);
             payload = {
                 nexus_config: currentSettings
                 };
@@ -4314,6 +4314,7 @@ function setupPWAInstallButton(btn) {
                 cheated_list: Object.keys(this.stat_cheated),
                 timeplayed: xw_timer_seconds
             };
+            showTrace("saveDB will save obj= ",payload);
         }
     
         try {
