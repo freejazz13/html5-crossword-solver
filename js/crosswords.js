@@ -312,6 +312,7 @@ function setupPWAInstallButton(btn) {
                 <div    class = "cw-menu">
                 <button class = "cw-menu-item cw-save-db" backend-required>Save to DB</button>
                 <button class = "cw-menu-item cw-load-db" backend-required>Load from DB</button>
+                <button class = "cw-menu-item cw-amuse" backend-required>Share to Amuse</button>
                 <button class = "cw-menu-item cw-file-info">Infos</button>
                 <button class = "cw-menu-item cw-file-notepad">Notes</button>
                 <button class = "cw-menu-item cw-file-load">Open ...</button>
@@ -802,6 +803,7 @@ function setupPWAInstallButton(btn) {
         this.save_btn = this.root.find('.cw-file-save');
         this.save_db_btn = this.root.find('.cw-save-db');
         this.load_db_btn = this.root.find('.cw-load-db');
+        this.amuse_btn = this.root.find('.cw-amuse');
         this.download_btn = this.root.find('.cw-file-download');
         this.autocheck_btn = this.root.find('.cw-autocheck-checkbox');
         this.autocheck2 = this.root.find('#autocheck2');
@@ -1648,6 +1650,7 @@ function setupPWAInstallButton(btn) {
         this.load_btn.off('click');
         this.save_btn.off('click');
         this.save_db_btn.off('click');
+        this.amuse_btn.off('click');
         this.load_db_btn.off('click');
         this.download_btn.off('click');
         this.autocheck_btn.off('click');
@@ -1750,7 +1753,8 @@ function setupPWAInstallButton(btn) {
 
         // SAVE
         this.save_btn.on('click', this.saveAsIpuz.bind(this));
-        this.save_db_btn.on('click', (e) => { this.saveDb(e); });
+        this.save_db_btn.on('click', () => { this.saveDb(null); });
+        this.amuse_btn.on('click', (e) => { this.toAmuse(e); });
         this.load_db_btn.on('click', (e) => { this.loadDb(e); });
         this.autocheck_btn.on('click', (e) => { this.toggleAutoCheck(e); });
         this.autosave_btn.on('click', (e) => { this.toggleAutoSave(e); });
@@ -3196,7 +3200,7 @@ function setupPWAInstallButton(btn) {
           var display_seconds = xw_timer_seconds % 60;
           var display_minutes = (xw_timer_seconds - display_seconds) / 60;
           var minDisplay = display_minutes == 1 ? 'minute' : 'minutes';
-          var secDisplay = 'sec.';
+          var secDisplay = display_seconds == 1 ? 'second' : 'seconds';
           var allMin = display_minutes > 0 ? `${display_minutes} ${minDisplay} ` : '';
           const m = msg[window.currentLang]?.solved ?? msg.en.solved;
           timerMessage = `<br /><br /><center>${m} ${allMin} ${display_seconds} ${secDisplay}.</center>`;
@@ -4232,7 +4236,50 @@ function setupPWAInstallButton(btn) {
       }
     console.log("Grid updated.");
   }
-
+    /* upload currently to amuselabs, and open a new window with url */
+    async toAmuse(e) {
+        const isAvailable = await this.backendPromise;
+        if (!isAvailable) return;
+        const newWin = window.open( '', "_blank",);
+        let payload;
+            payload = {
+                ...this.jsxw,
+                timeplayed: xw_timer_seconds
+            };
+        try {
+            const stream = new Blob([JSON.stringify(payload)], { type: 'application/json' }).stream();
+            const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+            const compressedBody = await new Response(compressedStream).blob();
+    
+            //const response = await fetch(this.back_toAmuse, { FIX  !!!
+            const response = await fetch("/cgi-lmpuz/nexus2Amuse.py", {
+                method: 'POST',
+                referrerPolicy: 'no-referrer',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Encoding': 'gzip'
+                },
+                body: compressedBody
+            });
+    
+            const data = await response.json();
+            if (response.ok && data.success) {
+                // Request succeeded (status 200-299 and success is true)
+                console.log("Success! URL:", data.url);
+            } else {
+                // Request failed (e.g., status 500)
+                newWin.close();
+                alert(`Error ${data.error}`);
+                return; 
+            }
+            newWin.location.href = data.url;
+    
+        } catch (error) {
+                newWin.close();
+                alert(`Error ${data.error}`);
+                return; 
+        }
+    }
     /* Save the game/settings state to DB if backend avail */
     async saveDb(e, mustFill=true, currentSettings=null) {
         const isAvailable = await this.backendPromise;
@@ -4256,7 +4303,7 @@ function setupPWAInstallButton(btn) {
         if (mustFill) this.fillJsXw();
         let payload;
         if (currentSettings) {
-            showTrace("saveDB will savesettings: obj= ",currentSettings)
+            showTrace("saveDB will savesettings: obj= ",currentSettings);
             payload = {
                 nexus_config: currentSettings
                 };
@@ -4267,6 +4314,7 @@ function setupPWAInstallButton(btn) {
                 cheated_list: Object.keys(this.stat_cheated),
                 timeplayed: xw_timer_seconds
             };
+            showTrace("saveDB will save obj= ",payload);
         }
     
         try {

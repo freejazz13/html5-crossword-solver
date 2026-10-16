@@ -1,0 +1,15 @@
+{
+  "name": "Nexus Crossword Player",
+  "short_name": "Nexus",
+  "start_url": "/nexplay",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "images/nexplay.svg",
+      "sizes": "23x23",
+      "type": "image/svg"
+    }
+  ]
+}
