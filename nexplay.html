@@ -62,6 +62,11 @@
     <script type="module" src="./nexplay.js"></script>
 
     <script>
+        // Bouton « Aide » : pages d'aide en français (help/)
+        function showHelp() { window.open('help/aide.html', '_blank'); }
+        window.showHelp = showHelp;
+    </script>
+    <script>
         try {
             const lang = (navigator.language || navigator.userLanguage).substring(0, 2).toLowerCase();
             window.currentLang = lang === 'fr' ? 'fr' : 'en';
