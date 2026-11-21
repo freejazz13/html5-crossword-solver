@@ -1,0 +1,161 @@
+/* Aide NexPlay — styles communs (responsive, mode sombre automatique) */
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #1f2933;
+  --muted: #5f6b7a;
+  --accent: #2b6cb0;
+  --accent-soft: #e6effa;
+  --warn: #b7791f;
+  --warn-bg: #fff6e0;
+  --ok: #2f855a;
+  --ok-bg: #e7f6ee;
+  --bad: #c53030;
+  --bad-bg: #fdeaea;
+  --border: #d9dee7;
+  --key-bg: #fdfdfd;
+  --key-shadow: #b9c0cc;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c; --card: #1d2127; --text: #e6e9ee; --muted: #9aa5b4;
+    --accent: #7db4f0; --accent-soft: #22303f; --warn: #f0c36b; --warn-bg: #3a3118;
+    --ok: #6fd0a0; --ok-bg: #17302a; --bad: #f19090; --bad-bg: #3a1e1e;
+    --border: #323841; --key-bg: #2a2f37; --key-shadow: #0c0e11;
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--accent); }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px 64px; }
+
+/* En-tête / navigation */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--card); border-bottom: 1px solid var(--border);
+}
+.topbar .wrap { padding-bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.brand { font-weight: 700; padding: 10px 0; }
+.brand a { text-decoration: none; color: inherit; }
+nav.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+nav.tabs a {
+  padding: 10px 14px; text-decoration: none; color: var(--muted);
+  border-bottom: 3px solid transparent; font-weight: 600; font-size: .95rem;
+}
+nav.tabs a:hover { color: var(--text); }
+nav.tabs a[aria-current="page"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 28px 0 6px; line-height: 1.2; }
+h2 { font-size: clamp(1.25rem, 3vw, 1.6rem); margin: 40px 0 10px; padding-top: 6px; border-top: 2px solid var(--border); }
+h3 { font-size: 1.1rem; margin: 24px 0 6px; }
+.lead { color: var(--muted); font-size: 1.05rem; margin-top: 0; }
+
+/* Sommaire */
+.toc { background: var(--accent-soft); border-radius: var(--radius); padding: 12px 18px; margin: 18px 0; }
+.toc strong { display: block; margin-bottom: 4px; }
+.toc ol { margin: 0; padding-left: 20px; columns: 2 260px; }
+
+/* Cartes de choix (page d'accueil de l'aide) */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0; }
+.card {
+  display: block; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 18px; text-decoration: none; color: inherit;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06); transition: transform .12s, box-shadow .12s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+.card .ico { font-size: 2rem; }
+.card h3 { margin: 6px 0 4px; color: var(--accent); }
+.card p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+/* Encadrés */
+.note, .tip, .warn {
+  border-left: 5px solid; border-radius: 8px; padding: 10px 14px; margin: 14px 0;
+}
+.note { background: var(--accent-soft); border-color: var(--accent); }
+.tip  { background: var(--ok-bg); border-color: var(--ok); }
+.warn { background: var(--warn-bg); border-color: var(--warn); }
+.note > :first-child, .tip > :first-child, .warn > :first-child { margin-top: 0; }
+.note > :last-child, .tip > :last-child, .warn > :last-child { margin-bottom: 0; }
+
+/* Captures d'écran */
+figure { margin: 18px 0; text-align: center; }
+figure img {
+  max-width: 100%; height: auto; border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,.15); background: #fff;
+}
+figcaption { font-size: .9rem; color: var(--muted); margin-top: 6px; }
+.phones { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+.phones figure { flex: 0 1 230px; margin: 10px 0; }
+.phones figure img { width: 100%; }
+.side { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 720px) { .side { grid-template-columns: 1fr; } }
+
+/* Touches du clavier */
+kbd {
+  display: inline-block; min-width: 1.9em; padding: 1px 7px; text-align: center;
+  font: 600 .85em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--key-bg); color: var(--text);
+  border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 6px;
+  box-shadow: 0 1px 0 var(--key-shadow); white-space: nowrap;
+}
+.k { white-space: nowrap; }
+
+/* Tableaux (défilement horizontal sur petit écran) */
+.table-scroll { overflow-x: auto; margin: 14px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--card); }
+table { border-collapse: collapse; width: 100%; min-width: 520px; }
+th, td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+th { background: var(--accent-soft); font-size: .9rem; }
+tr:last-child td { border-bottom: 0; }
+td.c, th.c { text-align: center; }
+.yes { color: var(--ok); font-weight: 700; }
+.no  { color: var(--bad); font-weight: 700; }
+
+/* Étapes numérotées */
+ol.steps { counter-reset: s; list-style: none; padding-left: 0; }
+ol.steps > li { counter-increment: s; position: relative; padding: 4px 0 4px 44px; margin: 6px 0; }
+ol.steps > li::before {
+  content: counter(s); position: absolute; left: 0; top: 2px; width: 30px; height: 30px;
+  border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Scénarios de sauvegarde */
+.scenario { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 18px 14px; margin: 18px 0; }
+.scenario h3 { margin-top: 14px; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; font-size: .95rem; }
+.flow .box {
+  background: var(--accent-soft); border: 1px solid var(--border); border-radius: 10px;
+  padding: 6px 12px; text-align: center; font-weight: 600;
+}
+.flow .arrow { font-size: 1.4rem; color: var(--accent); }
+@media (max-width: 560px) {
+  .flow { flex-direction: column; align-items: stretch; }
+  .flow .arrow { text-align: center; transform: rotate(90deg); }
+}
+
+.pill { display: inline-block; font-size: .8rem; font-weight: 700; padding: 1px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.pill.cheat { background: var(--bad-bg); color: var(--bad); }
+.pill.safe { background: var(--ok-bg); color: var(--ok); }
+
+/* Clavier virtuel dessiné (mobile) */
+.vkb { display: inline-block; max-width: 100%; background: var(--accent-soft); border-radius: 12px; padding: 10px; }
+.vkb .r { display: flex; justify-content: center; gap: 4px; margin: 4px 0; }
+.vkb span {
+  min-width: 26px; padding: 6px 4px; text-align: center; font-size: .95rem; font-weight: 600;
+  background: var(--key-bg); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 2px 0 var(--key-shadow);
+}
+.vkb span.big { min-width: 40px; }
+
+footer { margin-top: 50px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .9rem; text-align: center; }
+
+@media print {
+  .topbar { position: static; }
+  nav.tabs { display: none; }
+  figure, .scenario, .note, .tip, .warn { break-inside: avoid; }
+}

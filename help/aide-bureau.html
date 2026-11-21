@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aide NexPlay — Sur ordinateur</title>
+  <link rel="icon" type="image/svg+xml" href="../images/nexplay.svg">
+  <link rel="stylesheet" href="aide.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><a href="../nexplay.html">🧩 NexPlay · Aide</a></div>
+    <nav class="tabs" aria-label="Pages d'aide">
+      <a href="aide.html">Fonctionnement général</a>
+      <a href="aide-bureau.html" aria-current="page">Ordinateur</a>
+      <a href="aide-mobile.html">Mobile / tablette</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>🖥️ Jouer sur ordinateur</h1>
+  <p class="lead">Clavier, souris, options et aides à la résolution. Sur un écran large, la grille est à gauche et les définitions (horizontales / verticales) à droite.</p>
+
+  <div class="toc">
+    <strong>Sur cette page</strong>
+    <ol>
+      <li><a href="#ecran">L'écran de jeu</a></li>
+      <li><a href="#clavier">Raccourcis clavier</a></li>
+      <li><a href="#souris">Souris</a></li>
+      <li><a href="#aides">Aides : vérifier et révéler</a></li>
+      <li><a href="#triche">Tableau « compte comme triche ? »</a></li>
+      <li><a href="#options">Les options (Préférences)</a></li>
+      <li><a href="#stats">Statistiques et chrono</a></li>
+    </ol>
+  </div>
+
+  <!-- ===================================================== -->
+  <h2 id="ecran">1. L'écran de jeu</h2>
+  <figure>
+    <img src="img/desktop-main.png" alt="Écran de jeu sur ordinateur : barre de boutons, grille et définitions" loading="lazy">
+    <figcaption>La grille (à gauche), les définitions (à droite). Le mot en cours est surligné en jaune, la case active en rouge. Sous le titre : les statistiques.</figcaption>
+  </figure>
+  <ul>
+    <li><strong>En haut</strong> : titre, auteur, taille, et la ligne de <a href="#stats">statistiques</a> (<em>Révélés / Erreurs / Avancement</em>). À droite, le mot en cours avec ses lettres déjà trouvées (<code>PILOTE__</code>).</li>
+    <li><strong>Barre de boutons</strong> : <em>Autosave</em> (si un serveur est disponible), <em>Vérif. auto</em>, menus <em>Grille</em>, <em>Vérifier</em>, <em>Révéler</em>, <em>Options</em>, et le <em>chrono</em>.</li>
+    <li><strong>Bandeau de définition</strong> sous les boutons : la définition du mot en cours.</li>
+    <li>Cliquer sur une définition dans la liste de droite sélectionne le mot correspondant.</li>
+  </ul>
+
+  <h3>Le menu « Grille »</h3>
+  <div class="table-scroll"><table>
+    <tr><th>Entrée</th><th>Rôle</th></tr>
+    <tr><td>Infos / Notes</td><td>Informations sur la grille (titre, auteur, copyright) et notes de l'auteur si elles existent.</td></tr>
+    <tr><td>Open …</td><td>Ouvrir un fichier de grille depuis l'ordinateur (PUZ, JPZ, XML, CFP, iPUZ). Glisser-déposer possible.</td></tr>
+    <tr><td>Imprimer (PDF)</td><td>Génère un PDF de la grille, prêt à imprimer (s'ouvre dans un nouvel onglet).</td></tr>
+    <tr><td>Sauvegarder</td><td>Télécharge la grille avec votre progression au format iPUZ.</td></tr>
+    <tr><td>Redémarrer</td><td>Efface toute la grille, les statistiques et remet le chrono à zéro.</td></tr>
+  </table></div>
+
+  <!-- ===================================================== -->
+  <h2 id="clavier">2. Raccourcis clavier</h2>
+
+  <h3>Écrire et corriger</h3>
+  <div class="table-scroll"><table>
+    <tr><th style="width:34%">Touche</th><th>Effet</th></tr>
+    <tr><td><kbd>A</kbd> … <kbd>Z</kbd></td><td>Écrit la lettre (en majuscule) dans la case active puis passe à la suivante. Pas besoin de taper les accents ni les cédilles : tapez <kbd>E</kbd> pour É, È, Ê…<br>Selon l'option <em>Ignorer les cases remplies</em>, le curseur saute les lettres déjà écrites. Avec <em>Vérif. auto</em>, une lettre fausse reste affichée en erreur et le curseur ne bouge pas.</td></tr>
+    <tr><td><kbd>⌫</kbd> Retour arrière</td><td>Efface la case active <strong>puis recule</strong> d'une case.</td></tr>
+    <tr><td><kbd>Suppr</kbd></td><td>Efface la case active <strong>sans bouger</strong>.</td></tr>
+    <tr><td><kbd>Espace</kbd></td><td>Selon l'option « Touche ESPACE » : <em>efface la case et avance</em> (par défaut) ou <em>change de direction</em> (horizontal ⇄ vertical).</td></tr>
+  </table></div>
+
+  <h3>Se déplacer</h3>
+  <div class="table-scroll"><table>
+    <tr><th style="width:34%">Touche</th><th>Effet</th></tr>
+    <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td><td>Déplace la case active d'une case. Les cases noires sont franchies. Si la flèche est perpendiculaire au mot en cours, le sens de saisie change ; la case active bouge ou non selon l'option « Au changement de direction avec les flèches ».</td></tr>
+    <tr><td><kbd>⇧ Maj</kbd> + flèche</td><td>Saute directement au <strong>mot suivant</strong> dans la direction de la flèche.</td></tr>
+    <tr><td><kbd>Tab</kbd> ou <kbd>Entrée</kbd></td><td>Passe au <strong>mot suivant</strong> (ou au prochain mot <em>non résolu</em>, selon l'option « Touche TAB »).</td></tr>
+    <tr><td><kbd>⇧ Maj</kbd> + <kbd>Tab</kbd> (ou + <kbd>Entrée</kbd>)</td><td>Revient au <strong>mot précédent</strong>.</td></tr>
+    <tr><td><kbd>Début</kbd> / <kbd>Fin</kbd></td><td>Va à la <strong>première</strong> / <strong>dernière</strong> case du mot en cours.</td></tr>
+  </table></div>
+  <div class="tip">Astuce : <kbd>Entrée</kbd> et <kbd>Tab</kbd> ont exactement le même effet ; utilisez la touche la plus proche de votre main.</div>
+
+  <h3>Divers</h3>
+  <div class="table-scroll"><table>
+    <tr><th style="width:34%">Touche</th><th>Effet</th></tr>
+    <tr><td><kbd>⇧ Maj</kbd> + <kbd>Échap</kbd></td><td>Pause / reprise du chrono (même effet qu'un clic sur le chrono).</td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>.</kbd> (ou <kbd>⌘</kbd> + <kbd>.</kbd>)</td><td>Ajoute / retire un cercle sur la case active (utile pour marquer une lettre).</td></tr>
+    <tr><td><em>Grilles « sans diagramme »</em></td><td><kbd>.</kbd> pose ou enlève une case noire ; <kbd>Espace</kbd> change la direction ; les flèches imposent la direction. (Seulement pour ce type de grille.)</td></tr>
+  </table></div>
+
+  <!-- ===================================================== -->
+  <h2 id="souris">3. Souris</h2>
+  <ul>
+    <li><strong>Clic sur une case</strong> : sélectionne la case et le mot qui la traverse.</li>
+    <li><strong>Double-clic sur la case déjà sélectionnée</strong> : change de direction (horizontal ⇄ vertical).</li>
+    <li><strong>Clic sur une définition</strong> (liste de droite) : sélectionne ce mot.</li>
+    <li><strong>Clic sur le chrono</strong> : pause / reprise. Le chrono se met aussi en pause tout seul lorsque l'onglet est masqué ou perd le focus, et repart au retour.</li>
+  </ul>
+
+  <!-- ===================================================== -->
+  <h2 id="aides">4. Aides : vérifier et révéler</h2>
+  <p>Deux familles d'aides existent. Elles apparaissent dans la barre de boutons <em>(sauf si vous avez choisi « Désactiver tout moyen d'aide »)</em>.</p>
+
+  <div class="side">
+    <figure>
+      <img src="img/desktop-check-menu.png" alt="Menu Vérifier : Lettre, Mot, Grille" loading="lazy">
+      <figcaption>Menu <strong>Vérifier</strong> : marque en rouge les lettres fausses.</figcaption>
+    </figure>
+    <figure>
+      <img src="img/desktop-reveal-menu.png" alt="Menu Révéler : Lettre, Mot, Grille" loading="lazy">
+      <figcaption>Menu <strong>Révéler</strong> : écrit la bonne réponse dans la grille.</figcaption>
+    </figure>
+  </div>
+
+  <h3>🔍 Vérifier (ne donne pas la réponse)</h3>
+  <p>Choisissez <em>Lettre</em>, <em>Mot</em> ou <em>Grille</em> : les lettres que vous avez saisies et qui sont fausses sont signalées (case en rouge / barrée). Les cases vides ne sont pas touchées. Chaque erreur détectée est ajoutée au compteur <strong>Erreurs</strong>.</p>
+  <p><strong>Vérif. auto</strong> (case à cocher dans la barre, ou dans les options) : vérifie automatiquement <em>chaque lettre dès que vous la tapez</em>. Lorsqu'elle est active, le menu « Vérifier » est masqué.</p>
+
+  <h3>💡 Révéler (donne la réponse)</h3>
+  <p>Écrit la bonne lettre / le bon mot / toute la grille. La grille entière se révèle via le menu.</p>
+
+  <h3>Les raccourcis « lettre » et « mot »</h3>
+  <p>Pour aller vite sans passer par la souris, trois raccourcis clavier révèlent la solution — <strong>avec ou sans pénalité dans les statistiques</strong> :</p>
+  <div class="table-scroll"><table>
+    <tr><th style="width:34%">Raccourci</th><th>Effet</th><th class="c">Compté dans « Révélés » ?</th></tr>
+    <tr><td><kbd>Inser</kbd></td><td>Révèle la <strong>lettre</strong> de la case active.</td><td class="c"><span class="pill cheat">Oui</span></td></tr>
+    <tr><td><kbd>Ctrl</kbd> + <kbd>Inser</kbd></td><td>Révèle le <strong>mot</strong> en cours.</td><td class="c"><span class="pill cheat">Oui</span> (chaque lettre qui n'était pas déjà juste)</td></tr>
+    <tr><td><kbd>⇧ Maj</kbd> + <kbd>Inser</kbd></td><td>Révèle le <strong>mot</strong> en cours, « accélérateur de frappe ».</td><td class="c"><span class="pill safe">Non</span></td></tr>
+  </table></div>
+  <div class="note">
+    <strong>À quoi sert <kbd>Maj</kbd> + <kbd>Inser</kbd> ?</strong> Vous connaissez un mot mais ne voulez pas le taper (nom long, mot déjà vu ailleurs…) : ce raccourci le saisit pour vous <em>sans</em> vous compter une triche. À utiliser honnêtement !<br>
+    Votre clavier n'a pas de touche <kbd>Inser</kbd> (ordinateurs portables) ? Utilisez alors le menu <em>Révéler</em>.
+  </div>
+  <p>Un mot qui contient déjà des lettres justes ne compte que pour les lettres qui étaient fausses ou vides.</p>
+
+  <!-- ===================================================== -->
+  <h2 id="triche">5. Tableau « compte comme triche ? »</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Action</th><th>Comment</th><th class="c">Compte comme « Révélé »</th><th class="c">Compte comme « Erreur »</th></tr>
+    <tr><td>Vérifier lettre / mot / grille</td><td>Menu <em>Vérifier</em></td><td class="c">—</td><td class="c"><span class="yes">oui</span>, pour chaque lettre fausse détectée</td></tr>
+    <tr><td>Vérif. auto</td><td>Case à cocher</td><td class="c">—</td><td class="c"><span class="yes">oui</span>, à chaque lettre fausse</td></tr>
+    <tr><td>Révéler une lettre</td><td>Menu ou <kbd>Inser</kbd></td><td class="c"><span class="no">OUI</span></td><td class="c">—</td></tr>
+    <tr><td>Révéler un mot</td><td>Menu ou <kbd>Ctrl</kbd>+<kbd>Inser</kbd></td><td class="c"><span class="no">OUI</span></td><td class="c">—</td></tr>
+    <tr><td>Révéler un mot « accélérateur »</td><td><kbd>Maj</kbd>+<kbd>Inser</kbd></td><td class="c"><span class="yes">NON</span></td><td class="c">—</td></tr>
+    <tr><td>Révéler toute la grille</td><td>Menu <em>Révéler › Grille</em></td><td class="c"><span class="no">OUI</span></td><td class="c">—</td></tr>
+  </table></div>
+  <p>Les compteurs sont enregistrés avec la grille et réapparaissent à la reprise du jeu. Ils sont remis à zéro par <em>Grille › Redémarrer</em>.</p>
+
+  <!-- ===================================================== -->
+  <h2 id="options">6. Les options (Préférences)</h2>
+  <p>Cliquez sur <strong>⚙️ Options</strong> : la fenêtre « Préférences » s'ouvre. Chaque réglage est <strong>enregistré immédiatement</strong> et conservé d'une grille à l'autre. Le clavier est désactivé pendant que la fenêtre est ouverte.</p>
+  <figure>
+    <img src="img/desktop-settings.png" alt="Fenêtre Préférences avec toutes les options" loading="lazy">
+    <figcaption>La fenêtre « Préférences » (bouton <em>Close</em> ou ✕ pour la fermer).</figcaption>
+  </figure>
+
+  <h3>Durant le jeu</h3>
+  <div class="table-scroll"><table>
+    <tr><th style="width:36%">Option</th><th>Explication</th></tr>
+    <tr><td><strong>Ignorer les cases remplies</strong><br><small>(coché par défaut)</small></td><td>Quand vous tapez une lettre, le curseur saute les cases du mot déjà remplies pour aller à la première case vide. Décochée : il avance simplement d'une case.</td></tr>
+    <tr><td><strong>Neutraliser déf. résolues</strong></td><td>Grise dans la liste les définitions dont le mot est entièrement rempli, pour repérer d'un coup d'œil ce qui reste à faire.</td></tr>
+  </table></div>
+
+  <h3>Au changement de direction avec les flèches</h3>
+  <p>Que se passe-t-il quand vous appuyez sur une flèche <em>perpendiculaire</em> au mot en cours (ex. <kbd>↓</kbd> alors que vous écrivez à l'horizontale) ?</p>
+  <div class="table-scroll"><table>
+    <tr><th style="width:36%">Choix</th><th>Effet</th></tr>
+    <tr><td><strong>Rester sur la même case</strong></td><td>La première pression ne fait que changer le sens de saisie. Appuyez une seconde fois pour avancer.</td></tr>
+    <tr><td><strong>Bouger dans le sens de la flèche</strong></td><td>Change le sens et déplace tout de suite le curseur d'une case.</td></tr>
+    <tr><td><strong>Bouger dans le sens de la flèche si la case est remplie</strong><br><small>(par défaut)</small></td><td>Combine les deux : sur une case <em>vide</em>, la flèche ne fait que changer le sens ; sur une case <em>remplie</em>, elle change le sens et avance.</td></tr>
+  </table></div>
+
+  <h3>Touche ESPACE</h3>
+  <ul>
+    <li><strong>Effacer et se déplacer</strong> (par défaut) : vide la case et passe à la suivante.</li>
+    <li><strong>Changer de direction</strong> : bascule entre horizontal et vertical (utile pour les grilles aux mots entrecroisés dans deux sens).</li>
+  </ul>
+
+  <h3>Touche TAB</h3>
+  <ul>
+    <li><strong>Mot suivant</strong> : va toujours au mot suivant dans l'ordre des définitions.</li>
+    <li><strong>Mot suivant non résolu</strong> (par défaut) : saute les mots déjà complets.</li>
+  </ul>
+
+  <h3>Divers</h3>
+  <div class="table-scroll"><table>
+    <tr><th style="width:36%">Option</th><th>Explication</th></tr>
+    <tr><td><strong>Démarrer chrono à l'ouverture du jeu</strong></td><td>Le chrono se déclenche dès que la grille s'affiche. Sinon, lancez-le vous-même en cliquant dessus.</td></tr>
+    <tr><td><strong>Effet Confetti à la fin</strong></td><td>Animation de confettis quand la grille est terminée.</td></tr>
+    <tr><td><strong>Vérif AUTO (🅰️)</strong></td><td>Même réglage que la case « Vérif. auto » de la barre : chaque lettre fausse est signalée dès la frappe et le curseur ne bouge pas.</td></tr>
+    <tr><td><strong>Afficher N° d'indices (style anglo-saxon)</strong></td><td>Affiche en petit, dans le coin de chaque case de départ de mot, le numéro de la définition (comme dans un journal papier). Désactivé par défaut : la grille reste épurée.</td></tr>
+    <tr><td><strong>Désactiver tout moyen d'aide</strong></td><td>Mode « puriste » : les menus <em>Vérifier</em> et <em>Révéler</em>, la Vérif. auto et les raccourcis <kbd>Inser</kbd> sont désactivés. Idéal pour un défi honnête ou pour un enfant tenté de tricher.</td></tr>
+    <tr><td><strong>Affichage Erreurs/Révélés dans la grille</strong></td><td>Marque dans la grille les cases révélées ou fausses, pour visualiser vos « tricheries ». <em>Fonctionne lorsque la Vérif. auto est active.</em></td></tr>
+    <tr><td><strong>Autosave Crossword (↕️)</strong></td><td>Visible uniquement si un serveur de sauvegarde est configuré : envoie la grille en cours vers ce serveur à chaque modification. La sauvegarde locale (dans le navigateur) est toujours active, quoi qu'il arrive.</td></tr>
+    <tr><td><strong>Mode sombre</strong></td><td>Thème sombre pour jouer le soir.</td></tr>
+  </table></div>
+
+  <!-- ===================================================== -->
+  <h2 id="stats">7. Statistiques et chrono</h2>
+  <p>La ligne sous le titre résume votre partie :</p>
+  <p><code>Révélés: 3 (1%) • Erreurs: 5 (2%) • Avancement: 42%</code></p>
+  <ul>
+    <li><strong>Révélés</strong> : nombre de cases dont la lettre vous a été donnée (et pourcentage de la grille).</li>
+    <li><strong>Erreurs</strong> : nombre de cases où une lettre fausse a été détectée (par <em>Vérifier</em> ou la <em>Vérif. auto</em>).</li>
+    <li><strong>Avancement</strong> : part de la grille remplie avec les <em>bonnes</em> lettres.</li>
+  </ul>
+  <p>Le <strong>chrono</strong> en haut à droite compte le temps de jeu effectif. À la fin de la grille, un message de félicitations indique votre temps.</p>
+
+  <footer>
+    <a href="../nexplay.html">← Retour aux mots croisés</a> ·
+    <a href="aide.html">Fonctionnement général</a> ·
+    <a href="aide-mobile.html">Aide mobile</a>
+  </footer>
+</main>
+</body>
+</html>

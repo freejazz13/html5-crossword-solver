@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aide NexPlay — Mobile et tablette</title>
+  <link rel="icon" type="image/svg+xml" href="../images/nexplay.svg">
+  <link rel="stylesheet" href="aide.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><a href="../nexplay.html">🧩 NexPlay · Aide</a></div>
+    <nav class="tabs" aria-label="Pages d'aide">
+      <a href="aide.html">Fonctionnement général</a>
+      <a href="aide-bureau.html">Ordinateur</a>
+      <a href="aide-mobile.html" aria-current="page">Mobile / tablette</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>📱 Jouer sur mobile ou tablette</h1>
+  <p class="lead">Sur un écran tactile, NexPlay affiche sa propre disposition : la grille en haut, un <strong>clavier virtuel intégré</strong> en bas, et un tiroir de boutons que l'on fait glisser. Le clavier du téléphone n'est pas utilisé.</p>
+
+  <div class="toc">
+    <strong>Sur cette page</strong>
+    <ol>
+      <li><a href="#ecran">L'écran de jeu</a></li>
+      <li><a href="#clavier">Le clavier virtuel et ses touches spéciales</a></li>
+      <li><a href="#triche">Touches d'aide : avec ou sans « triche »</a></li>
+      <li><a href="#gestes">Toucher, zoomer, déplacer</a></li>
+      <li><a href="#liste">Mode liste / mode grille</a></li>
+      <li><a href="#tiroir">Le tiroir : menus, options, statistiques</a></li>
+      <li><a href="#options">Les options sur mobile</a></li>
+      <li><a href="#tablette">Tablette et clavier physique</a></li>
+    </ol>
+  </div>
+
+  <!-- ===================================================== -->
+  <h2 id="ecran">1. L'écran de jeu</h2>
+  <div class="phones">
+    <figure>
+      <img src="img/mobile-main.png" alt="Écran de jeu mobile : définition, grille, mot en cours et clavier virtuel" loading="lazy">
+      <figcaption>Écran principal : de haut en bas, la définition, la grille, la barre jaune du mot en cours, la barre d'infos et le clavier.</figcaption>
+    </figure>
+  </div>
+  <ul>
+    <li><strong>Bandeau du haut</strong> : la définition du mot en cours.</li>
+    <li><strong>Grille</strong> : touchez une case pour la sélectionner. Le mot en cours est en jaune, la case active en rouge. Une lettre <em>fausse</em> repérée par la vérification automatique est <strong>barrée</strong> (comme le « E » en haut à gauche sur la capture).</li>
+    <li><strong>Barre jaune</strong> « <code>AUTOECOLE</code> » : les lettres déjà écrites du mot en cours, et des <code>_</code> pour les cases vides. À gauche, le petit symbole <strong>📄</strong> bascule entre mode grille et <a href="#liste">mode liste</a>.</li>
+    <li><strong>Barre d'infos</strong> (la poignée du tiroir) : 🅰️ si la vérification auto est active, titre de la grille, 📶 état de la connexion, ↕️ si l'autosave serveur est actif, et le <strong>chrono</strong>. Touchez-la ou faites-la glisser vers le haut pour ouvrir <a href="#tiroir">le tiroir</a>.</li>
+    <li><strong>Clavier virtuel</strong> en bas, de type AZERTY.</li>
+  </ul>
+
+  <!-- ===================================================== -->
+  <h2 id="clavier">2. Le clavier virtuel et ses touches spéciales</h2>
+  <p>Le clavier est volontairement différent d'un clavier classique : pas de chiffres, de ponctuation ni d'accents (inutiles en mots croisés), mais des touches de navigation et d'aide en plus.</p>
+
+  <div style="text-align:center">
+    <div class="vkb" aria-label="Schéma du clavier virtuel">
+      <div class="r"><span class="big">◀</span><span>A</span><span>Z</span><span>E</span><span>R</span><span>T</span><span>Y</span><span>U</span><span>I</span><span>O</span><span>P</span><span class="big">▶</span></div>
+      <div class="r"><span>Q</span><span>S</span><span>D</span><span>F</span><span>G</span><span>H</span><span>J</span><span>K</span><span>L</span><span>M</span></div>
+      <div class="r"><span>⤵️</span><span>💡</span><span>W</span><span>X</span><span>C</span><span>V</span><span>B</span><span>N</span><span>✅</span><span class="big">❌</span></div>
+    </div>
+  </div>
+
+  <h3>Lettres</h3>
+  <p>Une touche = une lettre écrite dans la case active, puis le curseur passe à la case suivante du mot (en sautant les cases déjà remplies si l'option <em>Ignorer les cases remplies</em> est cochée). Les lettres accentuées se tapent sans accent : <strong>E</strong> suffit pour É, È, Ê, Ë.</p>
+  <div class="note">Avec la <strong>Vérif. auto</strong> (🅰️), si la lettre est fausse, elle reste affichée (barrée) et le curseur <strong>ne bouge pas</strong> : corrigez-la directement en tapant une autre lettre.</div>
+
+  <h3>Touches spéciales</h3>
+  <div class="table-scroll"><table>
+    <tr><th class="c" style="width:90px">Touche</th><th>Action</th><th>Remarques</th></tr>
+    <tr><td class="c"><span class="vkb" style="padding:4px"><span class="big">◀</span></span></td><td>Va au <strong>mot précédent</strong>.</td><td>Respecte l'option « Touche TAB » (mot précédent <em>non résolu</em> ou simplement mot précédent). En <a href="#liste">mode liste</a>, elle recule d'<strong>une case</strong>.</td></tr>
+    <tr><td class="c"><span class="vkb" style="padding:4px"><span class="big">▶</span></span></td><td>Va au <strong>mot suivant</strong>.</td><td>Même règle. En mode liste : avance d'une case.</td></tr>
+    <tr><td class="c"><span class="vkb" style="padding:4px"><span>⤵️</span></span></td><td><strong>Change de direction</strong> (horizontal ⇄ vertical) pour la case active.</td><td>Équivalent de la touche Espace (option « changer de direction ») ou du double-clic sur ordinateur. Indispensable aux croisements.</td></tr>
+    <tr><td class="c"><span class="vkb" style="padding:4px"><span>💡</span></span></td><td><strong>Appui court</strong> : révèle la <strong>lettre</strong> de la case active.<br><strong>Appui long</strong> (maintenir environ une demi-seconde) : révèle le <strong>mot</strong> entier.</td><td><span class="pill cheat">Compte comme « Révélé »</span> dans les statistiques.</td></tr>
+    <tr><td class="c"><span class="vkb" style="padding:4px"><span>✅</span></span></td><td><strong>Appui long uniquement</strong> : révèle le <strong>mot</strong> en cours.</td><td><span class="pill safe">Ne compte PAS</span> comme triche : c'est un « accélérateur de frappe ». Un simple appui bref ne fait rien (pour éviter les fausses manœuvres).</td></tr>
+    <tr><td class="c"><span class="vkb" style="padding:4px"><span class="big">❌</span></span></td><td><strong>Efface</strong> la case active et recule.<br><strong>Appui long</strong> (maintenir ~0,6 s) : efface en continu, case après case.</td><td>Si la lettre effacée était <em>fausse</em>, le curseur ne recule pas : vous pouvez retaper immédiatement dans la même case.</td></tr>
+  </table></div>
+
+  <div class="warn">
+    <strong>⚠ Attention aux deux ampoules / cases à cocher :</strong>
+    <strong>💡</strong> compte comme une triche, <strong>✅</strong> (appui long) n'en est pas une. Si vous voulez jouer « propre » tout en vous épargnant la frappe d'un mot que vous connaissez, utilisez <strong>✅ en appui long</strong>.
+  </div>
+
+  <!-- ===================================================== -->
+  <h2 id="triche">3. Touches d'aide : avec ou sans « triche »</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Geste</th><th>Résultat</th><th class="c">Compté dans « Révélés »</th></tr>
+    <tr><td>💡 appui court</td><td>Lettre révélée</td><td class="c"><span class="no">OUI</span></td></tr>
+    <tr><td>💡 appui long</td><td>Mot révélé</td><td class="c"><span class="no">OUI</span> (lettres qui n'étaient pas déjà justes)</td></tr>
+    <tr><td>✅ appui long</td><td>Mot révélé</td><td class="c"><span class="yes">NON</span></td></tr>
+    <tr><td>Menu <em>Révéler</em> › Lettre / Mot / Grille</td><td>Lettre, mot ou grille révélés</td><td class="c"><span class="no">OUI</span></td></tr>
+    <tr><td>Menu <em>Vérifier</em> › Lettre / Mot / Grille</td><td>Lettres fausses marquées</td><td class="c">— (ajoute aux <strong>Erreurs</strong>)</td></tr>
+    <tr><td>Vérif. auto (🅰️)</td><td>Chaque lettre fausse est signalée à la frappe</td><td class="c">— (ajoute aux <strong>Erreurs</strong>)</td></tr>
+  </table></div>
+  <div class="tip">Vous voulez un défi sans aucune aide ? Dans <strong>Options</strong>, cochez « <em>Désactiver tout moyen d'aide</em> » : les touches 💡 et ✅ deviennent inactives (grisées) et les menus <em>Vérifier</em> / <em>Révéler</em> disparaissent.</div>
+
+  <!-- ===================================================== -->
+  <h2 id="gestes">4. Toucher, zoomer, déplacer</h2>
+  <ul>
+    <li><strong>Toucher une case</strong> : la sélectionne, ainsi que le mot qui la traverse. Pour changer de direction sur une case de croisement, utilisez la touche <strong>⤵️</strong> du clavier.</li>
+    <li><strong>Pincer avec deux doigts sur la grille</strong> : zoom avant / arrière (très utile sur les grandes grilles ou pour viser une petite case).</li>
+    <li><strong>Glisser un doigt sur la grille zoomée</strong> : déplace la grille.</li>
+    <li>Le pincement est <strong>volontairement bloqué sur le clavier</strong> pour ne pas zoomer la page par erreur.</li>
+    <li><strong>Glisser la barre d'infos vers le haut</strong> : ouvre le tiroir ; <strong>vers le bas</strong> : le referme.</li>
+  </ul>
+
+  <!-- ===================================================== -->
+  <h2 id="liste">5. Mode liste / mode grille</h2>
+  <p>Deux façons de voir les définitions :</p>
+  <div class="side">
+    <div>
+      <h3>▦ Mode grille (par défaut)</h3>
+      <p>La grille complète est visible ; vous touchez les cases. Idéal pour avoir une vision d'ensemble et exploiter les croisements. Sur un grand écran (tablette), les définitions apparaissent aussi à côté de la grille.</p>
+    </div>
+    <div>
+      <h3>☰ Mode liste</h3>
+      <p>La grille laisse place à la <strong>liste des définitions</strong> (HORIZONTALEMENT, puis VERTICALEMENT). Sous chaque définition, une rangée de petites cases montre les lettres déjà trouvées. Idéal quand la grille est trop petite pour vos doigts, ou pour parcourir les définitions à la suite.</p>
+    </div>
+  </div>
+  <div class="phones">
+    <figure>
+      <img src="img/mobile-list.png" alt="Mode liste : définitions avec leur rangée de cases" loading="lazy">
+      <figcaption>Le mode liste. La définition active est mise en évidence, et le clavier reste disponible.</figcaption>
+    </figure>
+  </div>
+  <h3>Comment basculer</h3>
+  <ul>
+    <li>Touchez le symbole <strong>📄</strong> à gauche de la barre jaune du mot en cours (il change d'aspect en mode liste) ;</li>
+    <li>ou ouvrez le <a href="#tiroir">tiroir</a> et touchez le bouton <strong>List</strong> (devenu <strong>Grid</strong> en mode liste).</li>
+  </ul>
+  <h3>Utiliser le mode liste</h3>
+  <ul>
+    <li><strong>Touchez une définition</strong> pour la sélectionner : le clavier écrit dans ce mot.</li>
+    <li><strong>◀ ▶</strong> déplacent le curseur <strong>d'une case</strong> dans le mot (au lieu de sauter de mot en mot comme en mode grille).</li>
+    <li>La liste s'ouvre sur la définition active, et les lettres que vous écrivez s'y affichent aussitôt (y compris celles des croisements).</li>
+  </ul>
+
+  <!-- ===================================================== -->
+  <h2 id="tiroir">6. Le tiroir : menus, options, statistiques</h2>
+  <p>Le tiroir est le panneau de boutons caché sous la barre d'infos. Pour l'ouvrir : <strong>touchez</strong> la barre d'infos (celle qui contient le chrono) ou <strong>faites-la glisser vers le haut</strong>.</p>
+  <div class="phones">
+    <figure>
+      <img src="img/mobile-drawer.png" alt="Tiroir ouvert : titre, statistiques et boutons Grille, Vérifier, Révéler, Options, List" loading="lazy">
+      <figcaption>Le tiroir ouvert : titre, statistiques puis les boutons.</figcaption>
+    </figure>
+  </div>
+
+  <h3>📊 Les statistiques</h3>
+  <p>La ligne affichée dans le tiroir donne en un coup d'œil :</p>
+  <p><code>Révélés: 3 (1%) • Erreurs: 5 (2%) • Avancement: 42%</code></p>
+  <ul>
+    <li><strong>Révélés</strong> : nombre de cases où la solution vous a été donnée (voir le tableau du §3) et leur part de la grille.</li>
+    <li><strong>Erreurs</strong> : nombre de cases où une lettre fausse a été détectée par <em>Vérifier</em> ou par la Vérif. auto.</li>
+    <li><strong>Avancement</strong> : pourcentage de la grille rempli avec les <em>bonnes</em> lettres.</li>
+  </ul>
+  <p>Les statistiques se mettent à jour <strong>à l'ouverture du tiroir</strong> (sur mobile, elles ne sont pas recalculées en permanence pour économiser la batterie). Refermez puis rouvrez le tiroir pour les rafraîchir.</p>
+
+  <h3>Les boutons</h3>
+  <div class="table-scroll"><table>
+    <tr><th>Bouton</th><th>Rôle</th></tr>
+    <tr><td><strong>Grille ⌄</strong></td><td>Infos, Notes, Open…, Imprimer (PDF), Sauvegarder (iPUZ), Redémarrer.</td></tr>
+    <tr><td><strong>Vérifier ⌄</strong></td><td>Vérifie la <em>lettre</em>, le <em>mot</em> ou la <em>grille</em> (ne donne pas la réponse). Masqué quand la Vérif. auto est active.</td></tr>
+    <tr><td><strong>Révéler ⌄</strong></td><td>Révèle la <em>lettre</em>, le <em>mot</em> ou la <em>grille</em> (compte comme triche).</td></tr>
+    <tr><td><strong>Options</strong></td><td>Ouvre la fenêtre des préférences (voir ci-dessous).</td></tr>
+    <tr><td><strong>List / Grid</strong></td><td>Bascule entre <a href="#liste">mode liste et mode grille</a>.</td></tr>
+  </table></div>
+
+  <!-- ===================================================== -->
+  <h2 id="options">7. Les options sur mobile</h2>
+  <p>Touchez <strong>Options</strong> dans le tiroir. Les réglages sont enregistrés immédiatement et conservés d'une grille à l'autre.</p>
+  <div class="phones">
+    <figure>
+      <img src="img/mobile-settings.png" alt="Fenêtre des préférences sur mobile" loading="lazy">
+      <figcaption>La fenêtre « Préférences » sur mobile (faites défiler si besoin ; ✕ ou <em>Close</em> pour fermer).</figcaption>
+    </figure>
+  </div>
+  <div class="table-scroll"><table>
+    <tr><th style="width:36%">Option</th><th>Effet sur mobile</th></tr>
+    <tr><td><strong>Ignorer les cases remplies</strong></td><td>Après une lettre, le curseur saute les cases déjà remplies du mot.</td></tr>
+    <tr><td><strong>Neutraliser déf. résolues</strong></td><td>Grise les définitions déjà complètes (particulièrement pratique en mode liste ou sur tablette).</td></tr>
+    <tr><td><strong>Touche TAB</strong> : mot suivant / mot suivant non résolu</td><td>Gouverne le comportement de <strong>◀</strong> et <strong>▶</strong> du clavier virtuel (aller au mot précédent / suivant, ou au prochain mot non résolu).</td></tr>
+    <tr><td><em>Au changement de direction avec les flèches</em> et <em>Touche ESPACE</em></td><td>Ne concernent que le <strong>clavier physique</strong> (tablette avec clavier). Sans clavier physique, ces deux réglages sont sans effet.</td></tr>
+    <tr><td><strong>Démarrer chrono à l'ouverture</strong></td><td>Lance le chrono dès l'affichage de la grille. Le chrono se met en pause quand l'application est en arrière-plan.</td></tr>
+    <tr><td><strong>Effet Confetti à la fin</strong></td><td>Animation à la fin de la grille.</td></tr>
+    <tr><td><strong>Vérif AUTO (🅰️)</strong></td><td>Signale chaque lettre fausse dès la saisie ; le curseur reste sur la case fausse.</td></tr>
+    <tr><td><strong>Afficher N° d'indices</strong></td><td>Affiche le numéro de définition dans les cases de départ.</td></tr>
+    <tr><td><strong>Désactiver tout moyen d'aide</strong></td><td>Désactive 💡 et ✅ (touches grisées), masque <em>Vérifier</em> et <em>Révéler</em>, coupe la Vérif. auto.</td></tr>
+    <tr><td><strong>Affichage Erreurs/Révélés dans la grille</strong></td><td>Marque les cases fausses / révélées dans la grille (avec la Vérif. auto active).</td></tr>
+    <tr><td><strong>Mode sombre</strong></td><td>Thème sombre, plus reposant le soir sur un écran OLED.</td></tr>
+    <tr><td><strong>Autosave Crossword (↕️)</strong></td><td>Visible seulement si un serveur de sauvegarde est configuré. La sauvegarde locale sur le téléphone reste toujours active.</td></tr>
+  </table></div>
+
+  <!-- ===================================================== -->
+  <h2 id="tablette">8. Tablette et clavier physique</h2>
+  <ul>
+    <li>Sur <strong>tablette</strong> (écran large), les définitions s'affichent en colonne à côté de la grille ; le clavier virtuel et le tiroir restent disponibles.</li>
+    <li>Si vous branchez un <strong>clavier physique</strong>, tous les <a href="aide-bureau.html#clavier">raccourcis de l'aide ordinateur</a> fonctionnent également (flèches, Tab, Inser, etc.).</li>
+    <li>En <strong>orientation paysage</strong>, la grille peut être petite : pincez pour zoomer, ou passez en <a href="#liste">mode liste</a>.</li>
+  </ul>
+
+  <div class="note">
+    <strong>Changer d'appareil ?</strong> Votre progression est enregistrée dans le navigateur du téléphone. Pour la retrouver sur un ordinateur (ou l'inverse), voir
+    <a href="aide.html#scenarios">les scénarios d'export / import avec QR code</a>.
+  </div>
+
+  <footer>
+    <a href="../nexplay.html">← Retour aux mots croisés</a> ·
+    <a href="aide.html">Fonctionnement général</a> ·
+    <a href="aide-bureau.html">Aide ordinateur</a>
+  </footer>
+</main>
+</body>
+</html>

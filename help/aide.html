@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aide NexPlay — Fonctionnement général</title>
+  <link rel="icon" type="image/svg+xml" href="../images/nexplay.svg">
+  <link rel="stylesheet" href="aide.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><a href="../nexplay.html">🧩 NexPlay · Aide</a></div>
+    <nav class="tabs" aria-label="Pages d'aide">
+      <a href="aide.html" aria-current="page">Fonctionnement général</a>
+      <a href="aide-bureau.html">Ordinateur</a>
+      <a href="aide-mobile.html">Mobile / tablette</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Fonctionnement général</h1>
+  <p class="lead">Comment sont organisés les mots croisés, comment reprendre une grille là où vous l'avez laissée, et comment transférer votre progression d'un appareil à un autre.</p>
+
+  <div class="cards">
+    <a class="card" href="aide-bureau.html"><div class="ico">🖥️</div><h3>Sur ordinateur</h3><p>Raccourcis clavier, flèches, Tab, options, aides « lettre » et « mot ».</p></a>
+    <a class="card" href="aide-mobile.html"><div class="ico">📱</div><h3>Sur mobile / tablette</h3><p>Clavier virtuel, touches spéciales, mode liste / grille, statistiques.</p></a>
+  </div>
+
+  <div class="toc">
+    <strong>Sur cette page</strong>
+    <ol>
+      <li><a href="#organisation">Recueils et mots croisés</a></li>
+      <li><a href="#statuts">Les pastilles d'avancement</a></li>
+      <li><a href="#hors-ligne">Jouer hors connexion</a></li>
+      <li><a href="#sauvegarde">Où est enregistrée ma progression ?</a></li>
+      <li><a href="#export">Exporter (fichier ou cloud + QR code)</a></li>
+      <li><a href="#import">Importer (fichier ou QR code)</a></li>
+      <li><a href="#scenarios">Scénarios de transfert</a></li>
+      <li><a href="#faq">Questions fréquentes</a></li>
+    </ol>
+  </div>
+
+  <!-- ===================================================== -->
+  <h2 id="organisation">1. Recueils et mots croisés</h2>
+  <p>Les grilles sont rangées en deux niveaux :</p>
+  <ol class="steps">
+    <li><strong>Le choix d'un recueil</strong> (page d'accueil). Chaque vignette est un <em>volume</em> : un titre (« Telerama 2020 », « New York Times 1995 »…), le nombre de mots croisés qu'il contient et le nom du fichier d'archive (<code>.zip</code>).</li>
+    <li><strong>Le choix d'un mot croisé</strong> dans le recueil ouvert. Chaque vignette indique le titre, l'auteur, la taille de la grille (ex. <code>15x15</code>), le nom du fichier et votre avancement.</li>
+  </ol>
+
+  <figure>
+    <img src="img/volumes.png" alt="Page d'accueil : la liste des cinq recueils" loading="lazy">
+    <figcaption>Étape 1 — Choisissez un recueil en cliquant (ou en touchant) sa vignette.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/crosswords.png" alt="Liste des mots croisés d'un recueil avec le fil d'Ariane et les boutons Rafraîchir et Trier" loading="lazy">
+    <figcaption>Étape 2 — Choisissez une grille. Le fil d'Ariane en haut (<em>Mots-Croisés › Telerama 2020</em>) permet de revenir à la liste des recueils.</figcaption>
+  </figure>
+
+  <p>Un clic sur une grille l'ouvre <strong>dans un nouvel onglet</strong> : vous pouvez ainsi garder la liste ouverte et passer d'une grille à l'autre.</p>
+
+  <h3>Les boutons de la liste</h3>
+  <div class="table-scroll"><table>
+    <tr><th>Bouton</th><th>Rôle</th></tr>
+    <tr><td><strong>↺ Rafraîchir</strong></td><td>Met à jour les pastilles d'avancement (utile après avoir joué dans un autre onglet, ou après un import).</td></tr>
+    <tr><td><strong>Trier par titre</strong> / <strong>Trier par fichier</strong></td><td>Bascule entre le tri par nom de fichier (ordre d'origine du recueil) et le tri alphabétique par titre.</td></tr>
+    <tr><td><strong>Exporter</strong> / <strong>Importer</strong></td><td>Sauvegarde et restauration de votre progression — voir <a href="#export">plus bas</a>.</td></tr>
+    <tr><td><strong>Aide</strong></td><td>Cette aide.</td></tr>
+  </table></div>
+
+  <!-- ===================================================== -->
+  <h2 id="statuts">2. Les pastilles d'avancement</h2>
+  <div class="table-scroll"><table>
+    <tr><th>Affichage</th><th>Signification</th></tr>
+    <tr><td>🎁</td><td>Grille <strong>jamais commencée</strong>.</td></tr>
+    <tr><td>En cours...</td><td>Grille commencée mais pas terminée (fond coloré BLEU).</td></tr>
+    <tr><td>Terminé</td><td>Grille complètement et correctement remplie (fond coloré ROUGE).</td></tr>
+  </table></div>
+  <div class="note">
+    <strong>À savoir :</strong> l'avancement est associé au couple <em>nom de fichier + titre du recueil</em>. Si deux recueils contiennent un fichier de même nom, la pastille n'apparaît que dans le recueil dans lequel vous avez réellement joué.
+  </div>
+
+  <!-- ===================================================== -->
+  <h2 id="hors-ligne">3. Jouer hors connexion</h2>
+  <p>Au premier chargement, les archives des recueils sont copiées dans le navigateur ; une mention <span style="color:#27ae60">✓ cached</span> apparaît sur les vignettes concernées. Ensuite, vous pouvez jouer <strong>sans Internet</strong> (en avion, dans le train…).</p>
+  <ul>
+    <li>Sur ordinateur et sur mobile, vous pouvez aussi <em>installer l'application</em> (menu du navigateur : « Installer… » ou « Ajouter à l'écran d'accueil »).</li>
+    <li>Seules les fonctions qui ont besoin du réseau sont indisponibles hors connexion : l'<strong>export vers le cloud</strong> et l'<strong>import par QR code</strong>. L'export et l'import par fichier fonctionnent toujours.</li>
+  </ul>
+
+  <!-- ===================================================== -->
+  <h2 id="sauvegarde">4. Où est enregistrée ma progression ?</h2>
+  <p>Chaque lettre que vous saisissez est <strong>enregistrée automatiquement dans le navigateur</strong> de l'appareil que vous utilisez (stockage local). Sont conservés pour chaque grille : les lettres saisies, vos notes, le temps écoulé, le nombre de lettres révélées et d'erreurs, et l'état (en cours / terminé).</p>
+
+  <div class="warn">
+    <strong>⚠ Cette sauvegarde reste sur l'appareil.</strong>
+    <ul>
+      <li>Elle n'est <strong>pas</strong> partagée entre votre ordinateur et votre téléphone.</li>
+      <li>Elle disparaît si vous <strong>effacez les données du site</strong> / l'historique, ou si vous jouez en <strong>navigation privée</strong>.</li>
+      <li>Navigateurs différents (Chrome / Firefox) sur un même ordinateur = sauvegardes différentes.</li>
+    </ul>
+    Pour changer d'appareil, ou simplement par précaution, utilisez <strong>Exporter / Importer</strong>.
+  </div>
+
+  <p>Si votre installation dispose d'un <em>serveur de sauvegarde</em>, des options supplémentaires apparaissent dans le jeu (case « Autosave », entrées « Save to DB » / « Load from DB » du menu <em>Grille</em>) : elles envoient la grille en cours vers ce serveur. Sans serveur, ces options sont masquées et seule la sauvegarde locale ci-dessus s'applique.</p>
+
+  <!-- ===================================================== -->
+  <h2 id="export">5. Exporter ma progression</h2>
+  <p>Le bouton <strong>Exporter</strong> (page d'accueil, en haut à droite) crée une copie de <strong>toute</strong> votre progression (toutes les grilles de tous les recueils) dans un seul fichier compressé.</p>
+
+  <h3>a) Export vers un fichier (toujours fait)</h3>
+  <p>Le fichier est téléchargé dans le dossier de téléchargements de votre appareil, avec un nom daté :</p>
+  <p><code>crosswords-2026-11-21-1430.bz2</code> &nbsp;<small>(<em>crosswords-</em> année-mois-jour<em>-</em>heure+minutes<em>.bz2</em>)</small></p>
+  <p>Un bandeau temporaire « Saved to disk: <em>nom du fichier</em> » confirme l'opération (selon le navigateur, le téléchargement peut aussi apparaître dans sa barre de téléchargements). Conservez ce fichier où vous voulez : clé USB, messagerie, Drive, etc.</p>
+
+  <h3>b) Export vers le cloud, avec lien et QR code (optionnel)</h3>
+  <p>Cochez <strong>« Exporter vers Cloud »</strong> <em>avant</em> de cliquer sur Exporter. En plus du fichier local, la sauvegarde est envoyée sur un espace en ligne et NexPlay affiche :</p>
+  <ul>
+    <li>un <strong>QR code</strong> à scanner avec un autre appareil ;</li>
+    <li>le <strong>lien</strong> de téléchargement (champ texte : un clic le sélectionne), <strong>copié automatiquement</strong> dans le presse-papiers si le navigateur l'autorise.</li>
+  </ul>
+  <figure>
+    <img src="img/qr-export.png" alt="Fenêtre affichant un QR code et le lien du fichier de sauvegarde" loading="lazy" style="max-width:420px">
+    <figcaption>Fenêtre « QR code + lien » après un export cloud (exemple : le lien et le QR code affichés ici sont fictifs). Le bouton <em>Close</em> la referme.</figcaption>
+  </figure>
+  <div class="warn">
+    <strong>Bon à savoir sur le cloud</strong>
+    <ul>
+      <li>Il faut être <strong>connecté à Internet</strong> (sinon : « Cloud failed: You are offline »).</li>
+      <li>La taille du fichier est <strong>limitée (environ 5 Mo)</strong>. Au-delà, l'envoi est refusé et le message « Erreur durant l'export cloud » s'affiche ; le fichier local, lui, est bien créé.</li>
+      <li>Toute personne qui possède le lien peut télécharger la sauvegarde : ne le publiez pas.</li>
+      <li>Le QR code et le lien sont faits pour un transfert immédiat. Pour une archive durable, gardez le fichier local.</li>
+    </ul>
+  </div>
+
+  <!-- ===================================================== -->
+  <h2 id="import">6. Importer une progression</h2>
+  <p>Le bouton <strong>Importer</strong> restaure une sauvegarde. Deux modes, selon la case <strong>« Importer d'un QRcode »</strong> :</p>
+
+  <div class="table-scroll"><table>
+    <tr><th>Case « Importer d'un QRcode »</th><th>Ce qui se passe au clic sur <em>Importer</em></th></tr>
+    <tr><td><strong>Décochée</strong> (par défaut)<br><span class="pill safe">Fonctionne hors ligne</span></td><td>Une fenêtre de sélection de fichier s'ouvre : choisissez le fichier <code>.bz2</code> (ou <code>.br</code>, <code>.zip</code>) précédemment exporté.</td></tr>
+    <tr><td><strong>Cochée</strong><br><span class="pill">Nécessite Internet</span></td><td>Une fenêtre « Scanner un QRCode avec la caméra ou un screenshot » s'ouvre. Présentez la caméra devant le QR code affiché sur l'autre appareil, <em>ou</em> chargez une image/capture d'écran contenant le QR code. Le fichier est alors téléchargé depuis le lien et importé. Le bouton <em>Abandon</em> ferme le lecteur.</td></tr>
+  </table></div>
+
+  <p>Dans les deux cas, un message « Import terminé, OK pour recharger » apparaît ; après validation, la page se recharge : vos pastilles d'avancement sont à jour.</p>
+
+  <div class="warn">
+    <strong>Que devient ce que j'ai déjà joué sur cet appareil ?</strong><br>
+    L'import <strong>fusionne</strong> : les grilles présentes dans la sauvegarde <strong>remplacent</strong> les versions locales de ces mêmes grilles ; les autres grilles de l'appareil ne sont pas touchées. Si vous avez avancé la même grille sur les deux appareils, c'est donc la version importée qui l'emporte. Au moindre doute, faites d'abord un <strong>Exporter</strong> sur l'appareil de destination.
+  </div>
+
+  <div class="note">
+    <strong>Si vous avez seulement le lien</strong> (reçu par message, par exemple) : ouvrez-le dans le navigateur, le fichier <code>.bz2</code> est téléchargé ; revenez ensuite à NexPlay et importez-le par fichier (case QR décochée).
+  </div>
+
+  <!-- ===================================================== -->
+  <h2 id="scenarios">7. Scénarios de transfert</h2>
+
+  <div class="scenario">
+    <h3>A · Ordinateur ➜ téléphone, avec le QR code <span class="pill">le plus rapide</span></h3>
+    <div class="flow">
+      <div class="box">🖥️ Ordinateur<br>Exporter + Cloud</div><div class="arrow">➜</div>
+      <div class="box">QR code à l'écran</div><div class="arrow">➜</div>
+      <div class="box">📱 Téléphone<br>Importer + QR</div>
+    </div>
+    <ol class="steps">
+      <li>Sur l'ordinateur : cochez <strong>Exporter vers Cloud</strong>, cliquez sur <strong>Exporter</strong>. Le QR code s'affiche.</li>
+      <li>Sur le téléphone, ouvrez NexPlay, cochez <strong>Importer d'un QRcode</strong>, touchez <strong>Importer</strong> et autorisez l'accès à la caméra.</li>
+      <li>Visez le QR code sur l'écran de l'ordinateur. Attendez « Import terminé », puis validez : la page se recharge avec votre progression.</li>
+    </ol>
+  </div>
+
+  <div class="scenario">
+    <h3>B · Téléphone ➜ ordinateur, avec le QR code</h3>
+    <div class="flow">
+      <div class="box">📱 Téléphone<br>Exporter + Cloud</div><div class="arrow">➜</div>
+      <div class="box">Capture d'écran du QR code</div><div class="arrow">➜</div>
+      <div class="box">🖥️ Ordinateur<br>Importer + QR</div>
+    </div>
+    <ol class="steps">
+      <li>Sur le téléphone : <strong>Exporter vers Cloud</strong> puis <strong>Exporter</strong>. Faites une <strong>capture d'écran</strong> du QR code (ou notez que le lien est déjà dans le presse-papiers).</li>
+      <li>Transmettez la capture à l'ordinateur (messagerie, e-mail…). Si l'ordinateur a une webcam, vous pouvez aussi simplement présenter l'écran du téléphone devant elle.</li>
+      <li>Sur l'ordinateur : cochez <strong>Importer d'un QRcode</strong>, cliquez sur <strong>Importer</strong>, puis choisissez l'<strong>image</strong> de la capture (ou utilisez la webcam).</li>
+    </ol>
+  </div>
+
+  <div class="scenario">
+    <h3>C · Par fichier, sans cloud <span class="pill safe">hors ligne possible</span></h3>
+    <div class="flow">
+      <div class="box">Appareil 1<br>Exporter</div><div class="arrow">➜</div>
+      <div class="box">📄 crosswords-….bz2<br>(USB, mail, Drive…)</div><div class="arrow">➜</div>
+      <div class="box">Appareil 2<br>Importer</div>
+    </div>
+    <ol class="steps">
+      <li>Appareil 1 : <strong>Exporter</strong> (case cloud décochée). Repérez le fichier <code>crosswords-AAAA-MM-JJ-HHMM.bz2</code> dans vos téléchargements.</li>
+      <li>Transférez-le sur l'appareil 2 : clé USB, pièce jointe, Drive/Dropbox, partage de proximité…</li>
+      <li>Appareil 2 : <strong>Importer</strong> (case QR décochée) et sélectionnez le fichier. Sur mobile, le sélecteur de fichiers de l'appareil s'ouvre ; cherchez le fichier dans « Téléchargements » ou dans votre stockage en ligne.</li>
+    </ol>
+    <div class="tip">C'est aussi la méthode à privilégier pour une <strong>sauvegarde de sécurité</strong> : vous restez maître du fichier.</div>
+  </div>
+
+  <div class="scenario">
+    <h3>D · Sauvegarde de sécurité sur le même appareil</h3>
+    <p>Avant de vider le navigateur, de réinstaller l'application ou de changer de navigateur : <strong>Exporter</strong> d'abord. Ensuite, dans le nouveau navigateur ou après nettoyage, <strong>Importer</strong> le fichier pour tout retrouver.</p>
+  </div>
+
+  <div class="table-scroll"><table>
+    <tr><th>Méthode</th><th class="c">Internet requis</th><th>Idéal pour</th><th>Identifiant du transfert</th></tr>
+    <tr><td>Fichier <code>.bz2</code></td><td class="c"><span class="yes">Non</span></td><td>Sauvegarde durable, transfert sans réseau</td><td>Chemin du fichier (dossier Téléchargements)</td></tr>
+    <tr><td>Cloud + QR code</td><td class="c"><span class="no">Oui</span></td><td>Passage rapide ordinateur ⇄ téléphone</td><td>QR code / lien affiché + copié</td></tr>
+  </table></div>
+
+  <!-- ===================================================== -->
+  <h2 id="faq">8. Questions fréquentes</h2>
+  <details>
+    <summary><strong>Mon import a échoué, pourquoi ?</strong></summary>
+    <ul>
+      <li><em>« Le format de fichier doit être zip, bz2, br »</em> : le fichier choisi n'est pas une sauvegarde NexPlay.</li>
+      <li><em>« Failed to process backup file »</em> : fichier corrompu ou incomplet (téléchargement interrompu ?).</li>
+      <li>En mode QR code : vérifiez la connexion, l'autorisation de la caméra et que le QR code est net et entier.</li>
+    </ul>
+  </details>
+  <details>
+    <summary><strong>Je ne vois pas ma progression sur l'autre appareil.</strong></summary>
+    <p>C'est normal tant que vous n'avez pas fait un export puis un import (voir scénarios ci-dessus). Après l'import, cliquez éventuellement sur <strong>↺ Rafraîchir</strong>.</p>
+  </details>
+  <details>
+    <summary><strong>Puis-je ajouter mes propres grilles ?</strong></summary>
+    <p>Oui, dans une grille ouverte, le menu <em>Grille › Open…</em> permet d'ouvrir un fichier PUZ, JPZ, XML, CFP ou iPUZ depuis votre appareil.</p>
+  </details>
+  <details>
+    <summary><strong>Où sont les explications pour jouer ?</strong></summary>
+    <p>Voir <a href="aide-bureau.html">l'aide ordinateur</a> ou <a href="aide-mobile.html">l'aide mobile / tablette</a>.</p>
+  </details>
+
+  <footer>
+    <a href="../nexplay.html">← Retour aux mots croisés</a> ·
+    <a href="aide-bureau.html">Aide ordinateur</a> ·
+    <a href="aide-mobile.html">Aide mobile</a>
+  </footer>
+</main>
+</body>
+</html>

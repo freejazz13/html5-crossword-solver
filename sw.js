@@ -1,5 +1,5 @@
 // CRITICAL: You MUST change this string (e.g., v3, v4) every time you deploy a new update!
-const CACHE_NAME = "nexplay-2026-10-16-2592168";
+const CACHE_NAME = "nexplay-2026-11-21-382565";
 
 const ASSETS = [
   "/",
@@ -22,7 +22,22 @@ const ASSETS = [
   "/images/xw-solve-icon-512.png",
   "/images/nexplay.svg",
   "/images/nexus2.png",
-  "/volumes.json"
+  "/volumes.json",
+  "/help/aide.html",
+  "/help/aide-bureau.html",
+  "/help/aide-mobile.html",
+  "/help/aide.css",
+  "/help/img/volumes.png",
+  "/help/img/crosswords.png",
+  "/help/img/qr-export.png",
+  "/help/img/desktop-main.png",
+  "/help/img/desktop-check-menu.png",
+  "/help/img/desktop-reveal-menu.png",
+  "/help/img/desktop-settings.png",
+  "/help/img/mobile-main.png",
+  "/help/img/mobile-drawer.png",
+  "/help/img/mobile-list.png",
+  "/help/img/mobile-settings.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -65,6 +80,8 @@ self.addEventListener("fetch", (event) => {
         const response = await fetch(req);
         if (response.ok && !response.redirected) return response;
       } catch {}
+      const exact = await caches.match(req, { ignoreSearch: true }); // ex. pages d'aide hors ligne
+      if (exact) return exact;
       const cached = await caches.match("/");
       return cached || caches.match("/nexplay");
     })());
